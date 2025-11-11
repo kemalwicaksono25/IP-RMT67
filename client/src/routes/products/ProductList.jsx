@@ -302,14 +302,14 @@ export default function ProductList() {
                 <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
                   <Link
                     to={`/products/${product.id}`}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-primary-50 to-pink-50 text-primary-700 rounded-lg hover:from-primary-100 hover:to-pink-100 transition-all text-sm font-medium border border-primary-200 hover:border-primary-300 hover:shadow-sm"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all text-sm font-medium shadow-md hover:shadow-lg"
                   >
                     <Eye className="w-4 h-4" />
                     Detail
                   </Link>
                   <button
                     onClick={() => handleDelete(product.id)}
-                    className="px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all text-sm font-medium border border-red-200 hover:border-red-300 hover:shadow-sm flex items-center gap-1.5"
+                    className="px-4 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all text-sm font-medium shadow-md hover:shadow-lg flex items-center gap-1.5"
                   >
                     <Trash2 className="w-4 h-4" />
                     Hapus
