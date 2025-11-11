@@ -182,7 +182,7 @@ export default function Team() {
                         <div className={`p-2 rounded-lg ${
                           member.role === 'admin'
                             ? 'bg-primary-100 text-primary-600'
-                            : 'bg-gray-100 text-gray-600'
+                            : 'bg-emerald-100 text-emerald-600'
                         }`}>
                           {member.role === 'admin' ? (
                             <Shield className="w-5 h-5" />
@@ -195,7 +195,7 @@ export default function Team() {
                           <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold mt-1 ${
                             member.role === 'admin'
                               ? 'bg-primary-100 text-primary-700'
-                              : 'bg-gray-100 text-gray-700'
+                              : 'bg-emerald-100 text-emerald-700'
                           }`}>
                             {member.role === 'admin' ? (
                               <>
