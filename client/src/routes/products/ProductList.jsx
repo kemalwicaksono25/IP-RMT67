@@ -1,9 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Eye, Trash2, Package, Sparkles, Link as LinkIcon, FileText, Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Eye, Trash2, Package, Sparkles, Link as LinkIcon, Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProductStore } from '../../store/product.store';
 import { getProducts, deleteProduct } from '../../services/product.api';
-import { getBriefs } from '../../services/brief.api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
@@ -11,7 +10,6 @@ import EmptyState from '../../components/EmptyState';
 export default function ProductList() {
   const { products, setProducts } = useProductStore();
   const [loading, setLoading] = useState(true);
-  const [briefs, setBriefs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [filterBy, setFilterBy] = useState('all');
@@ -20,7 +18,6 @@ export default function ProductList() {
 
   useEffect(() => {
     fetchProducts();
-    fetchBriefs();
   }, []);
 
   const fetchProducts = async () => {
@@ -32,27 +29,6 @@ export default function ProductList() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchBriefs = async () => {
-    try {
-      const response = await getBriefs();
-      setBriefs(response.data);
-    } catch (error) {
-      // Silent fail, briefs are optional
-    }
-  };
-
-  const getBriefsThisMonth = (productId) => {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
-    return briefs.filter((brief) => {
-      if (brief.ProductId !== productId) return false;
-      const briefDate = new Date(brief.createdAt);
-      return briefDate >= monthStart && briefDate <= monthEnd;
-    }).length;
   };
 
   // Filter, Sort, and Paginate products
@@ -289,12 +265,6 @@ export default function ProductList() {
                   >
                     {product.name}
                   </Link>
-                  {getBriefsThisMonth(product.id) > 0 && (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-primary-100 text-primary-700 rounded-lg text-xs font-semibold flex-shrink-0">
-                      <FileText className="w-3 h-3" />
-                      <span>{getBriefsThisMonth(product.id)}</span>
-                    </div>
-                  )}
                 </div>
                 <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-1 leading-relaxed">
                   {product.description || 'Tidak ada deskripsi'}
