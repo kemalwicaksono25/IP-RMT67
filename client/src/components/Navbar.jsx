@@ -51,7 +51,7 @@ export default function Navbar() {
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
+                className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
