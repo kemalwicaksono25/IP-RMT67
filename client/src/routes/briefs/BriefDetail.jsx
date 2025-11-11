@@ -1,0 +1,1620 @@
+import { useEffect, useState } from 'react';
+import React from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getBriefById, generateDetail, updateBriefDetail, submitDetailForApproval, deleteBriefDetail } from '../../services/brief.api';
+import { FileText, Sparkles, CheckCircle, Edit2, Save, X, Eye, ChevronUp, Trash2, Send, Package, ExternalLink, Calendar, Clock, Info, Zap } from 'lucide-react';
+import { TONE_OF_VOICE, BRIEF_TYPES, FUNNEL_STAGES, getStatusLabel } from '../../utils/constants';
+import { useAuthStore } from '../../store/auth.store';
+import toast from 'react-hot-toast';
+import Loader from '../../components/Loader';
+import StatusBadge from '../../components/StatusBadge';
+import Modal from '../../components/Modal';
+
+export default function BriefDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [brief, setBrief] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [generatingDetail, setGeneratingDetail] = useState({});
+  const [editingDetail, setEditingDetail] = useState({});
+  const [editingIdea, setEditingIdea] = useState({});
+  const [editData, setEditData] = useState({});
+  const [ideaEditData, setIdeaEditData] = useState({});
+  const [saving, setSaving] = useState({});
+  const [savingIdea, setSavingIdea] = useState({});
+  const [expandedDetails, setExpandedDetails] = useState({});
+  const [showApprovalModal, setShowApprovalModal] = useState({});
+  const [approvalData, setApprovalData] = useState({});
+  const [submittingApproval, setSubmittingApproval] = useState({});
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    fetchBrief();
+  }, [id]);
+
+  const fetchBrief = async () => {
+    try {
+      const response = await getBriefById(id);
+      setBrief(response.data);
+    } catch (error) {
+      toast.error('Gagal memuat brief');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateDetail = async (detailId) => {
+    // Prevent multiple simultaneous requests for the same detail using functional update
+    setGeneratingDetail((prev) => {
+      if (prev[detailId]) {
+        return prev; // Already generating, don't update
+      }
+      return { ...prev, [detailId]: true };
+    });
+
+    try {
+      await generateDetail(detailId);
+      toast.success('Detail berhasil di-generate');
+      fetchBrief();
+    } catch (error) {
+      toast.error('Gagal generate detail');
+    } finally {
+      setGeneratingDetail((prev) => ({ ...prev, [detailId]: false }));
+    }
+  };
+
+  const handleGenerateAllDetails = async () => {
+    if (!brief?.details || brief.details.length === 0) {
+      toast.error('Tidak ada brief detail untuk di-generate');
+      return;
+    }
+
+    // Filter details that don't have detail yet
+    const detailsToGenerate = brief.details.filter(d => !d.detail || !d.detail.type);
+    
+    if (detailsToGenerate.length === 0) {
+      toast.success('Semua detail sudah di-generate');
+      return;
+    }
+
+    // Set all to generating
+    const generatingState = {};
+    detailsToGenerate.forEach(d => {
+      generatingState[d.id] = true;
+    });
+    setGeneratingDetail((prev) => ({ ...prev, ...generatingState }));
+
+    // Generate all in parallel
+    const promises = detailsToGenerate.map(detail => 
+      generateDetail(detail.id).catch(error => {
+        console.error(`Failed to generate detail ${detail.id}:`, error);
+        return null;
+      })
+    );
+
+    try {
+      await Promise.all(promises);
+      toast.success(`${detailsToGenerate.length} detail berhasil di-generate`);
+      fetchBrief();
+    } catch (error) {
+      toast.error('Beberapa detail gagal di-generate');
+    } finally {
+      // Clear all generating states
+      setGeneratingDetail((prev) => {
+        const newState = { ...prev };
+        detailsToGenerate.forEach(d => {
+          delete newState[d.id];
+        });
+        return newState;
+      });
+    }
+  };
+
+  const toggleDetail = (detailId) => {
+    setExpandedDetails({
+      ...expandedDetails,
+      [detailId]: !expandedDetails[detailId],
+    });
+  };
+
+  const handleEditDetail = (detail) => {
+    setEditingDetail({ ...editingDetail, [detail.id]: true });
+    const detailObj = detail.detail || {};
+    
+    // Initialize edit data based on detail type
+    if (detailObj.type === 'video') {
+      // Handle scenes - convert object to array if needed
+      let scenes = detailObj.scenes || [];
+      if (!Array.isArray(scenes)) {
+        // If scenes is an object, convert to array
+        scenes = Object.keys(scenes).map(key => {
+          const scene = scenes[key];
+          return typeof scene === 'object' ? scene : { time: key, description: scene || '' };
+        });
+      }
+      
+      setEditData({
+        ...editData,
+        [detail.id]: {
+          type: 'video',
+          duration: detailObj.duration || '',
+          scenes: scenes.length > 0 ? scenes : [{ time: '0-3s', description: '' }, { time: '4-10s', description: '' }, { time: '11-15s', description: '' }],
+          visual: detailObj.visual || '',
+          music: detailObj.music || '',
+          captionWithHashtags: detail.caption 
+            ? (detail.caption + (detail.hashtags && detail.hashtags.length > 0 ? ' ' + detail.hashtags.join(' ') : ''))
+            : '',
+        },
+      });
+    } else if (detailObj.type === 'carousel') {
+      setEditData({
+        ...editData,
+        [detail.id]: {
+          type: 'carousel',
+          slideCount: detailObj.slideCount || 4,
+          slides: detailObj.slides || [],
+          visualTone: detailObj.visualTone || '',
+          captionWithHashtags: detail.caption 
+            ? (detail.caption + (detail.hashtags && detail.hashtags.length > 0 ? ' ' + detail.hashtags.join(' ') : ''))
+            : '',
+        },
+      });
+    } else if (detailObj.type === 'image') {
+      setEditData({
+        ...editData,
+        [detail.id]: {
+          type: 'image',
+          headline: detailObj.headline || '',
+          subheadline: detailObj.subheadline || '',
+          visual: detailObj.visual || '',
+          layout: detailObj.layout || '',
+          captionWithHashtags: detail.caption 
+            ? (detail.caption + (detail.hashtags && detail.hashtags.length > 0 ? ' ' + detail.hashtags.join(' ') : ''))
+            : '',
+        },
+      });
+    } else {
+      // Fallback to JSON if type unknown
+      setEditData({
+        ...editData,
+        [detail.id]: {
+          detail: detail.detail ? JSON.stringify(detail.detail, null, 2) : '',
+          captionWithHashtags: detail.caption 
+            ? (detail.caption + (detail.hashtags && detail.hashtags.length > 0 ? ' ' + detail.hashtags.join(' ') : ''))
+            : '',
+        },
+      });
+    }
+  };
+
+  const handleCancelEdit = (detailId) => {
+    setEditingDetail({ ...editingDetail, [detailId]: false });
+    setEditData({ ...editData, [detailId]: null });
+  };
+
+  const handleSaveDetail = async (detailId) => {
+    setSaving({ ...saving, [detailId]: true });
+    try {
+      const data = editData[detailId];
+      let detailJson = null;
+
+      // Build detail JSON based on type
+      if (data.type === 'video') {
+        detailJson = {
+          type: 'video',
+          duration: data.duration,
+          scenes: data.scenes.filter(s => s.description.trim()),
+          visual: data.visual,
+          music: data.music,
+        };
+      } else if (data.type === 'carousel') {
+        detailJson = {
+          type: 'carousel',
+          slideCount: parseInt(data.slideCount) || 4,
+          slides: data.slides.filter(s => s.text.trim()),
+          visualTone: data.visualTone,
+        };
+      } else if (data.type === 'image') {
+        detailJson = {
+          type: 'image',
+          headline: data.headline,
+          subheadline: data.subheadline,
+          visual: data.visual,
+          layout: data.layout,
+        };
+      } else if (data.detail) {
+        // Fallback: parse JSON string
+        try {
+          detailJson = JSON.parse(data.detail);
+        } catch (e) {
+          toast.error('Format JSON detail tidak valid');
+          setSaving({ ...saving, [detailId]: false });
+          return;
+        }
+      }
+
+      // Extract hashtags from captionWithHashtags
+      const captionWithHashtags = data.captionWithHashtags || '';
+      const hashtagRegex = /#[\w]+/g;
+      const foundHashtags = captionWithHashtags.match(hashtagRegex) || [];
+      const hashtagsArray = foundHashtags.map(t => t.trim()).filter(t => t);
+      
+      // Remove hashtags from caption (optional, or keep them in caption)
+      // For now, keep hashtags in caption
+      const captionText = captionWithHashtags;
+
+      await updateBriefDetail(detailId, {
+        detail: detailJson,
+        caption: captionText,
+        hashtags: hashtagsArray,
+      });
+
+      toast.success('Detail berhasil disimpan');
+      setEditingDetail({ ...editingDetail, [detailId]: false });
+      setEditData({ ...editData, [detailId]: null });
+      fetchBrief();
+    } catch (error) {
+      toast.error('Gagal menyimpan detail');
+    } finally {
+      setSaving({ ...saving, [detailId]: false });
+    }
+  };
+
+  const getFunnelLabel = (value) => {
+    const stage = FUNNEL_STAGES.find(s => s.value === value);
+    return stage ? stage.label : value;
+  };
+
+  const handleEditIdea = (detail) => {
+    setEditingIdea({ ...editingIdea, [detail.id]: true });
+    setIdeaEditData({
+      ...ideaEditData,
+      [detail.id]: {
+        platform: detail.platform || '',
+        tag: detail.tag || 'video',
+        title: detail.title || '',
+        funnel: detail.funnel || 'awareness',
+        cta: detail.cta || '',
+        objectiveCampaign: detail.detail?.objectiveCampaign || '',
+        decisionTrigger: detail.detail?.decisionTrigger || '',
+        productValueHighlight: detail.detail?.productValueHighlight || '',
+        communicationApproach: detail.detail?.communicationApproach || '',
+        hookOpening: detail.detail?.hookOpening || '',
+        mainContentPoints: Array.isArray(detail.detail?.mainContentPoints) ? detail.detail.mainContentPoints : [],
+        breakdownDetail: detail.detail?.breakdownDetail || '',
+        visualIdentityNote: detail.detail?.visualIdentityNote || '',
+      },
+    });
+  };
+
+  const handleCancelEditIdea = (detailId) => {
+    setEditingIdea({ ...editingIdea, [detailId]: false });
+    setIdeaEditData({ ...ideaEditData, [detailId]: null });
+  };
+
+  const handleSaveIdea = async (detailId) => {
+    setSavingIdea({ ...savingIdea, [detailId]: true });
+    try {
+      const data = ideaEditData[detailId];
+      const currentDetail = brief.details?.find(d => d.id === detailId);
+      const existingDetail = currentDetail?.detail || {};
+      
+      await updateBriefDetail(detailId, {
+        platform: data.platform,
+        tag: data.tag,
+        title: data.title,
+        funnel: data.funnel,
+        cta: data.cta,
+        detail: {
+          ...existingDetail,
+          objectiveCampaign: data.objectiveCampaign,
+          decisionTrigger: data.decisionTrigger,
+          productValueHighlight: data.productValueHighlight,
+          communicationApproach: data.communicationApproach,
+          hookOpening: data.hookOpening,
+          mainContentPoints: Array.isArray(data.mainContentPoints) ? data.mainContentPoints : [],
+          breakdownDetail: data.breakdownDetail,
+          visualIdentityNote: data.visualIdentityNote,
+        },
+      });
+      toast.success('Brief berhasil disimpan');
+      setEditingIdea({ ...editingIdea, [detailId]: false });
+      setIdeaEditData({ ...ideaEditData, [detailId]: null });
+      fetchBrief();
+    } catch (error) {
+      toast.error('Gagal menyimpan brief');
+    } finally {
+      setSavingIdea({ ...savingIdea, [detailId]: false });
+    }
+  };
+
+  const handleDeleteIdea = async (detailId) => {
+    if (!confirm('Yakin ingin menghapus brief ini?')) return;
+
+    try {
+      await deleteBriefDetail(detailId);
+      toast.success('Brief berhasil dihapus');
+      fetchBrief();
+      // Trigger event to update other components (like Dashboard)
+      window.dispatchEvent(new Event('briefsUpdated'));
+    } catch (error) {
+      toast.error('Gagal menghapus brief');
+    }
+  };
+
+  const handleOpenApprovalModal = (detailId) => {
+    setShowApprovalModal({ ...showApprovalModal, [detailId]: true });
+    setApprovalData({
+      ...approvalData,
+      [detailId]: {
+        scheduledAt: '',
+        scheduledTime: '',
+      },
+    });
+  };
+
+  const handleCloseApprovalModal = (detailId) => {
+    setShowApprovalModal({ ...showApprovalModal, [detailId]: false });
+    setApprovalData({
+      ...approvalData,
+      [detailId]: null,
+    });
+  };
+
+  const handleSubmitApproval = async (detailId) => {
+    const data = approvalData[detailId];
+    
+    // Validate date and time are filled
+    if (!data?.scheduledAt || !data?.scheduledTime) {
+      toast.error('Tanggal dan waktu posting wajib diisi');
+      return;
+    }
+
+    // Validate date is not in the past
+    const scheduledDateTime = new Date(`${data.scheduledAt}T${data.scheduledTime}`);
+    if (scheduledDateTime < new Date()) {
+      toast.error('Tanggal dan waktu posting tidak boleh di masa lalu');
+      return;
+    }
+
+    setSubmittingApproval({ ...submittingApproval, [detailId]: true });
+    try {
+      const response = await submitDetailForApproval(detailId, {
+        scheduledAt: data.scheduledAt,
+        scheduledTime: data.scheduledTime,
+      });
+      
+      // Check if user is admin (status will be SCHEDULED for admin)
+      const isAdmin = user?.role === 'admin';
+      if (isAdmin) {
+        toast.success('Brief berhasil dijadwalkan dan langsung tampil di kalender');
+      } else {
+        toast.success('Brief berhasil di-submit untuk approval');
+      }
+      
+      handleCloseApprovalModal(detailId);
+      fetchBrief();
+      // Trigger event to update calendar
+      window.dispatchEvent(new Event('briefsUpdated'));
+    } catch (error) {
+      const message = error.response?.data?.message || 'Gagal submit approval';
+      toast.error(message);
+    } finally {
+      setSubmittingApproval({ ...submittingApproval, [detailId]: false });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (!brief) {
+    return <div>Brief tidak ditemukan</div>;
+  }
+
+  const totalDetails = brief.details?.length || 0;
+  const generatedDetails = brief.details?.filter((d) => d.detail && d.caption).length || 0;
+  const readyDetails = brief.details?.filter((d) => d.status === 'ready').length || 0;
+
+  // Helper function to get label from value
+  const getToneOfVoiceLabel = (value) => {
+    const tone = TONE_OF_VOICE.find(t => t.value === value);
+    return tone ? tone.label : value;
+  };
+
+  const getBriefTypeLabel = (value) => {
+    if (!value) return '-';
+    const types = value.split(',').map(v => {
+      const type = BRIEF_TYPES.find(t => t.value === v.trim());
+      return type ? type.label : v.trim();
+    });
+    return types.join(', ');
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header dengan Gradient */}
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">Membuat Detail Brief</h1>
+              <p className="text-primary-100 text-sm mt-1">
+                Produk: {brief.product?.name} | Funnel: {brief.funnelStage}
+              </p>
+            </div>
+          </div>
+          {/* Status is only managed at BriefDetail level, not parent Brief */}
+        </div>
+
+        {/* Statistik */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <FileText className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Total Brief</span>
+            </div>
+            <p className="text-2xl font-bold">{totalDetails}</p>
+            <p className="text-xs text-primary-200 mt-1">Brief</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Detail Generated</span>
+            </div>
+            <p className="text-2xl font-bold">{generatedDetails}</p>
+            <p className="text-xs text-primary-200 mt-1">Konten siap</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Status Ready</span>
+            </div>
+            <p className="text-2xl font-bold">{readyDetails}</p>
+            <p className="text-xs text-primary-200 mt-1">Konten ready</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Product Card & Informasi Brief - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Product Card */}
+        {brief.product && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+            <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <Package className="w-5 h-5 text-primary-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Produk</h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                {/* Product Image */}
+                {brief.product.imageUrl && (
+                  <div className="flex-shrink-0">
+                    <div className="w-40 h-40 rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200">
+                      <img
+                        src={`http://localhost:3000${brief.product.imageUrl}`}
+                        alt={brief.product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Product Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-bold text-gray-900 mb-2">{brief.product.name}</h3>
+                  {brief.product.description && (
+                    <p className="text-sm text-gray-600 line-clamp-3 mb-3">{brief.product.description}</p>
+                  )}
+                  {brief.product.link && (
+                    <a
+                      href={brief.product.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Link Produk
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Informasi Brief */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Informasi Brief</h2>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div>
+                <span className="text-sm text-gray-600">Target Market:</span>
+                <p className="text-base font-medium text-gray-900 mt-1">{brief.targetMarket || '-'}</p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600">Gaya Bahasa:</span>
+                <p className="text-base font-medium text-gray-900 mt-1">{getToneOfVoiceLabel(brief.toneOfVoice) || '-'}</p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600">Jenis Brief:</span>
+                <p className="text-base font-medium text-gray-900 mt-1">{getBriefTypeLabel(brief.briefType) || '-'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Brief */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Brief</h2>
+            </div>
+          </div>
+        </div>
+        
+        {/* Info Section */}
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-blue-200/50 px-6 py-5">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg flex-shrink-0">
+              <Info className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-bold text-gray-900 mb-1.5">
+                Generate Detail Produksi
+              </h3>
+              <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                Silakan klik tombol Generate Detail Produksi untuk setiap ide konten, atau gunakan tombol di bawah untuk generate semua sekaligus.
+              </p>
+              <button
+                onClick={handleGenerateAllDetails}
+                disabled={
+                  !brief?.details || 
+                  brief.details.length === 0 ||
+                  brief.details.every(d => d.detail && d.detail.type) ||
+                  Object.values(generatingDetail).some(v => v)
+                }
+                className="inline-flex items-center gap-2.5 px-6 py-3 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white rounded-xl hover:from-pink-600 hover:via-rose-600 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-semibold text-sm transform hover:scale-105 active:scale-100"
+              >
+                {Object.values(generatingDetail).some(v => v) ? (
+                  <>
+                    <Loader size="sm" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-5 h-5" />
+                    <span>Generate Semua Detail</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto shadow-inner">
+          <table className="w-full border-collapse">
+            <thead className="bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700">
+              <tr>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase sticky left-0 bg-gradient-to-r from-primary-500 to-primary-600 z-20 w-12 shadow-lg border-r border-primary-400/30">
+                  No
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-32">
+                  Format Konten
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
+                  Judul Konten
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
+                  Objective Campaign
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-32">
+                  Audience Funnel
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
+                  Decision Trigger
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
+                  Product Value Highlight
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-40">
+                  Communication Approach
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
+                  Hook/Opening
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-56">
+                  Main Content Points
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-32">
+                  CTA
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-56">
+                  Breakdown Detail
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
+                  Visual Identity Note
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-24">
+                  Status
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase sticky right-0 bg-gradient-to-r from-primary-600 to-primary-700 z-20 w-32 shadow-lg border-l border-primary-400/30">
+                  Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-100">
+              {brief.details?.map((detail, index) => (
+                <React.Fragment key={detail.id}>
+                  <tr className={`transition-colors duration-150 ${
+                    editingIdea[detail.id] 
+                      ? 'bg-blue-50/50 hover:bg-blue-50' 
+                      : 'hover:bg-gray-50/80'
+                  } ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+                    <td className="px-4 py-5 text-sm font-semibold text-gray-700 sticky left-0 bg-inherit z-10 w-12 border-r border-gray-200/50">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 text-primary-700">
+                        {index + 1}
+                      </div>
+                    </td>
+                    <td className="px-4 py-5 text-sm w-32 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <div className="space-y-2">
+                          <select
+                            value={ideaEditData[detail.id]?.platform || ''}
+                            onChange={(e) => setIdeaEditData({
+                              ...ideaEditData,
+                              [detail.id]: { ...ideaEditData[detail.id], platform: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
+                          >
+                            <option value="TikTok">TikTok</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="Shopee">Shopee</option>
+                            <option value="Meta">Meta</option>
+                            <option value="YouTube">YouTube</option>
+                          </select>
+                          <select
+                            value={ideaEditData[detail.id]?.tag || 'video'}
+                            onChange={(e) => setIdeaEditData({
+                              ...ideaEditData,
+                              [detail.id]: { ...ideaEditData[detail.id], tag: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
+                          >
+                            <option value="video">Video</option>
+                            <option value="carousel">Carousel</option>
+                            <option value="image">Image</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2 items-center">
+                          <span className="font-semibold text-gray-900">{detail.platform}</span>
+                          <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize text-center shadow-sm ${
+                            detail.tag === 'video' 
+                              ? 'bg-red-100 text-red-700 border border-red-200' 
+                              : detail.tag === 'carousel'
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                              : 'bg-blue-100 text-blue-700 border border-blue-200'
+                          }`}>
+                            {detail.tag}
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm w-48 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <input
+                          type="text"
+                          value={ideaEditData[detail.id]?.title || ''}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], title: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          placeholder="Judul konten..."
+                        />
+                      ) : (
+                        <span className="font-semibold text-gray-900 whitespace-normal break-words">{detail.title}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm text-gray-700 w-48 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <textarea
+                          value={ideaEditData[detail.id]?.objectiveCampaign || ''}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], objectiveCampaign: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          rows="2"
+                          placeholder="Objective campaign..."
+                        />
+                      ) : (
+                        <span className="whitespace-normal break-words leading-relaxed">{detail.detail?.objectiveCampaign || '-'}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm text-gray-700 w-32 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <select
+                          value={ideaEditData[detail.id]?.funnel || 'awareness'}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], funnel: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                        >
+                          {FUNNEL_STAGES.map((stage) => (
+                            <option key={stage.value} value={stage.value}>
+                              {stage.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="whitespace-normal break-words leading-relaxed">{getFunnelLabel(detail.funnel)}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm text-gray-700 w-48 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <input
+                          type="text"
+                          value={ideaEditData[detail.id]?.decisionTrigger || ''}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], decisionTrigger: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          placeholder="Decision trigger..."
+                        />
+                      ) : (
+                        <span className="whitespace-normal break-words leading-relaxed">{detail.detail?.decisionTrigger || '-'}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm text-gray-700 w-48 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <textarea
+                          value={ideaEditData[detail.id]?.productValueHighlight || ''}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], productValueHighlight: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          rows="2"
+                          placeholder="Product value highlight..."
+                        />
+                      ) : (
+                        <span className="whitespace-normal break-words leading-relaxed">{detail.detail?.productValueHighlight || '-'}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm text-gray-700 w-40 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <input
+                          type="text"
+                          value={ideaEditData[detail.id]?.communicationApproach || ''}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], communicationApproach: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          placeholder="Communication approach..."
+                        />
+                      ) : (
+                        <span className="whitespace-normal break-words leading-relaxed">{detail.detail?.communicationApproach || '-'}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm text-gray-700 w-48 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <textarea
+                          value={ideaEditData[detail.id]?.hookOpening || ''}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], hookOpening: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          rows="2"
+                          placeholder="Hook/opening..."
+                        />
+                      ) : (
+                        <span className="whitespace-normal break-words leading-relaxed">{detail.detail?.hookOpening || '-'}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm text-gray-700 w-56 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <textarea
+                          value={Array.isArray(ideaEditData[detail.id]?.mainContentPoints) ? ideaEditData[detail.id].mainContentPoints.join('\n') : ''}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], mainContentPoints: e.target.value.split('\n').filter(p => p.trim()) }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          rows="3"
+                          placeholder="Main content points (one per line)..."
+                        />
+                      ) : (
+                        <div className="space-y-1.5">
+                          {Array.isArray(detail.detail?.mainContentPoints) && detail.detail.mainContentPoints.length > 0 ? (
+                            detail.detail.mainContentPoints.map((point, i) => (
+                              <div key={`point-${detail.id}-${i}`} className="text-xs text-gray-700 leading-relaxed">• {point}</div>
+                            ))
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm text-gray-700 w-32 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <input
+                          type="text"
+                          value={ideaEditData[detail.id]?.cta || ''}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], cta: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          placeholder="CTA..."
+                        />
+                      ) : (
+                        <span className="font-medium whitespace-normal break-words leading-relaxed">{detail.cta || '-'}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm text-gray-700 w-56 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <textarea
+                          value={ideaEditData[detail.id]?.breakdownDetail || ''}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], breakdownDetail: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          rows="3"
+                          placeholder="Breakdown detail..."
+                        />
+                      ) : (
+                        <span className="text-xs whitespace-normal break-words leading-relaxed">
+                          {(() => {
+                            const value = detail.detail?.breakdownDetail;
+                            if (!value) return '-';
+                            if (typeof value === 'object') {
+                              return JSON.stringify(value, null, 2);
+                            }
+                            return value;
+                          })()}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm text-gray-700 w-48 border-r border-gray-200/50">
+                      {editingIdea[detail.id] ? (
+                        <textarea
+                          value={ideaEditData[detail.id]?.visualIdentityNote || ''}
+                          onChange={(e) => setIdeaEditData({
+                            ...ideaEditData,
+                            [detail.id]: { ...ideaEditData[detail.id], visualIdentityNote: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          rows="2"
+                          placeholder="Visual identity note..."
+                        />
+                      ) : (
+                        <span className="text-xs whitespace-normal break-words leading-relaxed">
+                          {(() => {
+                            const value = detail.detail?.visualIdentityNote;
+                            if (!value) return '-';
+                            if (typeof value === 'object') {
+                              return JSON.stringify(value, null, 2);
+                            }
+                            return value;
+                          })()}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-5 text-sm w-24 border-r border-gray-200/50">
+                      <div className="flex flex-col gap-2 items-center">
+                        <StatusBadge status={detail.status || 'draft'}>
+                          {getStatusLabel(detail.status || 'draft')}
+                        </StatusBadge>
+                        {(detail.status === 'draft' || detail.status === 'ready') && detail.detail && detail.caption && (
+                          <button
+                            onClick={() => handleOpenApprovalModal(detail.id)}
+                            className="px-3 py-1.5 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-1 w-full shadow-sm hover:shadow-md"
+                            title="Submit for Approval"
+                          >
+                            <Send className="w-3 h-3" />
+                            Submit
+                          </button>
+                        )}
+                        {detail.status === 'scheduled' && detail.scheduledAt && (
+                          <span className="text-xs text-gray-500 text-center">
+                            {new Date(detail.scheduledAt).toLocaleString('id-ID', {
+                              dateStyle: 'short',
+                              timeStyle: 'short',
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-5 text-sm sticky right-0 bg-inherit z-10 w-32 border-l border-gray-200/50">
+                      <div className="flex items-center justify-center gap-2 flex-wrap">
+                        {!editingIdea[detail.id] && (
+                          <>
+                            <div className="relative group">
+                              <button
+                                onClick={() => handleEditIdea(detail)}
+                                className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                title="Edit Brief"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                Edit Brief
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                              </div>
+                            </div>
+                            <div className="relative group">
+                              <button
+                                onClick={() => {
+                                  if (!generatingDetail[detail.id]) {
+                                    handleGenerateDetail(detail.id);
+                                  }
+                                }}
+                                disabled={generatingDetail[detail.id]}
+                                className="p-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+                                title="Generate Detail Produksi"
+                              >
+                                {generatingDetail[detail.id] ? (
+                                  <Loader size="sm" />
+                                ) : (
+                                  <Sparkles className="w-4 h-4" />
+                                )}
+                              </button>
+                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                {generatingDetail[detail.id] ? "Generating..." : "Generate Detail Produksi"}
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                              </div>
+                            </div>
+                            {detail.detail && detail.detail.type && (
+                              <div className="relative group">
+                                <button
+                                  onClick={() => toggleDetail(detail.id)}
+                                  className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                  title={expandedDetails[detail.id] ? "Sembunyikan Detail Produksi" : "Lihat Detail Produksi"}
+                                >
+                                  {expandedDetails[detail.id] ? (
+                                    <ChevronUp className="w-4 h-4" />
+                                  ) : (
+                                    <Eye className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                  {expandedDetails[detail.id] ? "Sembunyikan Detail Produksi" : "Lihat Detail Produksi"}
+                                  <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                                </div>
+                              </div>
+                            )}
+                            <div className="relative group">
+                              <button
+                                onClick={() => handleDeleteIdea(detail.id)}
+                                className="p-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                title="Hapus Brief"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                Hapus Brief
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        {editingIdea[detail.id] && (
+                          <>
+                            <div className="relative group">
+                              <button
+                                onClick={() => handleSaveIdea(detail.id)}
+                                disabled={savingIdea[detail.id]}
+                                className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                                title={savingIdea[detail.id] ? "Menyimpan..." : "Simpan Perubahan"}
+                              >
+                                {savingIdea[detail.id] ? (
+                                  <Loader size="sm" />
+                                ) : (
+                                  <Save className="w-4 h-4" />
+                                )}
+                              </button>
+                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                {savingIdea[detail.id] ? "Menyimpan..." : "Simpan Perubahan"}
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                              </div>
+                            </div>
+                            <div className="relative group">
+                              <button
+                                onClick={() => handleCancelEditIdea(detail.id)}
+                                className="p-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                                title="Batal Edit"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                Batal Edit
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Detail Section - Production Detail (not idea content) */}
+                  {detail.detail && expandedDetails[detail.id] && detail.detail.type && (
+                    <tr key={`detail-${detail.id}`} className="bg-gradient-to-r from-gray-50 to-blue-50/30">
+                      <td colSpan={15} className="px-6 py-6 border-t-2 border-gray-200">
+                      <div className="space-y-4">
+                        {editingDetail[detail.id] ? (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold text-gray-900">Edit Detail Konten</h4>
+                              <div className="flex gap-2">
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleSaveDetail(detail.id)}
+                                    disabled={saving[detail.id]}
+                                    className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                                    title={saving[detail.id] ? "Menyimpan..." : "Simpan Detail Produksi"}
+                                  >
+                                    {saving[detail.id] ? (
+                                      <Loader size="sm" />
+                                    ) : (
+                                      <Save className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                    {saving[detail.id] ? "Menyimpan..." : "Simpan Detail Produksi"}
+                                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                                  </div>
+                                </div>
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleCancelEdit(detail.id)}
+                                    className="p-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                                    title="Batal Edit"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                    Batal Edit
+                                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Form based on type */}
+                            {editData[detail.id]?.type === 'video' && (
+                              <>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Durasi
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editData[detail.id]?.duration || ''}
+                                    onChange={(e) => setEditData({
+                                      ...editData,
+                                      [detail.id]: { ...editData[detail.id], duration: e.target.value }
+                                    })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                    placeholder="15 detik"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Scene Breakdown
+                                  </label>
+                                  <div className="space-y-2">
+                                    {editData[detail.id]?.scenes?.map((scene, i) => (
+                                      <div key={i} className="flex gap-2">
+                                        <input
+                                          type="text"
+                                          value={scene.time}
+                                          onChange={(e) => {
+                                            const newScenes = [...editData[detail.id].scenes];
+                                            newScenes[i] = { ...newScenes[i], time: e.target.value };
+                                            setEditData({
+                                              ...editData,
+                                              [detail.id]: { ...editData[detail.id], scenes: newScenes }
+                                            });
+                                          }}
+                                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                          placeholder="0-3s"
+                                        />
+                                        <textarea
+                                          value={scene.description}
+                                          onChange={(e) => {
+                                            const newScenes = [...editData[detail.id].scenes];
+                                            newScenes[i] = { ...newScenes[i], description: e.target.value };
+                                            setEditData({
+                                              ...editData,
+                                              [detail.id]: { ...editData[detail.id], scenes: newScenes }
+                                            });
+                                          }}
+                                          rows={2}
+                                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                          placeholder="Deskripsi scene..."
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Visual Description
+                                  </label>
+                                  <textarea
+                                    value={editData[detail.id]?.visual || ''}
+                                    onChange={(e) => setEditData({
+                                      ...editData,
+                                      [detail.id]: { ...editData[detail.id], visual: e.target.value }
+                                    })}
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                    placeholder="Deskripsi visual..."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Music Suggestion
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editData[detail.id]?.music || ''}
+                                    onChange={(e) => setEditData({
+                                      ...editData,
+                                      [detail.id]: { ...editData[detail.id], music: e.target.value }
+                                    })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                    placeholder="Upbeat cheerful"
+                                  />
+                                </div>
+                              </>
+                            )}
+                            {editData[detail.id]?.type === 'carousel' && (
+                              <>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Jumlah Slide
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={editData[detail.id]?.slideCount || 4}
+                                    onChange={(e) => {
+                                      const count = parseInt(e.target.value) || 4;
+                                      const currentSlides = editData[detail.id]?.slides || [];
+                                      const newSlides = Array.from({ length: count }, (_, i) => 
+                                        currentSlides[i] || { slide: i + 1, text: '' }
+                                      );
+                                      setEditData({
+                                        ...editData,
+                                        [detail.id]: { ...editData[detail.id], slideCount: count, slides: newSlides }
+                                      });
+                                    }}
+                                    min="1"
+                                    max="10"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Konten Slide
+                                  </label>
+                                  <div className="space-y-2">
+                                    {editData[detail.id]?.slides?.map((slide, i) => (
+                                      <div key={i} className="flex gap-2 items-start">
+                                        <span className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium min-w-[60px] text-center">
+                                          Slide {slide.slide}
+                                        </span>
+                                        <textarea
+                                          value={slide.text}
+                                          onChange={(e) => {
+                                            const newSlides = [...editData[detail.id].slides];
+                                            newSlides[i] = { ...newSlides[i], text: e.target.value };
+                                            setEditData({
+                                              ...editData,
+                                              [detail.id]: { ...editData[detail.id], slides: newSlides }
+                                            });
+                                          }}
+                                          rows={2}
+                                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                          placeholder="Teks slide..."
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Visual Tone
+                                  </label>
+                                  <textarea
+                                    value={editData[detail.id]?.visualTone || ''}
+                                    onChange={(e) => setEditData({
+                                      ...editData,
+                                      [detail.id]: { ...editData[detail.id], visualTone: e.target.value }
+                                    })}
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                    placeholder="Deskripsi visual tone..."
+                                  />
+                                </div>
+                              </>
+                            )}
+                            {editData[detail.id]?.type === 'image' && (
+                              <>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Headline
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editData[detail.id]?.headline || ''}
+                                    onChange={(e) => setEditData({
+                                      ...editData,
+                                      [detail.id]: { ...editData[detail.id], headline: e.target.value }
+                                    })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                    placeholder="Headline yang kuat..."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Subheadline
+                                  </label>
+                                  <textarea
+                                    value={editData[detail.id]?.subheadline || ''}
+                                    onChange={(e) => setEditData({
+                                      ...editData,
+                                      [detail.id]: { ...editData[detail.id], subheadline: e.target.value }
+                                    })}
+                                    rows={2}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                    placeholder="Subheadline yang mendukung..."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Visual Description
+                                  </label>
+                                  <textarea
+                                    value={editData[detail.id]?.visual || ''}
+                                    onChange={(e) => setEditData({
+                                      ...editData,
+                                      [detail.id]: { ...editData[detail.id], visual: e.target.value }
+                                    })}
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                    placeholder="Deskripsi visual..."
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Layout Description
+                                  </label>
+                                  <textarea
+                                    value={editData[detail.id]?.layout || ''}
+                                    onChange={(e) => setEditData({
+                                      ...editData,
+                                      [detail.id]: { ...editData[detail.id], layout: e.target.value }
+                                    })}
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                    placeholder="Deskripsi layout..."
+                                  />
+                                </div>
+                              </>
+                            )}
+                            {!editData[detail.id]?.type && editData[detail.id]?.detail && (
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Detail (JSON)
+                                </label>
+                                <textarea
+                                  value={editData[detail.id]?.detail || ''}
+                                  onChange={(e) => setEditData({
+                                    ...editData,
+                                    [detail.id]: { ...editData[detail.id], detail: e.target.value }
+                                  })}
+                                  rows={10}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
+                                  placeholder='{"type": "video", ...}'
+                                />
+                              </div>
+                            )}
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Caption & Hashtags
+                              </label>
+                              <textarea
+                                value={editData[detail.id]?.captionWithHashtags || ''}
+                                onChange={(e) => setEditData({
+                                  ...editData,
+                                  [detail.id]: { ...editData[detail.id], captionWithHashtags: e.target.value }
+                                })}
+                                rows={6}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                placeholder="Masukkan caption (minimal 3-5 kalimat) dan tambahkan hashtag di akhir..."
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Tulis caption yang panjang dan menarik, lalu tambahkan hashtag di akhir (contoh: #hashtag1 #hashtag2)
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold text-gray-900">Detail Konten</h4>
+                              <div className="relative group">
+                                <button
+                                  onClick={() => handleEditDetail(detail)}
+                                  className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                  title="Edit Detail Produksi"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                  Edit Detail Produksi
+                                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Display Detail */}
+                            <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-3">
+                              {detail.detail.type === 'video' && (
+                                <>
+                                  {detail.detail.duration && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Durasi:</span>
+                                      <p className="text-gray-900 mt-1">{detail.detail.duration}</p>
+                                    </div>
+                                  )}
+                                  {detail.detail.scenes && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Scene Breakdown:</span>
+                                      <div className="mt-2 space-y-2">
+                                        {(() => {
+                                          // Handle both array and object formats
+                                          let scenes = detail.detail.scenes;
+                                          if (!Array.isArray(scenes)) {
+                                            // Convert object to array
+                                            scenes = Object.keys(scenes).map(key => {
+                                              const scene = scenes[key];
+                                              return typeof scene === 'object' ? { ...scene, time: scene.time || key } : { time: key, description: scene || '' };
+                                            });
+                                          }
+                                          return scenes.map((scene, i) => (
+                                            <div key={`scene-${detail.id}-${i}`} className="bg-gray-50 p-3 rounded border border-gray-200">
+                                              <span className="text-xs font-semibold text-primary-600">{scene.time || `Scene ${i + 1}`}</span>
+                                              <p className="text-sm text-gray-700 mt-1">{scene.description || '-'}</p>
+                                            </div>
+                                          ));
+                                        })()}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {detail.detail.visual && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Visual Description:</span>
+                                      <p className="text-gray-900 mt-1">{detail.detail.visual}</p>
+                                    </div>
+                                  )}
+                                  {detail.detail.music && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Music Suggestion:</span>
+                                      <p className="text-gray-900 mt-1">{detail.detail.music}</p>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              {detail.detail.type === 'carousel' && (
+                                <>
+                                  {detail.detail.slideCount && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Jumlah Slide:</span>
+                                      <p className="text-gray-900 mt-1">{detail.detail.slideCount}</p>
+                                    </div>
+                                  )}
+                                  {detail.detail.slides && Array.isArray(detail.detail.slides) && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Konten Slide:</span>
+                                      <div className="mt-2 space-y-2">
+                                        {detail.detail.slides.map((slide, i) => (
+                                          <div key={`slide-${detail.id}-${i}`} className="bg-gray-50 p-3 rounded border border-gray-200">
+                                            <span className="text-xs font-semibold text-primary-600">Slide {slide.slide}</span>
+                                            <p className="text-sm text-gray-700 mt-1">{slide.text}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {detail.detail.visualTone && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Visual Tone:</span>
+                                      <p className="text-gray-900 mt-1">{detail.detail.visualTone}</p>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              {detail.detail.type === 'image' && (
+                                <>
+                                  {detail.detail.headline && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Headline:</span>
+                                      <p className="text-gray-900 mt-1 font-semibold">{detail.detail.headline}</p>
+                                    </div>
+                                  )}
+                                  {detail.detail.subheadline && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Subheadline:</span>
+                                      <p className="text-gray-900 mt-1">{detail.detail.subheadline}</p>
+                                    </div>
+                                  )}
+                                  {detail.detail.visual && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Visual Description:</span>
+                                      <p className="text-gray-900 mt-1">{detail.detail.visual}</p>
+                                    </div>
+                                  )}
+                                  {detail.detail.layout && (
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-600">Layout Description:</span>
+                                      <p className="text-gray-900 mt-1">{detail.detail.layout}</p>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+
+                            {/* Caption & Hashtags */}
+                            {detail.caption && (
+                              <div>
+                                <span className="text-sm font-medium text-gray-600">Caption & Hashtags:</span>
+                                <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mt-1">
+                                  <p className="text-gray-900 text-sm leading-relaxed whitespace-pre-wrap">
+                                    {detail.caption}
+                                    {/* Show additional hashtags if they exist separately and not already in caption */}
+                                    {detail.hashtags && detail.hashtags.length > 0 && 
+                                     !detail.caption.match(/#[\w]+/g) && (
+                                      <span className="block mt-2">
+                                        {detail.hashtags.map((tag, i) => (
+                                          <span key={`hashtag-${detail.id}-${i}`} className="text-primary-600 font-medium mr-2">{tag}</span>
+                                        ))}
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Approval Modal */}
+      {brief.details?.map((detail) => (
+        <Modal
+          key={`approval-${detail.id}`}
+          isOpen={showApprovalModal[detail.id] || false}
+          onClose={() => handleCloseApprovalModal(detail.id)}
+          title="Submit for Approval"
+          size="md"
+        >
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                {user?.role === 'admin' 
+                  ? 'Sebagai admin, brief akan langsung dijadwalkan setelah Anda submit.'
+                  : 'Permintaan approval akan dikirim ke admin. Brief akan dijadwalkan setelah disetujui.'}
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tanggal Posting <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="date"
+                    value={approvalData[detail.id]?.scheduledAt || ''}
+                    onChange={(e) => setApprovalData({
+                      ...approvalData,
+                      [detail.id]: { ...approvalData[detail.id], scheduledAt: e.target.value }
+                    })}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Waktu Posting <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Clock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="time"
+                    value={approvalData[detail.id]?.scheduledTime || ''}
+                    onChange={(e) => setApprovalData({
+                      ...approvalData,
+                      [detail.id]: { ...approvalData[detail.id], scheduledTime: e.target.value }
+                    })}
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => handleCloseApprovalModal(detail.id)}
+                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => handleSubmitApproval(detail.id)}
+                disabled={submittingApproval[detail.id] || !approvalData[detail.id]?.scheduledAt || !approvalData[detail.id]?.scheduledTime}
+                className="px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-sm hover:shadow-md"
+              >
+                {submittingApproval[detail.id] ? (
+                  <>
+                    <Loader size="sm" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Submit
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      ))}
+    </div>
+  );
+}
+

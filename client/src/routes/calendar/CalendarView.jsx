@@ -1,0 +1,683 @@
+import { useEffect, useState } from 'react';
+import { getCalendar } from '../../services/calendar.api';
+import { Calendar, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Sparkles, Video, Image as ImageIcon, Layers, ExternalLink, Package, Target, TrendingUp, FileText } from 'lucide-react';
+import toast from 'react-hot-toast';
+import Loader from '../../components/Loader';
+import EmptyState from '../../components/EmptyState';
+import Modal from '../../components/Modal';
+import { formatDate, formatDateTime } from '../../utils/format';
+import { PLATFORM_COLORS, FUNNEL_STAGES } from '../../utils/constants';
+
+export default function CalendarView() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  useEffect(() => {
+    fetchCalendar();
+    // Auto refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchCalendar();
+    }, 30000);
+    
+    // Listen for briefsUpdated event
+    const handleBriefsUpdated = () => {
+      fetchCalendar();
+    };
+    window.addEventListener('briefsUpdated', handleBriefsUpdated);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('briefsUpdated', handleBriefsUpdated);
+    };
+  }, []);
+
+  const fetchCalendar = async () => {
+    try {
+      setLoading(true);
+      const response = await getCalendar();
+      setEvents(response.data || []);
+    } catch (error) {
+      console.error('Calendar error:', error);
+      toast.error('Gagal memuat kalender');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days = [];
+    // Empty cells for days before month starts
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    // Days of the month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(new Date(year, month, i));
+    }
+    return days;
+  };
+
+  const getEventsForDate = (date) => {
+    if (!date) return [];
+    return events.filter((event) => {
+      if (!event.scheduledAt) return false;
+      const eventDate = new Date(event.scheduledAt);
+      return (
+        eventDate.getDate() === date.getDate() &&
+        eventDate.getMonth() === date.getMonth() &&
+        eventDate.getFullYear() === date.getFullYear()
+      );
+    }).sort((a, b) => {
+      // Sort by time
+      const timeA = new Date(a.scheduledAt).getTime();
+      const timeB = new Date(b.scheduledAt).getTime();
+      return timeA - timeB;
+    });
+  };
+
+  const getEventTime = (scheduledAt) => {
+    if (!scheduledAt) return '';
+    const date = new Date(scheduledAt);
+    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getTagIcon = (tag) => {
+    switch (tag?.toLowerCase()) {
+      case 'video':
+        return <Video className="w-3 h-3" />;
+      case 'carousel':
+        return <Layers className="w-3 h-3" />;
+      case 'image':
+        return <ImageIcon className="w-3 h-3" />;
+      default:
+        return null;
+    }
+  };
+
+  const getTagColor = (tag) => {
+    switch (tag?.toLowerCase()) {
+      case 'video':
+        return 'bg-red-100 text-red-700 border-red-300';
+      case 'carousel':
+        return 'bg-purple-100 text-purple-700 border-purple-300';
+      case 'image':
+        return 'bg-blue-100 text-blue-700 border-blue-300';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-300';
+    }
+  };
+
+  const getFunnelLabel = (value) => {
+    const stage = FUNNEL_STAGES.find(s => s.value === value);
+    return stage ? stage.label : value;
+  };
+
+  const renderProductionDetail = (detail) => {
+    if (!detail || typeof detail !== 'object') {
+      return (
+        <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+          {JSON.stringify(detail, null, 2)}
+        </pre>
+      );
+    }
+
+    // Video type
+    if (detail.type === 'video') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <span className="text-xs font-semibold text-gray-600 block mb-1">Tipe Konten</span>
+            <span className="text-sm font-bold text-gray-900 capitalize">{detail.type}</span>
+          </div>
+          {detail.duration && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-1">Durasi</span>
+              <span className="text-sm text-gray-900">{detail.duration}</span>
+            </div>
+          )}
+          {detail.music && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-1">Musik</span>
+              <p className="text-sm text-gray-900 leading-relaxed">{detail.music}</p>
+            </div>
+          )}
+          {detail.visual && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-1">Visual Identity</span>
+              <p className="text-sm text-gray-900 leading-relaxed">{detail.visual}</p>
+            </div>
+          )}
+          {detail.scenes && detail.scenes.length > 0 && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-2">Skenario</span>
+              <div className="space-y-3">
+                {detail.scenes.map((scene, index) => (
+                  <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-bold">
+                        {scene.time || `Scene ${index + 1}`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-700 leading-relaxed">{scene.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Carousel type
+    if (detail.type === 'carousel') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <span className="text-xs font-semibold text-gray-600 block mb-1">Tipe Konten</span>
+            <span className="text-sm font-bold text-gray-900 capitalize">{detail.type}</span>
+          </div>
+          {detail.slideCount && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-1">Jumlah Slide</span>
+              <span className="text-sm text-gray-900">{detail.slideCount}</span>
+            </div>
+          )}
+          {detail.visualTone && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-1">Visual Tone</span>
+              <p className="text-sm text-gray-900 leading-relaxed">{detail.visualTone}</p>
+            </div>
+          )}
+          {detail.slides && detail.slides.length > 0 && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-2">Konten Slide</span>
+              <div className="space-y-3">
+                {detail.slides.map((slide, index) => (
+                  <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold">
+                        Slide {index + 1}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-700 leading-relaxed">{slide.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Image type
+    if (detail.type === 'image') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <span className="text-xs font-semibold text-gray-600 block mb-1">Tipe Konten</span>
+            <span className="text-sm font-bold text-gray-900 capitalize">{detail.type}</span>
+          </div>
+          {detail.headline && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-1">Headline</span>
+              <p className="text-sm font-bold text-gray-900">{detail.headline}</p>
+            </div>
+          )}
+          {detail.subheadline && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-1">Subheadline</span>
+              <p className="text-sm text-gray-900">{detail.subheadline}</p>
+            </div>
+          )}
+          {detail.visual && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-1">Visual Identity</span>
+              <p className="text-sm text-gray-900 leading-relaxed">{detail.visual}</p>
+            </div>
+          )}
+          {detail.layout && (
+            <div>
+              <span className="text-xs font-semibold text-gray-600 block mb-1">Layout</span>
+              <p className="text-sm text-gray-900">{detail.layout}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Fallback: display as JSON
+    return (
+      <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+        {JSON.stringify(detail, null, 2)}
+      </pre>
+    );
+  };
+
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+  const prevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
+
+  const goToToday = () => {
+    setCurrentMonth(new Date());
+  };
+
+  const isToday = (date) => {
+    if (!date) return false;
+    const today = new Date();
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
+  };
+
+  const getMonthStats = () => {
+    const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999); // Include end of day
+    
+    const monthEvents = events.filter((event) => {
+      if (!event || !event.scheduledAt) return false;
+      try {
+        const eventDate = new Date(event.scheduledAt);
+        return eventDate >= monthStart && eventDate <= monthEnd;
+      } catch (error) {
+        return false;
+      }
+    });
+
+    return {
+      total: monthEvents.length,
+      byTag: monthEvents.reduce((acc, event) => {
+        const tag = event.tag || 'unknown';
+        acc[tag] = (acc[tag] || 0) + 1;
+        return acc;
+      }, {}),
+    };
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader />
+      </div>
+    );
+  }
+
+  const days = getDaysInMonth(currentMonth);
+  const stats = getMonthStats();
+
+  return (
+    <div className="space-y-6">
+      {/* Header dengan Gradient */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-2xl shadow-xl">
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }}
+        ></div>
+        <div className="relative p-8 text-white">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                <Calendar className="w-8 h-8" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold mb-2">Kalender Konten</h1>
+                <p className="text-primary-100 text-base">Kelola jadwal posting konten yang sudah di-approve</p>
+              </div>
+            </div>
+            <button
+              onClick={goToToday}
+              className="px-5 py-3 bg-white text-primary-700 rounded-xl hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl font-medium flex items-center gap-2"
+            >
+              <Clock className="w-5 h-5" />
+              Hari Ini
+            </button>
+          </div>
+
+          {/* Statistik */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/30 shadow-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-5 h-5" />
+                <span className="text-sm font-medium text-primary-100">Total Konten</span>
+              </div>
+              <p className="text-3xl font-bold mb-1">{stats.total}</p>
+              <p className="text-xs text-primary-200">Bulan ini</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/30 shadow-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Video className="w-5 h-5" />
+                <span className="text-sm font-medium text-primary-100">Video</span>
+              </div>
+              <p className="text-3xl font-bold mb-1">{stats.byTag.video || 0}</p>
+              <p className="text-xs text-primary-200">Konten</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/30 shadow-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Layers className="w-5 h-5" />
+                <span className="text-sm font-medium text-primary-100">Carousel</span>
+              </div>
+              <p className="text-3xl font-bold mb-1">{stats.byTag.carousel || 0}</p>
+              <p className="text-xs text-primary-200">Konten</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/30 shadow-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <ImageIcon className="w-5 h-5" />
+                <span className="text-sm font-medium text-primary-100">Image</span>
+              </div>
+              <p className="text-3xl font-bold mb-1">{stats.byTag.image || 0}</p>
+              <p className="text-xs text-primary-200">Konten</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/30 shadow-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <CalendarIcon className="w-5 h-5" />
+                <span className="text-sm font-medium text-primary-100">Periode</span>
+              </div>
+              <p className="text-xl font-bold mb-1">{monthNames[currentMonth.getMonth()]}</p>
+              <p className="text-xs text-primary-200">{currentMonth.getFullYear()}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Controls */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 flex items-center justify-between">
+        <button
+          onClick={prevMonth}
+          className="p-3 text-gray-600 hover:bg-primary-50 hover:text-primary-600 rounded-xl transition-all hover:scale-110"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-gray-900">
+            {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+          </h2>
+        </div>
+        <button
+          onClick={nextMonth}
+          className="p-3 text-gray-600 hover:bg-primary-50 hover:text-primary-600 rounded-xl transition-all hover:scale-110"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+        {/* Day Headers */}
+        <div className="grid grid-cols-7 bg-gradient-to-r from-primary-50 via-gray-50 to-primary-50 border-b-2 border-primary-200">
+          {dayNames.map((day, idx) => (
+            <div
+              key={day}
+              className={`p-5 text-center text-sm font-bold ${
+                idx === 0 || idx === 6
+                  ? 'text-primary-700 bg-primary-100/50'
+                  : 'text-gray-700'
+              }`}
+            >
+              {day.substring(0, 3)}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7">
+          {days.map((date, index) => {
+            const dayEvents = getEventsForDate(date);
+            const isCurrentDay = isToday(date);
+            const isCurrentMonth = date && date.getMonth() === currentMonth.getMonth();
+            
+            return (
+              <div
+                key={index}
+                className={`min-h-40 border-r border-b border-gray-200 p-3 transition-all ${
+                  !isCurrentMonth
+                    ? 'bg-gray-50 opacity-50'
+                    : isCurrentDay
+                    ? 'bg-gradient-to-br from-primary-50 via-pink-50 to-purple-50 border-primary-400 border-2'
+                    : 'bg-white hover:bg-gray-50'
+                }`}
+              >
+                {date && (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <span
+                        className={`text-base font-bold ${
+                          isCurrentDay
+                            ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg'
+                            : isCurrentMonth
+                            ? 'text-gray-900'
+                            : 'text-gray-400'
+                        }`}
+                      >
+                        {date.getDate()}
+                      </span>
+                      {dayEvents.length > 0 && (
+                        <span className="text-xs font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 px-2.5 py-1 rounded-full shadow-md">
+                          {dayEvents.length}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {dayEvents.slice(0, 3).map((event) => (
+                        <button
+                          key={event.id}
+                          onClick={() => setSelectedEvent(event)}
+                          className="w-full text-left p-2 rounded-lg shadow-sm hover:shadow-md transition-all transform hover:scale-[1.02] border border-gray-200 bg-white group"
+                          title={event.title}
+                        >
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                                PLATFORM_COLORS[event.platform] || 'bg-gray-200 text-gray-800'
+                              }`}>
+                                {event.platform}
+                              </span>
+                              {event.tag && (
+                                <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded border text-xs font-medium ${getTagColor(event.tag)}`}>
+                                  {getTagIcon(event.tag)}
+                                  <span className="capitalize">{event.tag}</span>
+                                </div>
+                              )}
+                            </div>
+                            {event.brief?.product?.name && (
+                              <p className="text-xs text-primary-600 font-medium line-clamp-1">
+                                {event.brief.product.name}
+                              </p>
+                            )}
+                            <p className="text-xs font-semibold text-gray-900 line-clamp-2 group-hover:line-clamp-none">
+                              {event.title}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                      {dayEvents.length > 3 && (
+                        <div className="text-xs text-gray-600 font-semibold text-center py-2 bg-gray-100 rounded-lg border border-gray-200">
+                          +{dayEvents.length - 3} konten lagi
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <Modal
+        isOpen={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        title={selectedEvent?.title}
+        size="lg"
+      >
+        {selectedEvent && (
+          <div className="space-y-4">
+            {/* Product Card */}
+            {selectedEvent.brief?.product && (
+              <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border-2 border-gray-200 overflow-hidden shadow-lg">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+                  {selectedEvent.brief.product.imageUrl && (
+                    <div className="md:col-span-1">
+                      <div className="w-full aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-gray-100 to-gray-200">
+                        <img
+                          src={`http://localhost:3000${selectedEvent.brief.product.imageUrl}`}
+                          alt={selectedEvent.brief.product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <div className={`${selectedEvent.brief.product.imageUrl ? 'md:col-span-2' : 'md:col-span-3'} flex flex-col justify-center`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="w-5 h-5 text-primary-600" />
+                      <h3 className="text-lg font-bold text-gray-900">{selectedEvent.brief.product.name}</h3>
+                    </div>
+                    {selectedEvent.brief.product.description && (
+                      <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+                        {selectedEvent.brief.product.description}
+                      </p>
+                    )}
+                    {selectedEvent.brief.product.link && (
+                      <a
+                        href={selectedEvent.brief.product.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium w-fit"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Buka Link Produk
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Header Info */}
+            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary-50 via-pink-50 to-purple-50 rounded-xl border-2 border-primary-200 flex-wrap">
+              <div className={`px-3 py-1.5 rounded-lg font-bold text-xs shadow-md ${
+                PLATFORM_COLORS[selectedEvent.platform] || 'bg-gray-200 text-gray-800'
+              }`}>
+                {selectedEvent.platform}
+              </div>
+              {selectedEvent.tag && (
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 font-semibold text-xs shadow-md ${getTagColor(selectedEvent.tag)}`}>
+                  {getTagIcon(selectedEvent.tag)}
+                  <span className="capitalize">{selectedEvent.tag}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Scheduled Time */}
+            {selectedEvent.scheduledAt && (
+              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                <div className="p-2 bg-primary-100 rounded-lg">
+                  <Clock className="w-4 h-4 text-primary-600" />
+                </div>
+                <div>
+                  <span className="text-xs text-gray-600 block mb-1">Tanggal & Waktu Posting</span>
+                  <span className="text-sm font-bold text-gray-900">{formatDateTime(selectedEvent.scheduledAt)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Funnel Stage */}
+            {selectedEvent.funnel && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="w-4 h-4 text-primary-600" />
+                  <span className="text-sm font-bold text-gray-900">Audience Funnel</span>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl border border-gray-200">
+                  <p className="text-xs font-semibold text-gray-900">{getFunnelLabel(selectedEvent.funnel)}</p>
+                </div>
+              </div>
+            )}
+
+            {/* CTA */}
+            {selectedEvent.cta && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="w-4 h-4 text-primary-600" />
+                  <span className="text-sm font-bold text-gray-900">Call to Action (CTA)</span>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl border border-gray-200">
+                  <p className="text-xs font-semibold text-gray-900">{selectedEvent.cta}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Detail JSON - Production Details */}
+            {selectedEvent.detail && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-4 h-4 text-primary-600" />
+                  <span className="text-sm font-bold text-gray-900">Detail Produksi</span>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 max-h-96 overflow-y-auto">
+                  {renderProductionDetail(selectedEvent.detail)}
+                </div>
+              </div>
+            )}
+
+            {/* Caption */}
+            {selectedEvent.caption && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-primary-600" />
+                  <span className="text-sm font-bold text-gray-900">Caption</span>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl border border-gray-200">
+                  <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedEvent.caption}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Hashtags */}
+            {selectedEvent.hashtags?.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-primary-600" />
+                  <span className="text-sm font-bold text-gray-900">Hashtags</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[...new Set(selectedEvent.hashtags)].map((tag, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1.5 bg-gradient-to-r from-primary-100 to-pink-100 text-primary-700 rounded-lg text-xs font-semibold border-2 border-primary-200 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      #{tag.replace(/^#+/, '')}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}
+

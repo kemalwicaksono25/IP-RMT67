@@ -1,0 +1,19 @@
+import { useAuthStore } from '../store/auth.store';
+import { useLocation } from 'react-router-dom';
+
+export default function Footer() {
+  const { user, token } = useAuthStore();
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+
+  // Tampilkan footer di semua halaman (termasuk login/register)
+  return (
+    <footer className="bg-white border-t border-gray-200 mt-12">
+      <div className="max-w-7xl mx-auto px-6 py-4">
+        <p className="text-xs text-center text-gray-500">
+          © 2025 Content Planner & Writer Pro. All rights reserved.
+        </p>
+      </div>
+    </footer>
+  );
+}

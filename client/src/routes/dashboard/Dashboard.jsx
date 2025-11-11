@@ -1,0 +1,573 @@
+import { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { Package, FileText, CheckCircle, Eye, Plus, Calendar, Sparkles, TrendingUp, Clock, Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight, XCircle } from 'lucide-react';
+import { useProductStore } from '../../store/product.store';
+import { useBriefStore } from '../../store/brief.store';
+import { getProducts } from '../../services/product.api';
+import { getBriefs } from '../../services/brief.api';
+import toast from 'react-hot-toast';
+import EmptyState from '../../components/EmptyState';
+
+export default function Dashboard() {
+  const { products, setProducts } = useProductStore();
+  const { briefs, setBriefs } = useBriefStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+  const [filterBy, setFilterBy] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const fetchData = async () => {
+    try {
+      const [productsRes, briefsRes] = await Promise.all([
+        getProducts(),
+        getBriefs(),
+      ]);
+      setProducts(Array.isArray(productsRes?.data) ? productsRes.data : []);
+      // Ensure all briefs and their details are valid
+      const validBriefs = (Array.isArray(briefsRes?.data) ? briefsRes.data : []).filter(brief => brief != null).map(brief => ({
+        ...brief,
+        details: Array.isArray(brief.details) ? brief.details.filter(d => d != null) : []
+      }));
+      setBriefs(validBriefs);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Gagal memuat data');
+      setProducts([]);
+      setBriefs([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  // Auto-refresh data every 5 seconds to keep stats updated
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, 5000); // 5 seconds for faster updates
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only set up interval once
+
+  // Listen for storage events to refresh when data changes in other tabs/windows
+  useEffect(() => {
+    const handleStorageChange = () => {
+      fetchData();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom events (for same-tab updates)
+    window.addEventListener('briefsUpdated', handleStorageChange);
+    window.addEventListener('productsUpdated', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('briefsUpdated', handleStorageChange);
+      window.removeEventListener('productsUpdated', handleStorageChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only set up listeners once
+
+  // Filter, Sort, and Paginate products
+  const filteredAndSortedProducts = useMemo(() => {
+    if (!products || !Array.isArray(products)) return [];
+    let filtered = products.filter(p => p != null); // Filter out null/undefined products
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((product) => {
+        if (!product || !product.name) return false;
+        const nameMatch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const descMatch = product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase());
+        return nameMatch || descMatch;
+      });
+    }
+
+    // Filter by type
+    if (filterBy === 'withImage') {
+      filtered = filtered.filter((p) => p && p.imageUrl);
+    } else if (filterBy === 'withLink') {
+      filtered = filtered.filter((p) => p && p.link);
+    }
+
+    // Sort
+    try {
+      if (sortBy === 'newest') {
+        filtered.sort((a, b) => {
+          if (!a || !b) return 0;
+          const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return bDate - aDate;
+        });
+      } else if (sortBy === 'oldest') {
+        filtered.sort((a, b) => {
+          if (!a || !b) return 0;
+          const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return aDate - bDate;
+        });
+      } else if (sortBy === 'nameAsc') {
+        filtered.sort((a, b) => {
+          if (!a || !b) return 0;
+          const aName = a.name || '';
+          const bName = b.name || '';
+          return aName.localeCompare(bName);
+        });
+      } else if (sortBy === 'nameDesc') {
+        filtered.sort((a, b) => {
+          if (!a || !b) return 0;
+          const aName = a.name || '';
+          const bName = b.name || '';
+          return bName.localeCompare(aName);
+        });
+      }
+    } catch (error) {
+      console.error('Error sorting products:', error);
+    }
+
+    return filtered;
+  }, [products, searchQuery, sortBy, filterBy]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProducts = filteredAndSortedProducts.slice(startIndex, startIndex + itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [searchQuery, sortBy, filterBy]);
+
+  // Filter out briefs that have no details (all content ideas deleted)
+  const briefsWithDetails = useMemo(() => {
+    if (!briefs || !Array.isArray(briefs)) return [];
+    return briefs.filter(brief => brief && brief.details && Array.isArray(brief.details) && brief.details.length > 0);
+  }, [briefs]);
+  
+  // Count ide konten (BriefDetail) dengan status 'ready' (pending approval)
+  const pendingContentIdeas = useMemo(() => {
+    if (!briefsWithDetails || briefsWithDetails.length === 0) return 0;
+    return briefsWithDetails.reduce((total, brief) => {
+      if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
+      return total + (brief.details.filter(d => d && d.status === 'ready').length || 0);
+    }, 0);
+  }, [briefsWithDetails]);
+  
+  // Count ide konten (BriefDetail) dengan status 'approved' atau 'scheduled'
+  const approvedContentIdeas = useMemo(() => {
+    if (!briefsWithDetails || briefsWithDetails.length === 0) return 0;
+    return briefsWithDetails.reduce((total, brief) => {
+      if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
+      return total + (brief.details.filter(d => d && (d.status === 'approved' || d.status === 'scheduled')).length || 0);
+    }, 0);
+  }, [briefsWithDetails]);
+  
+  // Count ide konten (BriefDetail) dengan status 'rejected'
+  const rejectedContentIdeas = useMemo(() => {
+    if (!briefsWithDetails || briefsWithDetails.length === 0) return 0;
+    return briefsWithDetails.reduce((total, brief) => {
+      if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
+      return total + (brief.details.filter(d => d && d.status === 'rejected').length || 0);
+    }, 0);
+  }, [briefsWithDetails]);
+  
+  const briefsThisMonth = useMemo(() => {
+    if (!briefsWithDetails || briefsWithDetails.length === 0) return 0;
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999); // Include end of day
+    
+    // Count total content ideas (details) created this month based on detail.createdAt
+    return briefsWithDetails.reduce((total, brief) => {
+      if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
+      
+      return total + brief.details.filter(detail => {
+        if (!detail || !detail.createdAt) return false;
+        try {
+          const detailDate = new Date(detail.createdAt);
+          return detailDate >= monthStart && detailDate <= monthEnd;
+        } catch (error) {
+          console.error('Error parsing detail date:', error);
+          return false;
+        }
+      }).length;
+    }, 0);
+  }, [briefsWithDetails]);
+
+  return (
+    <div className="space-y-6">
+      {/* Header dengan Gradient */}
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">Dashboard</h1>
+              <p className="text-primary-100 text-sm mt-1">Ringkasan aktivitas dan statistik proyek Anda</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Statistik */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Package className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Total Produk</span>
+            </div>
+            <p className="text-2xl font-bold">{products?.length || 0}</p>
+            <p className="text-xs text-primary-200 mt-1">Produk terdaftar</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Brief Pending</span>
+            </div>
+            <p className="text-2xl font-bold">{pendingContentIdeas}</p>
+            <p className="text-xs text-primary-200 mt-1">Menunggu review</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Brief Approved</span>
+            </div>
+            <p className="text-2xl font-bold">{approvedContentIdeas}</p>
+            <p className="text-xs text-primary-200 mt-1">Brief disetujui</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <XCircle className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Brief Rejected</span>
+            </div>
+            <p className="text-2xl font-bold">{rejectedContentIdeas}</p>
+            <p className="text-xs text-primary-200 mt-1">Brief ditolak</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Brief Bulan Ini</span>
+            </div>
+            <p className="text-2xl font-bold">{briefsThisMonth}</p>
+            <p className="text-xs text-primary-200 mt-1">Total brief</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Aksi Cepat */}
+      <div>
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-primary-600" />
+            Aksi Cepat
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">Mulai dengan membuat produk baru atau langsung buat ide brief untuk menghasilkan brief</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Buat Brief Baru */}
+          <Link
+            to="/briefs/new"
+            className="group relative bg-white border-2 border-primary-200 rounded-2xl shadow-lg hover:shadow-xl p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-1"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-50 rounded-full -mr-16 -mt-16 blur-2xl opacity-50"></div>
+            <div className="relative z-10">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-md">
+                  <FileText className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-gray-900">Buat Ide Brief Baru</h3>
+                <p className="text-gray-600 text-sm">Generate brief dengan AI untuk produk Anda</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-primary-600 group-hover:translate-x-2 transition-transform">
+                Mulai Sekarang
+                <Sparkles className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          {/* Tambah Produk */}
+          <Link
+            to="/products/new"
+            className="group relative bg-white border-2 border-gray-200 rounded-2xl shadow-lg hover:shadow-xl p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-1"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full -mr-16 -mt-16 blur-2xl opacity-50"></div>
+            <div className="relative z-10">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-md">
+                  <Plus className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-gray-900">Tambah Produk</h3>
+                <p className="text-gray-600 text-sm">Tambahkan produk baru ke dalam sistem</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 group-hover:translate-x-2 transition-transform">
+                Tambah Sekarang
+                <Package className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          {/* Lihat Kalender */}
+          <Link
+            to="/calendar"
+            className="group relative bg-white border-2 border-gray-200 rounded-2xl shadow-lg hover:shadow-xl p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-1"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full -mr-16 -mt-16 blur-2xl opacity-50"></div>
+            <div className="relative z-10">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-md">
+                  <Calendar className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-gray-900">Lihat Kalender</h3>
+                <p className="text-gray-600 text-sm">Kelola jadwal posting konten Anda</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 group-hover:translate-x-2 transition-transform">
+                Buka Kalender
+                <Calendar className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      {/* Product Cards */}
+      <div>
+        <div className="relative bg-white border-2 border-primary-200 rounded-2xl shadow-lg p-8 mb-6 overflow-hidden">
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-30"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-50 rounded-full -ml-24 -mb-24 blur-2xl opacity-30"></div>
+          
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="p-4 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl shadow-md">
+                <Package className="w-10 h-10 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-4xl font-bold text-gray-900">Produk Terbaru</h2>
+                  <span className="px-4 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold border border-primary-200">
+                    {products?.length || 0} Produk
+                  </span>
+                </div>
+                <p className="text-gray-600 text-base">Kelola produk dan buat brief dengan mudah</p>
+              </div>
+            </div>
+            <Link
+              to="/products"
+              className="px-6 py-3.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all font-bold flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-1 text-base"
+            >
+              <Package className="w-5 h-5" />
+              Lihat Semua
+            </Link>
+          </div>
+        </div>
+
+        {/* Search, Sort, Filter Controls */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Search */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Cari Produk</label>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-500" />
+                <input
+                  type="text"
+                  placeholder="Cari berdasarkan nama atau deskripsi..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-white border-2 border-primary-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all shadow-sm hover:shadow-md"
+                />
+              </div>
+            </div>
+
+            {/* Sort */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Urutkan</label>
+              <div className="relative">
+                <ArrowUpDown className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-500 pointer-events-none" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-white border-2 border-primary-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all shadow-sm hover:shadow-md appearance-none cursor-pointer font-medium"
+                >
+                  <option value="newest">Terbaru</option>
+                  <option value="oldest">Terlama</option>
+                  <option value="nameAsc">Nama A-Z</option>
+                  <option value="nameDesc">Nama Z-A</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Filter */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Filter</label>
+              <div className="relative">
+                <Filter className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-500 pointer-events-none" />
+                <select
+                  value={filterBy}
+                  onChange={(e) => setFilterBy(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-white border-2 border-primary-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all shadow-sm hover:shadow-md appearance-none cursor-pointer font-medium"
+                >
+                  <option value="all">Semua Produk</option>
+                  <option value="withImage">Dengan Gambar</option>
+                  <option value="withLink">Dengan Link</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Results Count */}
+          <div className="mt-4 pt-4 border-t border-primary-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-semibold text-gray-700">Menampilkan</span>
+                <span className="px-3 py-1 bg-primary-600 text-white rounded-full font-bold">
+                  {paginatedProducts.length}
+                </span>
+                <span className="font-semibold text-gray-700">dari</span>
+                <span className="px-3 py-1 bg-pink-600 text-white rounded-full font-bold">
+                  {filteredAndSortedProducts.length}
+                </span>
+                <span className="font-semibold text-gray-700">produk</span>
+              </div>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                >
+                  Hapus pencarian
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {filteredAndSortedProducts.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-lg p-12">
+            <EmptyState
+              title={searchQuery ? "Produk tidak ditemukan" : "Belum ada produk"}
+              description={searchQuery ? "Coba ubah kata kunci pencarian Anda" : "Mulai dengan menambahkan produk pertama Anda"}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+              {paginatedProducts.filter(p => p && p.id).map((product) => (
+              <div
+                key={product.id}
+                className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full border border-gray-100 group"
+              >
+                {product.imageUrl ? (
+                  <Link
+                    to={`/products/${product.id}`}
+                    className="w-full aspect-square overflow-hidden flex-shrink-0 block cursor-pointer relative"
+                  >
+                    <img
+                      src={`http://localhost:3000${product.imageUrl}`}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </Link>
+                ) : (
+                  <div className="w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                    <Package className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+                <div className="p-4 flex flex-col flex-1">
+                  <Link
+                    to={`/products/${product.id}`}
+                    className="text-base font-bold text-gray-900 mb-2 line-clamp-2 min-h-[2.5rem] hover:text-primary-600 transition-colors cursor-pointer group-hover:text-primary-600"
+                  >
+                    {product.name}
+                  </Link>
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-1 leading-relaxed">
+                    {product.description || 'Tidak ada deskripsi'}
+                  </p>
+                  <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
+                    <Link
+                      to={`/products/${product.id}`}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-primary-50 to-pink-50 text-primary-700 rounded-lg hover:from-primary-100 hover:to-pink-100 transition-all text-sm font-medium border border-primary-200 hover:border-primary-300 hover:shadow-sm"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Detail
+                    </Link>
+                    <Link
+                      to={`/briefs/new?productId=${product.id}`}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all text-sm font-medium shadow-md hover:shadow-lg"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Brief
+                    </Link>
+                  </div>
+                </div>
+              </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between bg-white rounded-xl shadow-lg border border-gray-200 p-4">
+                <div className="text-sm text-gray-600">
+                  Halaman {currentPage} dari {totalPages}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Sebelumnya
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-2 rounded-lg transition-colors ${
+                              currentPage === page
+                                ? 'bg-primary-600 text-white font-semibold'
+                                : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (page === currentPage - 2 || page === currentPage + 2) {
+                        return <span key={page} className="px-2 text-gray-400">...</span>;
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    Selanjutnya
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+

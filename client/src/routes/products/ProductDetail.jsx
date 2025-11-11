@@ -1,0 +1,660 @@
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Edit, ExternalLink, Sparkles, Plus, X, Save, Info, AlertCircle, FileText, Package, Target, TrendingUp, Heart, Zap, Award } from 'lucide-react';
+import { getProductById, analyzeProduct, updateProduct } from '../../services/product.api';
+import { useProductStore } from '../../store/product.store';
+import toast from 'react-hot-toast';
+import Loader from '../../components/Loader';
+
+export default function ProductDetail() {
+  const { id } = useParams();
+  const { setSelectedProduct } = useProductStore();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [editingPGG, setEditingPGG] = useState({ pains: false, gains: false, goals: false });
+  const [pggData, setPggData] = useState({ pains: [], gains: [], goals: [] });
+  const [saving, setSaving] = useState(false);
+
+  // Helper function to check if PGG contains placeholder/default values
+  const isPlaceholderPGG = (items) => {
+    if (!items || items.length === 0) return true;
+    // Check if all items are placeholder patterns
+    const placeholderPatterns = [
+      /^Masalah umum \d+$/i,
+      /^Keuntungan \d+$/i,
+      /^Tujuan \d+$/i,
+    ];
+    return items.every(item => 
+      placeholderPatterns.some(pattern => pattern.test(item))
+    );
+  };
+
+  useEffect(() => {
+    fetchProduct();
+  }, [id]);
+
+  const fetchProduct = async () => {
+    try {
+      setLoading(true);
+      const response = await getProductById(id);
+      if (response && response.data) {
+        setProduct(response.data);
+        setSelectedProduct(response.data);
+        setPggData({
+          pains: Array.isArray(response.data.pains) ? response.data.pains : [],
+          gains: Array.isArray(response.data.gains) ? response.data.gains : [],
+          goals: Array.isArray(response.data.goals) ? response.data.goals : [],
+        });
+      } else {
+        toast.error('Data produk tidak valid');
+        setProduct(null);
+      }
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      toast.error('Gagal memuat produk');
+      setProduct(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const handleAnalyzeProduct = async () => {
+    if (!product || !product.link) {
+      toast.error('Link produk tidak tersedia');
+      return;
+    }
+
+    setAnalyzing(true);
+    try {
+      const response = await analyzeProduct(id, {
+        link: product.link,
+        title: product.name,
+        description: product.description,
+      });
+      if (response && response.data) {
+        setPggData({
+          pains: Array.isArray(response.data.pains) ? response.data.pains : [],
+          gains: Array.isArray(response.data.gains) ? response.data.gains : [],
+          goals: Array.isArray(response.data.goals) ? response.data.goals : [],
+        });
+        toast.success('Produk berhasil dianalisa');
+        fetchProduct(); // Refresh product data
+      }
+    } catch (error) {
+      console.error('Analyze product error:', error);
+      toast.error(error.response?.data?.message || 'Gagal menganalisa produk');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const handleEditPGG = (type) => {
+    setEditingPGG({ ...editingPGG, [type]: true });
+  };
+
+  const handleCancelEdit = (type) => {
+    setEditingPGG({ ...editingPGG, [type]: false });
+    // Reset to original data
+    setPggData({
+      pains: product?.pains || [],
+      gains: product?.gains || [],
+      goals: product?.goals || [],
+    });
+  };
+
+  const handleAddItem = (type) => {
+    setPggData({
+      ...pggData,
+      [type]: [...(pggData[type] || []), ''],
+    });
+  };
+
+  const handleRemoveItem = (type, index) => {
+    setPggData({
+      ...pggData,
+      [type]: pggData[type].filter((_, i) => i !== index),
+    });
+  };
+
+  const handleUpdateItem = (type, index, value) => {
+    const updated = [...pggData[type]];
+    updated[index] = value;
+    setPggData({
+      ...pggData,
+      [type]: updated,
+    });
+  };
+
+  const handleSavePGG = async (type) => {
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append('pains', JSON.stringify((pggData.pains || []).filter(p => p && p.trim() !== '')));
+      formData.append('gains', JSON.stringify((pggData.gains || []).filter(g => g && g.trim() !== '')));
+      formData.append('goals', JSON.stringify((pggData.goals || []).filter(g => g && g.trim() !== '')));
+
+      await updateProduct(id, formData);
+      toast.success(`${type === 'pains' ? 'Pain points' : type === 'gains' ? 'Gains' : 'Goals'} berhasil disimpan`);
+      setEditingPGG({ ...editingPGG, [type]: false });
+      fetchProduct(); // Refresh product data
+    } catch (error) {
+      console.error('Save PGG error:', error);
+      toast.error('Gagal menyimpan data');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">Produk tidak ditemukan</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header Section with Gradient */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-2xl shadow-xl">
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }}
+        ></div>
+        <div className="relative px-8 py-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                  <Package className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-3xl font-bold text-white truncate">{product.name}</h1>
+              </div>
+              <p className="text-primary-100 text-sm">Detail produk dan analisis untuk strategi konten</p>
+            </div>
+            <div className="flex gap-3 flex-shrink-0">
+              <Link
+                to={`/briefs/new?productId=${id}`}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white text-primary-700 rounded-xl hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl font-medium"
+              >
+                <FileText className="w-4 h-4" />
+                Buat Brief Baru
+              </Link>
+              <Link
+                to={`/products/${id}/edit`}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all border border-white/30"
+              >
+                <Edit className="w-4 h-4" />
+                Edit
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Image Section - Left Side */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            {product.imageUrl && (
+              <div className="w-full aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+                <img
+                  src={`http://localhost:3000${product.imageUrl}`}
+                  alt={product.name}
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+            )}
+            <div className="p-6 space-y-3">
+              {product.link && (
+                <a
+                  href={product.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all shadow-md hover:shadow-lg font-medium"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Buka Link Produk
+                </a>
+              )}
+              {product.link && (
+                <button
+                  onClick={handleAnalyzeProduct}
+                  disabled={analyzing}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {analyzing ? (
+                    <>
+                      <Loader size="sm" />
+                      <span>Menganalisa...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Analisa Produk</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Product Info Section - Right Side */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Description Card */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center gap-3 p-6 pb-4 border-b border-gray-100">
+              <div className="p-2 bg-primary-100 rounded-lg">
+                <FileText className="w-5 h-5 text-primary-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Deskripsi Produk</h2>
+            </div>
+            <div className="p-6 pt-4 overflow-y-auto" style={{ maxHeight: 'calc((100vw - 6rem - 3rem) / 3)' }}>
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{product.description || '-'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* PGG Section - Full Width */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Pain Points */}
+            <div className="border-l-4 border-red-500 pl-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 bg-red-100 rounded-lg">
+                      <Heart className="w-4 h-4 text-red-600" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">Pain Points</h3>
+                    {(!pggData.pains || pggData.pains.length === 0 || isPlaceholderPGG(pggData.pains)) && (
+                      <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Belum diisi
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 ml-7">Masalah yang dihadapi</p>
+                </div>
+                {!editingPGG.pains && (
+                  <button
+                    onClick={() => handleEditPGG('pains')}
+                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-all hover:scale-110 flex-shrink-0"
+                    title="Edit Pain Points"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {editingPGG.pains ? (
+                <div className="space-y-3">
+                  {pggData.pains && pggData.pains.length > 0 ? (
+                    pggData.pains.map((pain, index) => (
+                      <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                        <span className="text-red-500 mt-1.5 text-lg font-bold">•</span>
+                        <input
+                          type="text"
+                          value={pain}
+                          onChange={(e) => handleUpdateItem('pains', index, e.target.value)}
+                          className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                          placeholder="Masukkan pain point"
+                        />
+                        <button
+                          onClick={() => handleRemoveItem('pains', index)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400 italic bg-gray-50 rounded-xl p-4">Belum ada pain points. Klik "Tambah" untuk menambahkan.</p>
+                  )}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={() => handleAddItem('pains')}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-xl transition-colors font-medium"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Tambah
+                    </button>
+                    <button
+                      onClick={() => handleSavePGG('pains')}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium shadow-md"
+                    >
+                      {saving ? <Loader size="sm" /> : <Save className="w-4 h-4" />}
+                      Simpan
+                    </button>
+                    <button
+                      onClick={() => handleCancelEdit('pains')}
+                      disabled={saving}
+                      className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {pggData.pains && pggData.pains.length > 0 && !isPlaceholderPGG(pggData.pains) ? (
+                    <ul className="space-y-2">
+                      {pggData.pains.map((pain, index) => (
+                        <li key={index} className="text-xs text-gray-700 flex items-start gap-2 bg-red-50/50 rounded-lg p-2 border-l-2 border-red-500">
+                          <span className="text-red-500 mt-0.5 font-bold">•</span>
+                          <span className="flex-1">{pain}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100/50 border border-yellow-200 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="p-1.5 bg-yellow-200 rounded-lg flex-shrink-0">
+                          <Info className="w-4 h-4 text-yellow-700" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-yellow-900 mb-1">Belum Diisi</p>
+                          <p className="text-xs text-yellow-800 mb-2 leading-relaxed">
+                            Klik Edit atau gunakan "Analisa Produk" untuk generate otomatis.
+                          </p>
+                          {product.link && (
+                            <button
+                              onClick={handleAnalyzeProduct}
+                              disabled={analyzing}
+                              className="text-xs px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 font-medium shadow-md"
+                            >
+                              {analyzing ? (
+                                <>
+                                  <Loader size="sm" />
+                                  <span>Menganalisa...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-3 h-3" />
+                                  <span>Generate AI</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Gains */}
+            <div className="border-l-4 border-green-500 pl-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 bg-green-100 rounded-lg">
+                      <TrendingUp className="w-4 h-4 text-green-600" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">Gains</h3>
+                    {(!pggData.gains || pggData.gains.length === 0 || isPlaceholderPGG(pggData.gains)) && (
+                      <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Belum diisi
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 ml-7">Manfaat yang didapat</p>
+                </div>
+                {!editingPGG.gains && (
+                  <button
+                    onClick={() => handleEditPGG('gains')}
+                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-all hover:scale-110 flex-shrink-0"
+                    title="Edit Gains"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {editingPGG.gains ? (
+                <div className="space-y-3">
+                  {pggData.gains && pggData.gains.length > 0 ? (
+                    pggData.gains.map((gain, index) => (
+                      <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                        <span className="text-green-500 mt-1.5 text-lg font-bold">•</span>
+                        <input
+                          type="text"
+                          value={gain}
+                          onChange={(e) => handleUpdateItem('gains', index, e.target.value)}
+                          className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                          placeholder="Masukkan gain"
+                        />
+                        <button
+                          onClick={() => handleRemoveItem('gains', index)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400 italic bg-gray-50 rounded-xl p-4">Belum ada gains. Klik "Tambah" untuk menambahkan.</p>
+                  )}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={() => handleAddItem('gains')}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-xl transition-colors font-medium"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Tambah
+                    </button>
+                    <button
+                      onClick={() => handleSavePGG('gains')}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium shadow-md"
+                    >
+                      {saving ? <Loader size="sm" /> : <Save className="w-4 h-4" />}
+                      Simpan
+                    </button>
+                    <button
+                      onClick={() => handleCancelEdit('gains')}
+                      disabled={saving}
+                      className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {pggData.gains && pggData.gains.length > 0 && !isPlaceholderPGG(pggData.gains) ? (
+                    <ul className="space-y-2">
+                      {pggData.gains.map((gain, index) => (
+                        <li key={index} className="text-xs text-gray-700 flex items-start gap-2 bg-green-50/50 rounded-lg p-2 border-l-2 border-green-500">
+                          <span className="text-green-500 mt-0.5 font-bold">•</span>
+                          <span className="flex-1">{gain}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100/50 border border-yellow-200 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="p-1.5 bg-yellow-200 rounded-lg flex-shrink-0">
+                          <Info className="w-4 h-4 text-yellow-700" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-yellow-900 mb-1">Belum Diisi</p>
+                          <p className="text-xs text-yellow-800 mb-2 leading-relaxed">
+                            Klik Edit atau gunakan "Analisa Produk" untuk generate otomatis.
+                          </p>
+                          {product.link && (
+                            <button
+                              onClick={handleAnalyzeProduct}
+                              disabled={analyzing}
+                              className="text-xs px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 font-medium shadow-md"
+                            >
+                              {analyzing ? (
+                                <>
+                                  <Loader size="sm" />
+                                  <span>Menganalisa...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-3 h-3" />
+                                  <span>Generate AI</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Goals */}
+            <div className="border-l-4 border-blue-500 pl-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 bg-blue-100 rounded-lg">
+                      <Target className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">Goals</h3>
+                    {(!pggData.goals || pggData.goals.length === 0 || isPlaceholderPGG(pggData.goals)) && (
+                      <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Belum diisi
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 ml-7">Tujuan yang ingin dicapai</p>
+                </div>
+                {!editingPGG.goals && (
+                  <button
+                    onClick={() => handleEditPGG('goals')}
+                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-all hover:scale-110 flex-shrink-0"
+                    title="Edit Goals"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {editingPGG.goals ? (
+                <div className="space-y-3">
+                  {pggData.goals && pggData.goals.length > 0 ? (
+                    pggData.goals.map((goal, index) => (
+                      <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                        <span className="text-blue-500 mt-1.5 text-lg font-bold">•</span>
+                        <input
+                          type="text"
+                          value={goal}
+                          onChange={(e) => handleUpdateItem('goals', index, e.target.value)}
+                          className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                          placeholder="Masukkan goal"
+                        />
+                        <button
+                          onClick={() => handleRemoveItem('goals', index)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400 italic bg-gray-50 rounded-xl p-4">Belum ada goals. Klik "Tambah" untuk menambahkan.</p>
+                  )}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={() => handleAddItem('goals')}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-xl transition-colors font-medium"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Tambah
+                    </button>
+                    <button
+                      onClick={() => handleSavePGG('goals')}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium shadow-md"
+                    >
+                      {saving ? <Loader size="sm" /> : <Save className="w-4 h-4" />}
+                      Simpan
+                    </button>
+                    <button
+                      onClick={() => handleCancelEdit('goals')}
+                      disabled={saving}
+                      className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {pggData.goals && pggData.goals.length > 0 && !isPlaceholderPGG(pggData.goals) ? (
+                    <ul className="space-y-2">
+                      {pggData.goals.map((goal, index) => (
+                        <li key={index} className="text-xs text-gray-700 flex items-start gap-2 bg-blue-50/50 rounded-lg p-2 border-l-2 border-blue-500">
+                          <span className="text-blue-500 mt-0.5 font-bold">•</span>
+                          <span className="flex-1">{goal}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100/50 border border-yellow-200 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="p-1.5 bg-yellow-200 rounded-lg flex-shrink-0">
+                          <Info className="w-4 h-4 text-yellow-700" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-yellow-900 mb-1">Belum Diisi</p>
+                          <p className="text-xs text-yellow-800 mb-2 leading-relaxed">
+                            Klik Edit atau gunakan "Analisa Produk" untuk generate otomatis.
+                          </p>
+                          {product.link && (
+                            <button
+                              onClick={handleAnalyzeProduct}
+                              disabled={analyzing}
+                              className="text-xs px-3 py-1.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 font-medium shadow-md"
+                            >
+                              {analyzing ? (
+                                <>
+                                  <Loader size="sm" />
+                                  <span>Menganalisa...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-3 h-3" />
+                                  <span>Generate AI</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+    </div>
+  );
+}
