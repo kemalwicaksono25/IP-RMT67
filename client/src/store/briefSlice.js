@@ -16,7 +16,14 @@ const briefSlice = createSlice({
     },
     updateBrief: (state, action) => {
       const { id, updatedBrief } = action.payload;
-      state.briefs = state.briefs.map((b) => (b.id === id ? updatedBrief : b));
+      const existingIndex = state.briefs.findIndex((b) => b && b.id === id);
+      if (existingIndex >= 0) {
+        // Update existing brief
+        state.briefs[existingIndex] = updatedBrief;
+      } else {
+        // Add new brief jika belum ada
+        state.briefs.push(updatedBrief);
+      }
     },
     deleteBrief: (state, action) => {
       state.briefs = state.briefs.filter((b) => b.id !== action.payload);

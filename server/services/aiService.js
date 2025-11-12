@@ -210,16 +210,106 @@ Format output HANYA JSON array (tanpa penjelasan tambahan):
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+        max_tokens: 4000,
       });
 
       const content = completion.choices[0].message.content;
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+      const contentLength = content.length;
+      const finishReason = completion.choices[0].finish_reason;
+      const wasTruncated = finishReason === 'length';
+
+      console.log("AI Brief Generation Response:", {
+        length: contentLength,
+        preview: content.substring(0, 300),
+        finishReason,
+        count
+      });
+
+      if (wasTruncated) {
+        console.warn("AI response was truncated due to token limit:", {
+          contentLength,
+          count
+        });
       }
-      throw new Error("Invalid AI response format");
+
+      // Extract JSON array
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error("Format respons AI tidak valid: Tidak ditemukan array JSON");
+      }
+
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        // Coba perbaiki JSON dengan menghapus trailing comma dan karakter tidak valid
+        let cleanedJson = jsonMatch[0]
+          .replace(/,\s*}/g, '}')  // Remove trailing comma before }
+          .replace(/,\s*]/g, ']')  // Remove trailing comma before ]
+          .replace(/,\s*,/g, ',')   // Remove double commas
+          .replace(/:\s*,/g, ': null,')  // Replace missing values with null
+          .replace(/[\u0000-\u001F]/g, '');  // Remove control characters
+        
+        try {
+          parsed = JSON.parse(cleanedJson);
+        } catch (e2) {
+          console.error("Failed to parse AI brief response:", {
+            originalError: e.message,
+            cleanedError: e2.message,
+            jsonPreview: jsonMatch[0].substring(0, 500),
+            jsonLength: jsonMatch[0].length
+          });
+          throw new Error("Format respons AI tidak valid. Silakan coba lagi.");
+        }
+      }
+
+      // Validasi bahwa hasilnya adalah array
+      if (!Array.isArray(parsed)) {
+        throw new Error("Format respons AI tidak valid: Bukan array");
+      }
+
+      // Validasi bahwa setiap item memiliki field yang diperlukan
+      const validItems = parsed.filter(item => 
+        item && 
+        typeof item === 'object' && 
+        item.platform && 
+        item.tag && 
+        item.title
+      );
+
+      if (validItems.length === 0) {
+        throw new Error("Format respons AI tidak valid: Tidak ada item yang valid");
+      }
+
+      // Log untuk debugging - cek apakah semua field ter-generate
+      if (process.env.NODE_ENV === 'development') {
+        validItems.forEach((item, index) => {
+          const missingFields = [];
+          if (!item.objectiveCampaign) missingFields.push('objectiveCampaign');
+          if (!item.decisionTrigger) missingFields.push('decisionTrigger');
+          if (!item.productValueHighlight) missingFields.push('productValueHighlight');
+          if (!item.communicationApproach) missingFields.push('communicationApproach');
+          if (!item.hookOpening) missingFields.push('hookOpening');
+          if (!item.mainContentPoints || !Array.isArray(item.mainContentPoints) || item.mainContentPoints.length === 0) missingFields.push('mainContentPoints');
+          if (!item.breakdownDetail) missingFields.push('breakdownDetail');
+          if (!item.visualIdentityNote) missingFields.push('visualIdentityNote');
+          
+          if (missingFields.length > 0) {
+            console.warn(`⚠️ Brief Idea ${index + 1} missing fields:`, missingFields);
+          } else {
+            console.log(`✅ Brief Idea ${index + 1} all fields present`);
+          }
+        });
+      }
+
+      return validItems;
     } catch (error) {
-      console.error("AI Service Error:", error.message);
+      console.error("AI Service Error (generateBrief):", {
+        message: error.message,
+        stack: error.stack,
+        count
+      });
       // Fallback jika AI error
       return Array.from({ length: count }, (_, i) => ({
         platform: ["TikTok", "Instagram", "Shopee"][i % 3],
@@ -515,6 +605,25 @@ Format output JSON (HARUS EXACT FORMAT INI):
       const content = completion.choices[0].message.content;
       const contentLength = content.length;
       const wasTruncated = completion.choices[0].finish_reason === 'length';
+      
+      // Log response untuk debugging
+      console.log("AI Response received:", {
+        length: contentLength,
+        preview: content.substring(0, 300),
+        finishReason: completion.choices[0].finish_reason,
+        detailId: briefRow.id,
+        tag: briefRow.tag,
+        title: briefRow.title
+      });
+      
+      if (wasTruncated) {
+        console.warn("AI response was truncated due to token limit:", {
+          detailId: briefRow.id,
+          tag: briefRow.tag,
+          title: briefRow.title,
+          contentLength
+        });
+      }
       
       if (!content || content.trim().length === 0) {
         throw new Error("Respons AI kosong. Silakan coba lagi.");
@@ -828,11 +937,86 @@ Format output JSON (HARUS EXACT FORMAT INI):
               try {
                 parsed = JSON.parse(cleanedJson);
               } catch (e2) {
-                console.error("Failed to parse extracted JSON:", {
-                  error: e2.message,
-                  jsonPreview: jsonMatch[0].substring(0, 500)
-                });
-                throw new Error("Format respons AI tidak valid. Silakan coba lagi.");
+                // Coba perbaiki lebih agresif dengan menghapus karakter tidak valid
+                let moreCleanedJson = cleanedJson
+                  .replace(/,\s*}/g, '}')  // Remove trailing comma before }
+                  .replace(/,\s*]/g, ']')  // Remove trailing comma before ]
+                  .replace(/,\s*,/g, ',')   // Remove double commas
+                  .replace(/:\s*,/g, ': null,')  // Replace missing values with null
+                  .replace(/,\s*}/g, '}')  // Remove trailing comma again
+                  .replace(/,\s*]/g, ']')  // Remove trailing comma again
+                  .replace(/([^\\])\\([^"\\/bfnrt])/g, '$1\\\\$2')  // Fix invalid escape sequences
+                  .replace(/[\u0000-\u001F]/g, '');  // Remove control characters
+                try {
+                  parsed = JSON.parse(moreCleanedJson);
+                } catch (e3) {
+                  // Coba extract hanya bagian yang valid dengan mencari nested objects
+                  try {
+                    // Coba parse dengan menghapus bagian yang bermasalah
+                    const lines = moreCleanedJson.split('\n');
+                    let validJson = '';
+                    let braceCount = 0;
+                    let bracketCount = 0;
+                    let inString = false;
+                    let escapeNext = false;
+                    
+                    for (const line of lines) {
+                      for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (escapeNext) {
+                          escapeNext = false;
+                          validJson += char;
+                          continue;
+                        }
+                        if (char === '\\') {
+                          escapeNext = true;
+                          validJson += char;
+                          continue;
+                        }
+                        if (char === '"' && !escapeNext) {
+                          inString = !inString;
+                        }
+                        if (!inString) {
+                          if (char === '{') braceCount++;
+                          if (char === '}') braceCount--;
+                          if (char === '[') bracketCount++;
+                          if (char === ']') bracketCount--;
+                        }
+                        validJson += char;
+                      }
+                      validJson += '\n';
+                    }
+                    
+                    // Close any unclosed structures
+                    while (bracketCount > 0) {
+                      validJson += ']';
+                      bracketCount--;
+                    }
+                    while (braceCount > 0) {
+                      validJson += '}';
+                      braceCount--;
+                    }
+                    
+                    // Final cleanup
+                    validJson = validJson
+                      .replace(/,\s*}/g, '}')
+                      .replace(/,\s*]/g, ']')
+                      .replace(/,\s*,/g, ',')
+                      .replace(/:\s*,/g, ': null,');
+                    
+                    parsed = JSON.parse(validJson);
+                  } catch (e4) {
+                    console.error("All JSON parsing attempts failed:", {
+                      originalError: e.message,
+                      regexError: e2.message,
+                      cleanedError: e3.message,
+                      finalError: e4.message,
+                      jsonPreview: jsonMatch[0].substring(0, 1000),
+                      jsonLength: jsonMatch[0].length
+                    });
+                    throw new Error("Format respons AI tidak valid. Silakan coba lagi.");
+                  }
+                }
               }
             }
           } else {

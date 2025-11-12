@@ -12,6 +12,14 @@ export const rejectBrief = (id, reason) => {
   return api.put(`/admin/approvals/${id}/reject`, { rejectionReason: reason });
 };
 
+export const approveDetail = (detailId, data) => {
+  return api.put(`/admin/approvals/detail/${detailId}/approve`, data);
+};
+
+export const rejectDetail = (detailId, reason) => {
+  return api.put(`/admin/approvals/detail/${detailId}/reject`, { rejectionReason: reason });
+};
+
 export const updateProjectName = (projectName) => {
   return api.put('/admin/project/name', { projectName });
 };

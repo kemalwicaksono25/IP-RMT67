@@ -13,6 +13,7 @@ export default function CalendarView() {
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [expandedDates, setExpandedDates] = useState({});
 
   useEffect(() => {
     fetchCalendar();
@@ -270,14 +271,17 @@ export default function CalendarView() {
 
   const prevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+    setExpandedDates({}); // Reset expanded dates saat ganti bulan
   };
 
   const nextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+    setExpandedDates({}); // Reset expanded dates saat ganti bulan
   };
 
   const goToToday = () => {
     setCurrentMonth(new Date());
+    setExpandedDates({}); // Reset expanded dates saat kembali ke hari ini
   };
 
   const isToday = (date) => {
@@ -474,38 +478,65 @@ export default function CalendarView() {
                         )}
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        {dayEvents.slice(0, 2).map((event) => (
-                          <button
-                            key={event.id}
-                            onClick={() => setSelectedEvent(event)}
-                            className="w-full text-left p-1.5 sm:p-2 rounded-lg shadow-sm hover:shadow-md transition-all transform hover:scale-[1.02] border border-primary-200/50 bg-white group"
-                            title={event.title}
-                          >
-                            <div className="space-y-1.5">
-                              <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-                                <span className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-semibold ${
-                                  PLATFORM_COLORS[event.platform] || 'bg-gray-200 text-gray-800'
-                                }`}>
-                                  {event.platform}
-                                </span>
-                                {event.tag && (
-                                  <div className={`flex items-center gap-1 px-1 sm:px-1.5 py-0.5 rounded border text-[10px] sm:text-xs font-medium ${getTagColor(event.tag)}`}>
-                                    {getTagIcon(event.tag)}
-                                    <span className="capitalize hidden md:inline">{event.tag}</span>
+                        {(() => {
+                          const dateKey = date ? `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` : '';
+                          const isExpanded = expandedDates[dateKey];
+                          const eventsToShow = isExpanded ? dayEvents : dayEvents.slice(0, 2);
+                          
+                          return (
+                            <>
+                              {eventsToShow.map((event) => (
+                                <button
+                                  key={event.id}
+                                  onClick={() => setSelectedEvent(event)}
+                                  className="w-full text-left p-1.5 sm:p-2 rounded-lg shadow-sm hover:shadow-md transition-all transform hover:scale-[1.02] border border-primary-200/50 bg-white group"
+                                  title={event.title}
+                                >
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                                      <span className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-semibold ${
+                                        PLATFORM_COLORS[event.platform] || 'bg-gray-200 text-gray-800'
+                                      }`}>
+                                        {event.platform}
+                                      </span>
+                                      {event.tag && (
+                                        <div className={`flex items-center gap-1 px-1 sm:px-1.5 py-0.5 rounded border text-[10px] sm:text-xs font-medium ${getTagColor(event.tag)}`}>
+                                          {getTagIcon(event.tag)}
+                                          <span className="capitalize hidden md:inline">{event.tag}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] sm:text-xs font-semibold text-gray-800 line-clamp-1 lg:line-clamp-2 group-hover:line-clamp-none">
+                                      {event.title}
+                                    </p>
                                   </div>
-                                )}
-                              </div>
-                              <p className="text-[10px] sm:text-xs font-semibold text-gray-800 line-clamp-1 lg:line-clamp-2 group-hover:line-clamp-none">
-                                {event.title}
-                              </p>
-                            </div>
-                          </button>
-                        ))}
-                        {dayEvents.length > 2 && (
-                          <div className="text-[10px] sm:text-xs text-gray-700 font-semibold text-center py-1.5 lg:py-2 bg-primary-50 rounded-lg border border-primary-200/50">
-                            +{dayEvents.length - 2} lagi
-                          </div>
-                        )}
+                                </button>
+                              ))}
+                              {dayEvents.length > 2 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedDates(prev => ({
+                                      ...prev,
+                                      [dateKey]: !prev[dateKey]
+                                    }));
+                                  }}
+                                  className="w-full text-[10px] sm:text-xs text-primary-700 hover:text-primary-800 font-semibold text-center py-1.5 lg:py-2 bg-primary-50 hover:bg-primary-100 rounded-lg border border-primary-200/50 hover:border-primary-300 transition-all cursor-pointer"
+                                >
+                                  {isExpanded ? (
+                                    <span className="flex items-center justify-center gap-1">
+                                      Tampilkan Lebih Sedikit
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center justify-center gap-1">
+                                      +{dayEvents.length - 2} lagi
+                                    </span>
+                                  )}
+                                </button>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </>
                   )}

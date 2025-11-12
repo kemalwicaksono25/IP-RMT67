@@ -17,11 +17,15 @@ class AdminController {
       });
 
       const briefIdsWithPending = [...new Set(pendingDetails.map(d => d.BriefId))];
+      if (briefIdsWithPending.length === 0) {
+        return res.json([]);
+      }
+
       const briefs = await db.Brief.findAll({
         where: {
           ProjectId: req.user.ProjectId,
           id: {
-            [Sequelize.Op.in]: briefIdsWithPending.length > 0 ? briefIdsWithPending : [0],
+            [Sequelize.Op.in]: briefIdsWithPending,
           },
         },
         include: [
@@ -38,6 +42,7 @@ class AdminController {
               },
             },
             required: true,
+            separate: true,
             order: [["id", "ASC"]],
           },
           {
@@ -51,9 +56,14 @@ class AdminController {
         order: [["createdAt", "DESC"]],
       });
 
-      res.json(briefs);
+      const filteredBriefs = briefs.filter(brief => 
+        brief.details && 
+        brief.details.length > 0 && 
+        brief.details.some(detail => detail.status === BRIEF_DETAIL_STATUS.PENDING_APPROVAL)
+      );
+
+      res.json(filteredBriefs);
     } catch (error) {
-      console.error('Error in getPendingApprovals:', error);
       next(error);
     }
   }
@@ -159,6 +169,97 @@ class AdminController {
       });
 
       await brief.reload({
+        include: [
+          { model: db.Product, as: "product" },
+          { model: db.User, as: "user" },
+          { model: db.BriefDetail, as: "details" },
+        ],
+      });
+
+      res.json(brief);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async approveDetail(req, res, next) {
+    try {
+      const { detailId } = req.params;
+      const { scheduledAt, scheduledTime } = req.body;
+
+      const detail = await db.BriefDetail.findOne({
+        where: {
+          id: detailId,
+          ProjectId: req.user.ProjectId,
+          status: BRIEF_DETAIL_STATUS.PENDING_APPROVAL,
+        },
+        include: [
+          { model: db.Brief, as: "brief", include: [
+            { model: db.Product, as: "product" },
+            { model: db.User, as: "user" },
+          ]},
+        ],
+      });
+
+      if (!detail) {
+        return res.status(404).json({ message: "Detail brief tidak ditemukan atau tidak dalam status pending approval" });
+      }
+
+      let scheduledDateTime = null;
+      if (scheduledAt && scheduledTime) {
+        scheduledDateTime = new Date(`${scheduledAt}T${scheduledTime}`);
+      }
+
+      const finalScheduledAt = scheduledDateTime || detail.scheduledAt;
+      
+      if (finalScheduledAt) {
+        await detail.update({ 
+          status: BRIEF_DETAIL_STATUS.SCHEDULED,
+          scheduledAt: finalScheduledAt
+        });
+      } else {
+        await detail.update({ 
+          status: BRIEF_DETAIL_STATUS.APPROVED 
+        });
+      }
+
+      const brief = await db.Brief.findByPk(detail.BriefId, {
+        include: [
+          { model: db.Product, as: "product" },
+          { model: db.User, as: "user" },
+          { model: db.BriefDetail, as: "details" },
+        ],
+      });
+
+      res.json(brief);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async rejectDetail(req, res, next) {
+    try {
+      const { detailId } = req.params;
+      const { rejectionReason } = req.body;
+
+      const detail = await db.BriefDetail.findOne({
+        where: {
+          id: detailId,
+          ProjectId: req.user.ProjectId,
+          status: BRIEF_DETAIL_STATUS.PENDING_APPROVAL,
+        },
+      });
+
+      if (!detail) {
+        return res.status(404).json({ message: "Detail brief tidak ditemukan atau tidak dalam status pending approval" });
+      }
+
+      await detail.update({ 
+        status: BRIEF_DETAIL_STATUS.REJECTED,
+        rejectionReason: rejectionReason || "",
+      });
+
+      const brief = await db.Brief.findByPk(detail.BriefId, {
         include: [
           { model: db.Product, as: "product" },
           { model: db.User, as: "user" },

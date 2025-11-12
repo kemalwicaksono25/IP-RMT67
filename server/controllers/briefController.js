@@ -58,17 +58,34 @@ class BriefController {
       });
 
       const briefDetails = await Promise.all(
-        briefIdeas.map((idea) => {
+        briefIdeas.map((idea, index) => {
           const detailData = {
-            objectiveCampaign: idea.objectiveCampaign || "",
-            decisionTrigger: idea.decisionTrigger || "",
-            productValueHighlight: idea.productValueHighlight || "",
-            communicationApproach: idea.communicationApproach || "",
-            hookOpening: idea.hookOpening || "",
-            mainContentPoints: Array.isArray(idea.mainContentPoints) ? idea.mainContentPoints : [],
-            breakdownDetail: idea.breakdownDetail || "",
-            visualIdentityNote: idea.visualIdentityNote || "",
+            objectiveCampaign: (idea.objectiveCampaign && idea.objectiveCampaign.trim()) || "",
+            decisionTrigger: (idea.decisionTrigger && idea.decisionTrigger.trim()) || "",
+            productValueHighlight: (idea.productValueHighlight && idea.productValueHighlight.trim()) || "",
+            communicationApproach: (idea.communicationApproach && idea.communicationApproach.trim()) || "",
+            hookOpening: (idea.hookOpening && idea.hookOpening.trim()) || "",
+            mainContentPoints: Array.isArray(idea.mainContentPoints) && idea.mainContentPoints.length > 0 
+              ? idea.mainContentPoints.filter(p => p && p.trim()) 
+              : [],
+            breakdownDetail: (idea.breakdownDetail && idea.breakdownDetail.trim()) || "",
+            visualIdentityNote: (idea.visualIdentityNote && idea.visualIdentityNote.trim()) || "",
           };
+
+          // Log untuk debugging - hanya di development
+          if (process.env.NODE_ENV === 'development') {
+            const missingFields = [];
+            if (!detailData.objectiveCampaign) missingFields.push('objectiveCampaign');
+            if (!detailData.decisionTrigger) missingFields.push('decisionTrigger');
+            if (!detailData.productValueHighlight) missingFields.push('productValueHighlight');
+            if (!detailData.communicationApproach) missingFields.push('communicationApproach');
+            if (!detailData.hookOpening) missingFields.push('hookOpening');
+            if (!detailData.mainContentPoints || detailData.mainContentPoints.length === 0) missingFields.push('mainContentPoints');
+            if (!detailData.breakdownDetail) missingFields.push('breakdownDetail');
+            if (!detailData.visualIdentityNote) missingFields.push('visualIdentityNote');
+            
+            // Field validation untuk brief idea
+          }
 
           return db.BriefDetail.create({
             BriefId: brief.id,
@@ -129,16 +146,6 @@ class BriefController {
           brief.toneOfVoice || "Friendly"
         );
       } catch (aiError) {
-        console.error("Generate Detail AI Error:", {
-          message: aiError.message,
-          stack: aiError.stack,
-          name: aiError.name,
-          detailId: briefDetail.id,
-          tag: briefDetail.tag,
-          title: briefDetail.title,
-          productId: product.id,
-          productName: product.name
-        });
         return res.status(500).json({ 
           message: aiError.message || "Gagal generate detail",
           error: process.env.NODE_ENV === 'development' ? {
@@ -163,22 +170,25 @@ class BriefController {
       }
 
       const existingDetail = briefDetail.detail || {};
+      
       const ideaContentFields = {
-        objectiveCampaign: existingDetail.objectiveCampaign,
-        decisionTrigger: existingDetail.decisionTrigger,
-        productValueHighlight: existingDetail.productValueHighlight,
-        communicationApproach: existingDetail.communicationApproach,
-        hookOpening: existingDetail.hookOpening,
-        mainContentPoints: existingDetail.mainContentPoints,
-        breakdownDetail: existingDetail.breakdownDetail,
-        visualIdentityNote: existingDetail.visualIdentityNote,
+        objectiveCampaign: existingDetail.objectiveCampaign || "",
+        decisionTrigger: existingDetail.decisionTrigger || "",
+        productValueHighlight: existingDetail.productValueHighlight || "",
+        communicationApproach: existingDetail.communicationApproach || "",
+        hookOpening: existingDetail.hookOpening || "",
+        mainContentPoints: Array.isArray(existingDetail.mainContentPoints) ? existingDetail.mainContentPoints : [],
+        breakdownDetail: existingDetail.breakdownDetail || "",
+        visualIdentityNote: existingDetail.visualIdentityNote || "",
+      };
+
+      const mergedDetail = {
+        ...(aiResult.detail || {}),
+        ...ideaContentFields,
       };
 
       await briefDetail.update({
-        detail: {
-          ...aiResult.detail || {},
-          ...ideaContentFields,
-        },
+        detail: mergedDetail,
         caption: captionText,
         hashtags: hashtagsArray,
         status: BRIEF_DETAIL_STATUS.READY,
@@ -209,11 +219,10 @@ class BriefController {
 
         res.json({ brief: updatedBrief });
       } catch (queryError) {
-        console.error("Error reloading brief:", queryError.message);
         throw queryError;
       }
     } catch (error) {
-      console.error("Generate Detail Controller Error:", error.message);
+      // Error handling untuk generate detail
       next(error);
     }
   }
@@ -258,6 +267,7 @@ class BriefController {
           {
             model: db.BriefDetail,
             as: "details",
+            separate: true,
             order: [["id", "ASC"]],
           },
           {
@@ -282,7 +292,7 @@ class BriefController {
   static async updateDetail(req, res, next) {
     try {
       const { id } = req.params;
-      const { platform, tag, title, funnel, cta, detail, caption, hashtags, status, scheduledAt } = req.body;
+      const { platform, tag, title, funnel, cta, detail, caption, hashtags, status, scheduledAt, rejectionReason } = req.body;
 
       const briefDetail = await db.BriefDetail.findOne({
         where: {
@@ -308,10 +318,28 @@ class BriefController {
       if (scheduledAt !== undefined) {
         updateData.scheduledAt = scheduledAt ? new Date(scheduledAt) : null;
       }
+      if (rejectionReason !== undefined) updateData.rejectionReason = rejectionReason;
 
       await briefDetail.update(updateData);
 
-      res.json(briefDetail);
+      const updatedBrief = await db.Brief.findOne({
+        where: {
+          id: briefDetail.BriefId,
+          ProjectId: req.user.ProjectId,
+        },
+        include: [
+          { model: db.Product, as: "product" },
+          { model: db.User, as: "user" },
+          {
+            model: db.BriefDetail,
+            as: "details",
+            separate: true,
+            order: [["id", "ASC"]],
+          },
+        ],
+      });
+
+      res.json({ brief: updatedBrief, briefDetail });
     } catch (error) {
       next(error);
     }
@@ -336,17 +364,21 @@ class BriefController {
       const isAdmin = req.user.role === "admin";
       const newStatus = isAdmin ? BRIEF_DETAIL_STATUS.SCHEDULED : BRIEF_DETAIL_STATUS.PENDING_APPROVAL;
 
-      // Parse tanggal dan waktu dengan mempertimbangkan timezone lokal
       const [year, month, day] = scheduledAt.split('-').map(Number);
       const [hours, minutes] = scheduledTime.split(':').map(Number);
       const scheduledDateTime = new Date(year, month - 1, day, hours, minutes);
       
-      await briefDetail.update({
+      const updateData = {
         status: newStatus,
         scheduledAt: scheduledDateTime,
-      });
-
-      // Return updated brief dengan semua details
+      };
+      
+      if (briefDetail.rejectionReason) {
+        updateData.rejectionReason = null;
+      }
+      
+      await briefDetail.update(updateData);
+      await briefDetail.reload();
       const updatedBrief = await db.Brief.findOne({
         where: {
           id: briefDetail.BriefId,

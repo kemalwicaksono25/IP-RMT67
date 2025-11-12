@@ -217,13 +217,19 @@ export default function Dashboard() {
     return briefs.filter(brief => brief && brief.details && Array.isArray(brief.details) && brief.details.length > 0);
   }, [briefs]);
   
-  // Hitung ide konten (BriefDetail) dengan status 'ready' (belum disubmit)
+  // Hitung ide konten (BriefDetail) dengan status 'draft' dan 'ready' (belum disubmit)
   const readyToSubmitIdeas = useMemo(() => {
     if (!briefsWithDetails || briefsWithDetails.length === 0) return 0;
     const count = briefsWithDetails.reduce((total, brief) => {
       if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
-      const readyDetails = brief.details.filter(d => d && d.status === 'ready');
-      return total + readyDetails.length;
+      // Hitung draft dan ready (belum final)
+      const notSubmittedDetails = brief.details.filter(d => {
+        if (!d) return false;
+        const status = d.status || 'draft';
+        const isFinalStatus = status === 'scheduled' || status === 'pending_approval' || status === 'approved' || status === 'rejected';
+        return !isFinalStatus; // Semua yang belum final (draft dan ready)
+      });
+      return total + notSubmittedDetails.length;
     }, 0);
     return count;
   }, [briefsWithDetails]);
@@ -336,14 +342,14 @@ export default function Dashboard() {
           {/* Card Brief Belum Disubmit - Status Ready */}
           <div
             className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20"
-            title="Brief dengan status siap (belum disubmit)"
+            title="Brief dengan status draft dan siap submit (belum disubmit)"
           >
             <div className="flex items-center gap-1 sm:gap-2 mb-1">
               <Send className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="text-xs sm:text-sm text-primary-100">Brief Belum Disubmit</span>
             </div>
             <p className="text-lg sm:text-xl lg:text-2xl font-bold">{readyToSubmitIdeas}</p>
-            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Status siap</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Draft & Siap Submit</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
             <div className="flex items-center gap-1 sm:gap-2 mb-1">

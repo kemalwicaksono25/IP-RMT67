@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState, useMemo, Fragment } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { getBriefById, generateDetail, updateBriefDetail, submitDetailForApproval, deleteBriefDetail } from '../../services/brief.api';
 import { updateBrief } from '../../store/briefSlice';
-import { FileText, Sparkles, CheckCircle, Edit2, Save, X, Eye, ChevronUp, Trash2, Send, Package, ExternalLink, Calendar, Clock, Info, Zap, Hourglass, XCircle } from 'lucide-react';
+import { FileText, Sparkles, CheckCircle, Edit2, Save, X, Eye, ChevronUp, Trash2, Send, Package, ExternalLink, Calendar, Clock, Info, Zap, Hourglass, XCircle, AlertTriangle } from 'lucide-react';
 import { TONE_OF_VOICE, BRIEF_TYPES, FUNNEL_STAGES, getStatusLabel } from '../../utils/constants';
+import { isReadyToSubmit, isDetailComplete } from '../../utils/detailHelper';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 import StatusBadge from '../../components/StatusBadge';
@@ -12,6 +13,8 @@ import Modal from '../../components/Modal';
 
 export default function BriefDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const statusFilter = searchParams.get('filter'); // 'rejected', 'ready', dll
   const dispatch = useDispatch();
   const briefs = useSelector((state) => state.brief?.briefs) || [];
   const [localBrief, setLocalBrief] = useState(null);
@@ -32,22 +35,62 @@ export default function BriefDetail() {
   const [deletingDetailId, setDeletingDetailId] = useState(null);
   const user = useSelector((state) => state.auth?.user);
 
-  // Gunakan localBrief jika ada, jika tidak cek dari Redux store
-  // Pindahkan useMemo ke sini untuk menjaga urutan hooks
   const briefFromStore = useMemo(() => {
     if (!briefs || !Array.isArray(briefs) || briefs.length === 0) return null;
     const parsedId = parseInt(id);
     if (isNaN(parsedId)) return null;
-    return briefs.find(b => b && b.id === parsedId) || null;
+    const found = briefs.find(b => b && b.id === parsedId);
+    if (found && (!found.details || !Array.isArray(found.details))) {
+      return null;
+    }
+    return found || null;
   }, [briefs, id]);
   
   const brief = localBrief || briefFromStore;
 
-  const fetchBrief = async () => {
+  const filteredBrief = useMemo(() => {
+    if (!brief) return null;
+    if (!statusFilter) return brief;
+    
+    const filteredDetails = brief.details?.filter(d => {
+      if (!d) return false;
+      
+      if (statusFilter === 'draft') {
+        return (d.status || 'draft') === 'draft';
+      }
+      
+      if (statusFilter === 'ready') {
+        return isReadyToSubmit(d);
+      }
+      
+      return d.status === statusFilter;
+    }) || [];
+    
+    const result = {
+      ...brief,
+      details: filteredDetails
+    };
+    
+    if (brief.product) {
+      result.product = { ...brief.product };
+    }
+    if (brief.user) {
+      result.user = { ...brief.user };
+    }
+    
+    return result;
+  }, [brief, statusFilter]);
+
+  const displayBrief = filteredBrief || brief;
+  
+
+  const fetchBrief = async (preserveScroll = false) => {
     if (!id) {
       setLoading(false);
       return;
     }
+    
+    const scrollPosition = preserveScroll ? window.scrollY : null;
     
     try {
       setLoading(true);
@@ -56,11 +99,28 @@ export default function BriefDetail() {
       // Update local state dan Redux store
       if (response?.data) {
         const briefData = response.data;
-        setLocalBrief(briefData);
-        dispatch(updateBrief({ id: parseInt(id), updatedBrief: briefData }));
+        if (briefData && briefData.id) {
+          setLocalBrief(briefData);
+          dispatch(updateBrief({ id: parseInt(id), updatedBrief: briefData }));
+        } else {
+          throw new Error('Data brief tidak valid');
+        }
+      } else {
+        throw new Error('Response tidak valid');
+      }
+      
+      if (preserveScroll && scrollPosition !== null) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            window.scrollTo({
+              top: scrollPosition,
+              behavior: 'instant'
+            });
+          });
+        });
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Gagal memuat brief';
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal memuat brief';
       setError(errorMessage);
       toast.error(errorMessage);
       setLocalBrief(null);
@@ -70,16 +130,14 @@ export default function BriefDetail() {
   };
 
   useEffect(() => {
-    // Selalu fetch brief saat component mount atau id berubah
-    // Ini memastikan data selalu fresh saat refresh atau akses langsung
     if (id) {
       fetchBrief();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+
   const handleGenerateDetail = async (detailId) => {
-    // Cegah multiple request simultan untuk detail yang sama menggunakan functional update
     setGeneratingDetail((prev) => {
       if (prev[detailId]) {
         return prev; // Sudah sedang generate, jangan update
@@ -89,17 +147,19 @@ export default function BriefDetail() {
 
     try {
       const response = await generateDetail(detailId);
-      // Update Redux store dan local state dengan brief yang sudah di-update
       if (response && response.data && response.data.brief) {
         const updatedBrief = response.data.brief;
         setLocalBrief(updatedBrief);
         dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
-        // Force re-render dengan fetch ulang untuk memastikan data terbaru
-        setTimeout(() => {
-          fetchBrief();
-        }, 500);
       } else {
-        fetchBrief();
+        if (brief && brief.details) {
+          const updatedDetails = brief.details.map(d => 
+            d.id === detailId ? { ...d, detail: response?.data?.detail || d.detail } : d
+          );
+          const updatedBrief = { ...brief, details: updatedDetails };
+          setLocalBrief(updatedBrief);
+          dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
+        }
       }
       toast.success('Detail berhasil di-generate');
     } catch (error) {
@@ -116,7 +176,6 @@ export default function BriefDetail() {
       return;
     }
 
-    // Filter detail yang belum memiliki detail
     const detailsToGenerate = brief.details.filter(d => !d.detail || !d.detail.type);
     
     if (detailsToGenerate.length === 0) {
@@ -124,21 +183,17 @@ export default function BriefDetail() {
       return;
     }
 
-    // Set semua ke generating
     const generatingState = {};
     detailsToGenerate.forEach(d => {
       generatingState[d.id] = true;
     });
     setGeneratingDetail((prev) => ({ ...prev, ...generatingState }));
 
-    // Generate semua secara parallel dengan error handling yang lebih baik
     const promises = detailsToGenerate.map(async (detail) => {
       try {
         return await generateDetail(detail.id);
       } catch (error) {
         const errorMessage = error.response?.data?.message || error.message || 'Gagal generate detail';
-        console.error(`Error generating detail ${detail.id}:`, errorMessage);
-        // Return error info instead of null
         return { error: true, detailId: detail.id, message: errorMessage };
       }
     });
@@ -148,18 +203,23 @@ export default function BriefDetail() {
       const successfulResponses = responses.filter(r => r && !r.error && r.data && r.data.brief);
       const failedResponses = responses.filter(r => r && r.error);
       
-      // Update Redux store dan local state dengan brief yang sudah di-update (ambil dari response terakhir yang valid)
       if (successfulResponses.length > 0) {
         const lastValidResponse = successfulResponses[successfulResponses.length - 1];
         const updatedBrief = lastValidResponse.data.brief;
         setLocalBrief(updatedBrief);
         dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
-        fetchBrief();
       } else {
-        fetchBrief();
+        if (brief && brief.details && successfulResponses.length > 0) {
+          const updatedDetails = brief.details.map(d => {
+            const lastBrief = successfulResponses[successfulResponses.length - 1].data.brief;
+            const updatedDetail = lastBrief.details?.find(bd => bd.id === d.id);
+            return updatedDetail || d;
+          });
+          const updatedBrief = { ...brief, details: updatedDetails };
+          setLocalBrief(updatedBrief);
+          dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
+        }
       }
-      
-      // Tampilkan pesan yang lebih informatif
       if (successfulResponses.length === detailsToGenerate.length) {
         toast.success(`${successfulResponses.length} detail berhasil di-generate`);
       } else if (successfulResponses.length > 0) {
@@ -167,7 +227,6 @@ export default function BriefDetail() {
         toast.error(`${failedResponses.length} detail gagal di-generate`);
       } else {
         toast.error('Semua detail gagal di-generate');
-        // Tampilkan error detail untuk yang pertama
         if (failedResponses.length > 0) {
           toast.error(failedResponses[0].message);
         }
@@ -175,7 +234,6 @@ export default function BriefDetail() {
     } catch (error) {
       toast.error('Terjadi kesalahan saat generate detail');
     } finally {
-      // Hapus semua state generating
       setGeneratingDetail((prev) => {
         const newState = { ...prev };
         detailsToGenerate.forEach(d => {
@@ -197,12 +255,9 @@ export default function BriefDetail() {
     setEditingDetail({ ...editingDetail, [detail.id]: true });
     const detailObj = detail.detail || {};
     
-    // Inisialisasi data edit berdasarkan tipe detail
     if (detailObj.type === 'video') {
-      // Handle scenes - konversi object ke array jika diperlukan
       let scenes = detailObj.scenes || [];
       if (!Array.isArray(scenes)) {
-        // Jika scenes adalah object, konversi ke array
         scenes = Object.keys(scenes).map(key => {
           const scene = scenes[key];
           return typeof scene === 'object' ? scene : { time: key, description: scene || '' };
@@ -250,7 +305,6 @@ export default function BriefDetail() {
         },
       });
     } else {
-      // Fallback ke JSON jika tipe tidak diketahui
       setEditData({
         ...editData,
         [detail.id]: {
@@ -309,14 +363,10 @@ export default function BriefDetail() {
         }
       }
 
-      // Ekstrak hashtags dari captionWithHashtags
       const captionWithHashtags = data.captionWithHashtags || '';
       const hashtagRegex = /#[\w]+/g;
       const foundHashtags = captionWithHashtags.match(hashtagRegex) || [];
       const hashtagsArray = foundHashtags.map(t => t.trim()).filter(t => t);
-      
-      // Hapus hashtags dari caption (opsional, atau tetap simpan di caption)
-      // Untuk sekarang, tetap simpan hashtags di caption
       const captionText = captionWithHashtags;
 
       const response = await updateBriefDetail(detailId, {
@@ -325,14 +375,19 @@ export default function BriefDetail() {
         hashtags: hashtagsArray,
       });
 
-      // Update Redux store dan local state dengan brief yang sudah di-update
       if (response && response.data && response.data.brief) {
         const updatedBrief = response.data.brief;
         setLocalBrief(updatedBrief);
         dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
       } else {
-        // Jika response tidak mengembalikan brief, fetch ulang
-        fetchBrief();
+        if (brief && brief.details) {
+          const updatedDetails = brief.details.map(d => 
+            d.id === detailId ? { ...d, detail: response?.data?.detail || d.detail, caption: response?.data?.caption || d.caption, hashtags: response?.data?.hashtags || d.hashtags } : d
+          );
+          const updatedBrief = { ...brief, details: updatedDetails };
+          setLocalBrief(updatedBrief);
+          dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
+        }
       }
 
       toast.success('Detail berhasil disimpan');
@@ -403,11 +458,30 @@ export default function BriefDetail() {
         },
       });
       
-      // Update Redux store dengan brief yang sudah di-update
       if (response && response.data && response.data.brief) {
-        dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data.brief }));
+        const updatedBrief = response.data.brief;
+        setLocalBrief(updatedBrief);
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
       } else {
-        fetchBrief();
+        if (brief && brief.details) {
+          const updatedDetails = brief.details.map(d => 
+            d.id === detailId ? { 
+              ...d, 
+              platform: data.platform || d.platform,
+              tag: data.tag || d.tag,
+              title: data.title || d.title,
+              funnel: data.funnel || d.funnel,
+              cta: data.cta || d.cta,
+              detail: {
+                ...d.detail,
+                ...data,
+              }
+            } : d
+          );
+          const updatedBrief = { ...brief, details: updatedDetails };
+          setLocalBrief(updatedBrief);
+          dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
+        }
       }
       
       toast.success('Brief berhasil disimpan');
@@ -433,13 +507,11 @@ export default function BriefDetail() {
   const handleDeleteIdea = async (detailId) => {
     try {
       const response = await deleteBriefDetail(detailId);
-      // Update Redux store dan local state dengan brief yang sudah di-update
       if (response && response.data && response.data.brief) {
         const updatedBrief = response.data.brief;
         setLocalBrief(updatedBrief);
         dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
       } else {
-        // Fallback: update Redux store dan local state secara manual dengan menghapus detail dari array
         if (brief && brief.details) {
           const updatedBrief = { ...brief, details: brief.details.filter(d => d.id !== detailId) };
           setLocalBrief(updatedBrief);
@@ -450,7 +522,6 @@ export default function BriefDetail() {
         }
       }
       toast.success('Brief berhasil dihapus');
-      // Trigger event untuk update komponen lain (seperti Dashboard)
       window.dispatchEvent(new Event('briefsUpdated'));
       handleCloseDeleteModal(detailId);
     } catch (error) {
@@ -459,7 +530,6 @@ export default function BriefDetail() {
   };
 
   const handleOpenApprovalModal = (detailId) => {
-    // Cek apakah detail dengan ID ini ada dan statusnya belum final
     const detail = brief?.details?.find(d => d && d.id === detailId);
     if (detail) {
       const status = detail.status || 'draft';
@@ -488,17 +558,46 @@ export default function BriefDetail() {
     });
   };
 
+  const handleResubmit = async (detailId) => {
+    const detail = brief?.details?.find(d => d.id === detailId);
+    if (!detail) return;
+
+    try {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const defaultScheduledAt = tomorrow.toISOString().split('T')[0];
+      const defaultScheduledTime = '09:00';
+
+      const response = await submitDetailForApproval(detailId, {
+        scheduledAt: defaultScheduledAt,
+        scheduledTime: defaultScheduledTime,
+      });
+
+      if (response && response.data && response.data.brief) {
+        const updatedBrief = response.data.brief;
+        setLocalBrief(updatedBrief);
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
+        window.dispatchEvent(new Event('briefsUpdated'));
+        toast.success('Detail berhasil di-resubmit dan masuk ke approval');
+      } else {
+        await fetchBrief(true);
+        window.dispatchEvent(new Event('briefsUpdated'));
+        toast.success('Detail berhasil di-resubmit dan masuk ke approval');
+      }
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || 'Gagal resubmit detail';
+      toast.error(errorMessage);
+    }
+  };
+
   const handleSubmitApproval = async (detailId) => {
     const data = approvalData[detailId];
     
-    // Validasi tanggal dan waktu sudah diisi
     if (!data?.scheduledAt || !data?.scheduledTime) {
       toast.error('Tanggal dan waktu posting wajib diisi');
       return;
     }
 
-    // Validasi tanggal tidak di masa lalu
-    // Gabungkan tanggal dan waktu dengan mempertimbangkan timezone lokal
     const [year, month, day] = data.scheduledAt.split('-').map(Number);
     const [hours, minutes] = data.scheduledTime.split(':').map(Number);
     const scheduledDateTime = new Date(year, month - 1, day, hours, minutes);
@@ -516,17 +615,28 @@ export default function BriefDetail() {
         scheduledTime: data.scheduledTime,
       });
       
-      // Update Redux store dan local state dengan brief yang sudah di-update
       if (response && response.data && response.data.brief) {
         const updatedBrief = response.data.brief;
         setLocalBrief(updatedBrief);
         dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
+        window.dispatchEvent(new Event('briefsUpdated'));
       } else {
-        // Jika response tidak memiliki brief, fetch ulang untuk mendapatkan data terbaru
-        await fetchBrief();
+        if (brief && brief.details) {
+          const updatedDetails = brief.details.map(d => 
+            d.id === detailId ? { 
+              ...d, 
+              status: 'pending_approval',
+              scheduledAt: data.scheduledAt,
+              scheduledTime: data.scheduledTime
+            } : d
+          );
+          const updatedBrief = { ...brief, details: updatedDetails };
+          setLocalBrief(updatedBrief);
+          dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
+          window.dispatchEvent(new Event('briefsUpdated'));
+        }
       }
       
-      // Cek apakah user adalah admin (status akan menjadi SCHEDULED untuk admin)
       const isAdmin = user?.role === 'admin';
       if (isAdmin) {
         toast.success('Brief berhasil dijadwalkan dan langsung tampil di kalender');
@@ -535,7 +645,6 @@ export default function BriefDetail() {
       }
       
       handleCloseApprovalModal(detailId);
-      // Trigger event untuk update kalender
       window.dispatchEvent(new Event('briefsUpdated'));
     } catch (error) {
       const message = error.response?.data?.message || 'Gagal submit approval';
@@ -553,7 +662,25 @@ export default function BriefDetail() {
     );
   }
 
-  if (!brief && !loading) {
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (!displayBrief && !loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
@@ -570,69 +697,16 @@ export default function BriefDetail() {
     );
   }
 
-  // Fungsi helper untuk memvalidasi apakah detail sudah lengkap dan siap submit
-  const isDetailComplete = (detail) => {
-    if (!detail) {
-      return false;
-    }
+  const totalDetails = displayBrief?.details?.length || 0;
+  const readyDetails = displayBrief?.details?.filter((d) => {
+    if (!d) return false;
+    const status = d.status || 'draft';
+    const isFinalStatus = status === 'scheduled' || status === 'pending_approval' || status === 'approved' || status === 'rejected';
+    return !isFinalStatus;
+  }).length || 0;
+  const approvedDetails = displayBrief?.details?.filter((d) => d && (d.status === 'approved' || d.status === 'scheduled')).length || 0;
+  const rejectedDetails = displayBrief?.details?.filter((d) => d && d.status === 'rejected').length || 0;
 
-    // Parse detail jika masih berupa string JSON
-    let detailObj = detail.detail;
-    if (typeof detailObj === 'string') {
-      try {
-        detailObj = JSON.parse(detailObj);
-      } catch (e) {
-        return false;
-      }
-    }
-
-    if (!detailObj || !detailObj.type) {
-      return false;
-    }
-
-    if (!detail.caption || (typeof detail.caption === 'string' && detail.caption.trim().length === 0)) {
-      return false;
-    }
-
-    const type = detailObj.type;
-
-    if (type === 'video') {
-      // Untuk video, minimal harus ada scenes dan visual
-      const hasScenes = detailObj.scenes && 
-        Array.isArray(detailObj.scenes) && 
-        detailObj.scenes.length > 0 &&
-        detailObj.scenes.some(s => s && s.description && typeof s.description === 'string' && s.description.trim().length > 0);
-      const hasVisual = detailObj.visual && typeof detailObj.visual === 'string' && detailObj.visual.trim().length > 0;
-      
-      return hasScenes && hasVisual;
-    } else if (type === 'carousel') {
-      // Untuk carousel, minimal harus ada slides dan visualTone
-      const hasSlides = detailObj.slides && 
-        Array.isArray(detailObj.slides) && 
-        detailObj.slides.length > 0 &&
-        detailObj.slides.some(s => s && s.text && typeof s.text === 'string' && s.text.trim().length > 0);
-      const hasVisualTone = detailObj.visualTone && typeof detailObj.visualTone === 'string' && detailObj.visualTone.trim().length > 0;
-      
-      return hasSlides && hasVisualTone;
-    } else if (type === 'image') {
-      // Untuk image, minimal harus ada headline, subheadline, dan visual
-      const hasHeadline = detailObj.headline && typeof detailObj.headline === 'string' && detailObj.headline.trim().length > 0;
-      const hasSubheadline = detailObj.subheadline && typeof detailObj.subheadline === 'string' && detailObj.subheadline.trim().length > 0;
-      const hasVisual = detailObj.visual && typeof detailObj.visual === 'string' && detailObj.visual.trim().length > 0;
-      
-      return hasHeadline && hasSubheadline && hasVisual;
-    }
-
-    return false;
-  };
-
-  const totalDetails = brief?.details?.length || 0;
-  const emptyDetails = brief?.details?.filter((d) => d && (!d.detail || !d.detail.type)).length || 0;
-  const readyDetails = brief?.details?.filter((d) => d && d.status === 'ready' && isDetailComplete(d)).length || 0;
-  const approvedDetails = brief?.details?.filter((d) => d && (d.status === 'approved' || d.status === 'scheduled')).length || 0;
-  const rejectedDetails = brief?.details?.filter((d) => d && d.status === 'rejected').length || 0;
-
-  // Fungsi helper untuk mendapatkan label dari value
   const getToneOfVoiceLabel = (value) => {
     const tone = TONE_OF_VOICE.find(t => t.value === value);
     return tone ? tone.label : value;
@@ -659,7 +733,7 @@ export default function BriefDetail() {
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Membuat Detail Brief</h1>
               <p className="text-primary-100 text-xs sm:text-sm mt-1 break-words">
-                Produk: {brief.product?.name}
+                Produk: {displayBrief?.product?.name || brief?.product?.name || '-'}
               </p>
             </div>
           </div>
@@ -667,7 +741,7 @@ export default function BriefDetail() {
         </div>
 
         {/* Statistik */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mt-4">
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
             <div className="flex items-center gap-1 sm:gap-2 mb-1">
               <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -682,14 +756,14 @@ export default function BriefDetail() {
               <span className="text-xs sm:text-sm text-primary-100">Brief Belum Disubmit</span>
             </div>
             <p className="text-lg sm:text-xl lg:text-2xl font-bold">{readyDetails}</p>
-            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Status siap</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Draft & Siap Submit</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
             <div className="flex items-center gap-1 sm:gap-2 mb-1">
               <Hourglass className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="text-xs sm:text-sm text-primary-100">Menunggu Review</span>
             </div>
-            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{brief.details?.filter((d) => d && d.status === 'pending_approval').length || 0}</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{displayBrief?.details?.filter((d) => d && d.status === 'pending_approval').length || 0}</p>
             <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Menunggu review</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
@@ -708,21 +782,13 @@ export default function BriefDetail() {
             <p className="text-lg sm:text-xl lg:text-2xl font-bold">{rejectedDetails}</p>
             <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Brief ditolak</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
-            <div className="flex items-center gap-1 sm:gap-2 mb-1">
-              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="text-xs sm:text-sm text-primary-100">Empty</span>
-            </div>
-            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{emptyDetails}</p>
-            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Siap di-generate</p>
-          </div>
         </div>
       </div>
 
       {/* Product Card & Informasi Brief - Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Product Card */}
-        {brief.product && (
+        {(displayBrief?.product || brief?.product) && (
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
             <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
               <div className="flex items-center gap-2">
@@ -733,12 +799,12 @@ export default function BriefDetail() {
             <div className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
                 {/* Product Image */}
-                {brief.product.imageUrl && (
+                {(displayBrief?.product || brief?.product)?.imageUrl && (
                   <div className="flex-shrink-0 w-full sm:w-40 lg:w-48">
                     <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-primary-50 to-primary-100 border-2 border-primary-200 shadow-lg group">
                       <img
-                        src={`http://localhost:3000${brief.product.imageUrl}`}
-                        alt={brief.product.name}
+                        src={`http://localhost:3000${(displayBrief?.product || brief?.product)?.imageUrl}`}
+                        alt={(displayBrief?.product || brief?.product)?.name}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none"></div>
@@ -748,13 +814,13 @@ export default function BriefDetail() {
                 
                 {/* Product Info */}
                 <div className="flex-1 min-w-0 w-full">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 break-words leading-tight">{brief.product.name}</h3>
-                  {brief.product.description && (
-                    <p className="text-sm text-gray-600 mb-4 leading-relaxed line-clamp-4">{brief.product.description}</p>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 break-words leading-tight">{(displayBrief?.product || brief?.product)?.name}</h3>
+                  {(displayBrief?.product || brief?.product)?.description && (
+                    <p className="text-sm text-gray-600 mb-4 leading-relaxed line-clamp-4">{(displayBrief?.product || brief?.product)?.description}</p>
                   )}
-                  {brief.product.link && (
+                  {(displayBrief?.product || brief?.product)?.link && (
                     <a
-                      href={brief.product.link}
+                      href={(displayBrief?.product || brief?.product)?.link}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100"
@@ -781,21 +847,21 @@ export default function BriefDetail() {
             <div className="space-y-3 sm:space-y-4">
               <div>
                 <span className="text-xs sm:text-sm text-gray-600">Target Market:</span>
-                <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">{brief.targetMarket || '-'}</p>
+                <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">{(displayBrief || brief)?.targetMarket || '-'}</p>
               </div>
               <div>
                 <span className="text-xs sm:text-sm text-gray-600">Gaya Bahasa:</span>
-                <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">{getToneOfVoiceLabel(brief.toneOfVoice) || '-'}</p>
+                <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">{getToneOfVoiceLabel((displayBrief || brief)?.toneOfVoice) || '-'}</p>
               </div>
               <div>
                 <span className="text-xs sm:text-sm text-gray-600">Jenis Brief:</span>
-                <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">{getBriefTypeLabel(brief.briefType) || '-'}</p>
+                <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">{getBriefTypeLabel((displayBrief || brief)?.briefType) || '-'}</p>
               </div>
               <div>
                 <span className="text-xs sm:text-sm text-gray-600">Funnel:</span>
                 <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">
-                  {brief.funnelStage ? brief.funnelStage.split(',').map((f, idx) => (
-                    <span key={idx}>
+                  {(displayBrief || brief)?.funnelStage ? (displayBrief || brief).funnelStage.split(',').map((f, idx) => (
+                    <span key={`funnel-${(displayBrief || brief)?.id}-${idx}-${f.trim()}`}>
                       {idx > 0 && ', '}
                       {getFunnelLabel(f.trim())}
                     </span>
@@ -910,9 +976,9 @@ export default function BriefDetail() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {brief.details?.map((detail, index) => (
-                <>
-                  <tr key={detail.id} className={`transition-colors duration-150 ${
+              {displayBrief?.details?.map((detail, index) => (
+                <Fragment key={detail.id}>
+                  <tr className={`transition-colors duration-150 ${
                       editingIdea[detail.id] 
                         ? 'bg-primary-50/50 hover:bg-primary-50' 
                         : 'hover:bg-primary-50/80'
@@ -1000,7 +1066,16 @@ export default function BriefDetail() {
                           placeholder="Objective..."
                         />
                       ) : (
-                        <span className="whitespace-normal break-words text-xs leading-tight">{detail.detail?.objectiveCampaign || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">
+                          {(() => {
+                            const value = detail.detail?.objectiveCampaign;
+                            if (!value) return '-';
+                            if (typeof value === 'object') {
+                              return Array.isArray(value) ? value.join(', ') : JSON.stringify(value);
+                            }
+                            return String(value);
+                          })()}
+                        </span>
                       )}
                     </td>
                     <td className="px-1.5 py-2 text-xs text-gray-700 w-16 border-r border-gray-200/50">
@@ -1036,7 +1111,16 @@ export default function BriefDetail() {
                           placeholder="Trigger..."
                         />
                       ) : (
-                        <span className="whitespace-normal break-words text-xs leading-tight">{detail.detail?.decisionTrigger || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">
+                          {(() => {
+                            const value = detail.detail?.decisionTrigger;
+                            if (!value) return '-';
+                            if (typeof value === 'object') {
+                              return Array.isArray(value) ? value.join(', ') : JSON.stringify(value);
+                            }
+                            return String(value);
+                          })()}
+                        </span>
                       )}
                     </td>
                     <td className="px-1.5 py-2 text-xs text-gray-700 w-24 border-r border-gray-200/50">
@@ -1052,7 +1136,16 @@ export default function BriefDetail() {
                           placeholder="Value..."
                         />
                       ) : (
-                        <span className="whitespace-normal break-words text-xs leading-tight">{detail.detail?.productValueHighlight || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">
+                          {(() => {
+                            const value = detail.detail?.productValueHighlight;
+                            if (!value) return '-';
+                            if (typeof value === 'object') {
+                              return Array.isArray(value) ? value.join(', ') : JSON.stringify(value);
+                            }
+                            return String(value);
+                          })()}
+                        </span>
                       )}
                     </td>
                     <td className="px-1.5 py-2 text-xs text-gray-700 w-20 border-r border-gray-200/50">
@@ -1068,7 +1161,16 @@ export default function BriefDetail() {
                           placeholder="Approach..."
                         />
                       ) : (
-                        <span className="whitespace-normal break-words text-xs leading-tight">{detail.detail?.communicationApproach || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">
+                          {(() => {
+                            const value = detail.detail?.communicationApproach;
+                            if (!value) return '-';
+                            if (typeof value === 'object') {
+                              return Array.isArray(value) ? value.join(', ') : JSON.stringify(value);
+                            }
+                            return String(value);
+                          })()}
+                        </span>
                       )}
                     </td>
                     <td className="px-1.5 py-2 text-xs text-gray-700 w-24 border-r border-gray-200/50">
@@ -1084,7 +1186,16 @@ export default function BriefDetail() {
                           placeholder="Hook..."
                         />
                       ) : (
-                        <span className="whitespace-normal break-words text-xs leading-tight">{detail.detail?.hookOpening || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">
+                          {(() => {
+                            const value = detail.detail?.hookOpening;
+                            if (!value) return '-';
+                            if (typeof value === 'object') {
+                              return Array.isArray(value) ? value.join(', ') : JSON.stringify(value);
+                            }
+                            return String(value);
+                          })()}
+                        </span>
                       )}
                     </td>
                     <td className="px-1.5 py-2 text-xs text-gray-700 w-28 border-r border-gray-200/50">
@@ -1140,16 +1251,73 @@ export default function BriefDetail() {
                           placeholder="Breakdown..."
                         />
                       ) : (
-                        <span className="text-xs whitespace-normal break-words leading-tight">
+                        <div className="text-xs whitespace-normal break-words leading-tight space-y-1">
                           {(() => {
                             const value = detail.detail?.breakdownDetail;
-                            if (!value) return '-';
+                            if (!value) return <span className="text-gray-400">-</span>;
                             if (typeof value === 'object') {
-                              return JSON.stringify(value, null, 2);
+                              // Format object menjadi readable text
+                              if (Array.isArray(value)) {
+                                // Jika array, format sebagai list
+                                return value.map((item, idx) => {
+                                  if (typeof item === 'object' && item !== null) {
+                                    if (item.time && item.description) {
+                                      return (
+                                        <div key={`breakdown-${detail.id}-${idx}-${item.time}`} className="mb-1">
+                                          <span className="font-semibold text-primary-600">{item.time}:</span> {item.description}
+                                        </div>
+                                      );
+                                    }
+                                    // Object lainnya
+                                    return (
+                                      <div key={`breakdown-${detail.id}-${idx}-obj`} className="mb-1">
+                                        {Object.entries(item).map(([key, val]) => (
+                                          <div key={`breakdown-${detail.id}-${idx}-${key}`} className="ml-2">
+                                            <span className="font-medium">{key}:</span> {String(val)}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  }
+                                  return <div key={`breakdown-${detail.id}-${idx}-${String(item).substring(0, 10)}`} className="mb-1">• {String(item)}</div>;
+                                });
+                              } else {
+                                // Jika object, format menjadi list
+                                return Object.entries(value).map(([key, val]) => {
+                                  if (Array.isArray(val)) {
+                                    return (
+                                      <div key={key} className="mb-1">
+                                        <span className="font-semibold text-primary-600">{key}:</span>
+                                        <div className="ml-2 mt-0.5">
+                                          {val.map((v, i) => (
+                                            <div key={`breakdown-${detail.id}-${key}-${i}-${String(v).substring(0, 10)}`}>• {String(v)}</div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  } else if (typeof val === 'object' && val !== null) {
+                                    return (
+                                      <div key={key} className="mb-1">
+                                        <span className="font-semibold text-primary-600">{key}:</span>
+                                        <div className="ml-2 mt-0.5">
+                                          {Object.entries(val).map(([k, v]) => (
+                                            <div key={k}><span className="font-medium">{k}:</span> {String(v)}</div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <div key={key} className="mb-1">
+                                      <span className="font-semibold text-primary-600">{key}:</span> {String(val)}
+                                    </div>
+                                  );
+                                });
+                              }
                             }
-                            return value;
+                            return <span>{String(value)}</span>;
                           })()}
-                        </span>
+                        </div>
                       )}
                     </td>
                     <td className="px-1.5 py-2 text-xs text-gray-700 w-24 border-r border-gray-200/50">
@@ -1165,16 +1333,53 @@ export default function BriefDetail() {
                           placeholder="Visual..."
                         />
                       ) : (
-                        <span className="text-xs whitespace-normal break-words leading-tight">
+                        <div className="text-xs whitespace-normal break-words leading-tight space-y-1">
                           {(() => {
                             const value = detail.detail?.visualIdentityNote;
-                            if (!value) return '-';
+                            if (!value) return <span className="text-gray-400">-</span>;
                             if (typeof value === 'object') {
-                              return JSON.stringify(value, null, 2);
+                              // Format object menjadi readable text
+                              if (Array.isArray(value)) {
+                                return value.map((item, idx) => (
+                                  <div key={`visual-${detail.id}-${idx}-${String(item).substring(0, 10)}`} className="mb-1">• {String(item)}</div>
+                                ));
+                              } else {
+                                // Jika object, format menjadi list
+                                return Object.entries(value).map(([key, val]) => {
+                                  if (Array.isArray(val)) {
+                                    return (
+                                      <div key={key} className="mb-1">
+                                        <span className="font-semibold text-primary-600">{key}:</span>
+                                        <div className="ml-2 mt-0.5">
+                                          {val.map((v, i) => (
+                                            <div key={`breakdown-${detail.id}-${key}-${i}-${String(v).substring(0, 10)}`}>• {String(v)}</div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  } else if (typeof val === 'object' && val !== null) {
+                                    return (
+                                      <div key={key} className="mb-1">
+                                        <span className="font-semibold text-primary-600">{key}:</span>
+                                        <div className="ml-2 mt-0.5">
+                                          {Object.entries(val).map(([k, v]) => (
+                                            <div key={k}><span className="font-medium">{k}:</span> {String(v)}</div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <div key={key} className="mb-1">
+                                      <span className="font-semibold text-primary-600">{key}:</span> {String(val)}
+                                    </div>
+                                  );
+                                });
+                              }
                             }
-                            return value;
+                            return <span>{String(value)}</span>;
                           })()}
-                        </span>
+                        </div>
                       )}
                     </td>
                     <td className="px-1.5 py-2 text-xs w-16 border-r border-gray-200/50 text-center">
@@ -1182,12 +1387,8 @@ export default function BriefDetail() {
                         {(() => {
                           const status = detail.status || 'draft';
                           const isComplete = isDetailComplete(detail);
-                          // Tampilkan status berdasarkan status di database
-                          // Jika status sudah pending_approval, scheduled, approved, atau rejected, tampilkan sesuai status
-                          // Jika status ready atau draft, cek apakah detail sudah lengkap
                           let displayStatus = status;
                           if (status === 'pending_approval' || status === 'scheduled' || status === 'approved' || status === 'rejected') {
-                            // Status sudah final, tampilkan sesuai status
                             displayStatus = status;
                           } else if (status === 'ready' && isComplete) {
                             displayStatus = 'ready';
@@ -1205,8 +1406,6 @@ export default function BriefDetail() {
                         {(() => {
                           const status = detail.status || 'draft';
                           const isComplete = isDetailComplete(detail);
-                          // Tampilkan button submit hanya jika detail sudah lengkap DAN status belum final
-                          // Status final: scheduled, pending_approval, approved, rejected
                           const isFinalStatus = status === 'scheduled' || status === 'pending_approval' || status === 'approved' || status === 'rejected';
                           if (isComplete && !isFinalStatus) {
                             return (
@@ -1223,6 +1422,17 @@ export default function BriefDetail() {
                           }
                           return null;
                         })()}
+                        {detail.status === 'rejected' && (
+                          <button
+                            type="button"
+                            onClick={() => handleResubmit(detail.id)}
+                            className="px-2 py-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-medium rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all flex items-center justify-center gap-1 w-full shadow-sm hover:shadow-md"
+                            title="Resubmit Detail"
+                          >
+                            <Send className="w-3 h-3" />
+                            Resubmit
+                          </button>
+                        )}
                         {detail.status === 'scheduled' && detail.scheduledAt && (
                           <span className="text-xs text-gray-500 text-center">
                             {new Date(detail.scheduledAt).toLocaleString('id-ID', {
@@ -1680,6 +1890,40 @@ export default function BriefDetail() {
                               </div>
                             </div>
 
+                            {/* Alasan Penolakan - Tampilkan paling atas jika status rejected */}
+                            {detail.status === 'rejected' && (
+                              <div className="mb-4 bg-red-100 border-2 border-red-500 rounded-lg p-4 shadow-md w-full min-w-0">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                                    <span className="text-base font-bold text-red-700">Alasan Penolakan</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResubmit(detail.id)}
+                                    className="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-medium rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                                    title="Resubmit Detail"
+                                  >
+                                    <Send className="w-4 h-4" />
+                                    Resubmit
+                                  </button>
+                                </div>
+                                <div className="bg-white border-2 border-red-300 rounded-lg p-4 mb-3">
+                                  <p className="text-sm text-red-800 leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere font-medium">
+                                    {detail.rejectionReason || 'Tidak ada alasan penolakan yang diberikan'}
+                                  </p>
+                                </div>
+                                <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-3">
+                                  <div className="flex items-start gap-2">
+                                    <Info className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                                    <p className="text-sm text-yellow-800 leading-relaxed font-medium">
+                                      <span className="font-bold">Penting:</span> Silakan edit dan perbaiki detail sesuai alasan penolakan di atas sebelum melakukan resubmit.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
                             {/* Display Detail */}
                             <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-3">
                               {detail.detail.type === 'video' && (
@@ -1813,7 +2057,7 @@ export default function BriefDetail() {
                     </td>
                   </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -1821,7 +2065,7 @@ export default function BriefDetail() {
       </div>
 
       {/* Approval Modal */}
-      {brief.details?.map((detail) => (
+      {displayBrief?.details?.map((detail) => (
         <Modal
           key={`approval-${detail.id}`}
           isOpen={showApprovalModal[detail.id] || false}
@@ -1927,7 +2171,7 @@ export default function BriefDetail() {
       ))}
 
       {/* Delete Confirmation Modal */}
-      {brief?.details?.map((detail) => (
+      {displayBrief?.details?.map((detail) => (
         <Modal
           key={`delete-${detail.id}`}
           isOpen={showDeleteModal[detail.id] || false}

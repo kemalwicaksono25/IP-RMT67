@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getPendingApprovals, approveBrief, rejectBrief } from '../../services/admin.api';
+import { getPendingApprovals, approveBrief, rejectBrief, approveDetail, rejectDetail } from '../../services/admin.api';
 import { getBriefs } from '../../services/brief.api';
 import { setBriefs } from '../../store/briefSlice';
 import { FileText, Clock, CheckCircle, Sparkles, ChevronDown, ChevronUp, Target, TrendingUp, MessageSquare, Zap, Eye, Package, Image, Video, Layers, XCircle, ExternalLink, AlertTriangle, Hourglass } from 'lucide-react';
@@ -19,8 +19,11 @@ export default function BriefReview() {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
   const [selectedBrief, setSelectedBrief] = useState(null);
+  const [selectedDetail, setSelectedDetail] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [expandedDetails, setExpandedDetails] = useState({});
+  const [approvingDetail, setApprovingDetail] = useState({});
+  const [rejectingDetail, setRejectingDetail] = useState({});
 
   useEffect(() => {
     fetchApprovals();
@@ -322,6 +325,42 @@ export default function BriefReview() {
     }
   };
 
+  const handleApproveDetail = async (detailId) => {
+    setApprovingDetail({ ...approvingDetail, [detailId]: true });
+    try {
+      const response = await approveDetail(detailId, {});
+      toast.success('Detail brief berhasil di-approve');
+      fetchApprovals();
+      fetchAllBriefs();
+      window.dispatchEvent(new Event('briefsUpdated'));
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Gagal approve detail brief');
+    } finally {
+      setApprovingDetail({ ...approvingDetail, [detailId]: false });
+    }
+  };
+
+  const handleRejectDetail = async (detailId) => {
+    if (!rejectReason.trim()) {
+      toast.error('Alasan penolakan harus diisi');
+      return;
+    }
+
+    setRejectingDetail({ ...rejectingDetail, [detailId]: true });
+    try {
+      const response = await rejectDetail(detailId, rejectReason);
+      toast.success('Detail brief berhasil di-reject');
+      setRejectReason('');
+      setSelectedDetail(null);
+      fetchApprovals();
+      fetchAllBriefs();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Gagal reject detail brief');
+    } finally {
+      setRejectingDetail({ ...rejectingDetail, [detailId]: false });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -392,7 +431,9 @@ export default function BriefReview() {
         </div>
       ) : (
         <div className="space-y-6">
-          {pendingBriefs.map((brief) => (
+          {pendingBriefs
+            .filter(brief => brief.details && brief.details.some(detail => detail && detail.status === 'pending_approval'))
+            .map((brief) => (
             <div key={brief.id} className="bg-white rounded-lg shadow-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Brief Info Header */}
               <div className="flex items-center justify-between">
@@ -463,7 +504,7 @@ export default function BriefReview() {
                 )}
 
                 <h3 className="font-semibold text-lg text-gray-800 mb-4">Detail Brief:</h3>
-                {brief.details?.filter(detail => detail.status !== 'draft').map((detail, index) => (
+                {brief.details?.filter(detail => detail && detail.status === 'pending_approval').map((detail, index) => (
                   <div key={detail.id} className="border border-gray-200 rounded-xl overflow-hidden">
                     {/* Header */}
                     <div 
@@ -690,33 +731,50 @@ export default function BriefReview() {
                             </p>
                           </div>
                         )}
+
+                        {/* Action Buttons untuk setiap detail */}
+                        {detail.status === 'pending_approval' && (
+                          <div className="flex gap-2 pt-4 border-t border-gray-200">
+                            <button
+                              onClick={() => handleApproveDetail(detail.id)}
+                              disabled={approvingDetail[detail.id]}
+                              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                            >
+                              {approvingDetail[detail.id] ? (
+                                <>
+                                  <Loader size="sm" />
+                                  Approving...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4" />
+                                  Approve
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => setSelectedDetail(detail)}
+                              disabled={rejectingDetail[detail.id]}
+                              className="flex-1 px-4 py-2 bg-gradient-to-r from-gray-800 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              Reject
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 ))}
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleApprove(brief.id)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  ✅ Approve
-                </button>
-                <button
-                  onClick={() => setSelectedBrief(brief)}
-                  className="px-4 py-2 bg-gradient-to-r from-gray-800 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all shadow-md hover:shadow-lg"
-                >
-                  ❌ Reject
-                </button>
               </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Modal untuk reject brief (untuk backward compatibility) */}
       <Modal
-        isOpen={!!selectedBrief}
+        isOpen={!!selectedBrief && !selectedDetail}
         onClose={() => {
           setSelectedBrief(null);
           setRejectReason('');
@@ -751,6 +809,52 @@ export default function BriefReview() {
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
               Reject
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal untuk reject detail */}
+      <Modal
+        isOpen={!!selectedDetail}
+        onClose={() => {
+          setSelectedDetail(null);
+          setRejectReason('');
+        }}
+        title="Reject Detail Brief"
+      >
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-2">
+              Detail: <span className="font-semibold text-gray-800">{selectedDetail?.title}</span>
+            </p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Alasan Penolakan *
+            </label>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Masukkan alasan penolakan..."
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => {
+                setSelectedDetail(null);
+                setRejectReason('');
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-200 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              onClick={() => handleRejectDetail(selectedDetail?.id)}
+              disabled={rejectingDetail[selectedDetail?.id]}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {rejectingDetail[selectedDetail?.id] ? 'Rejecting...' : 'Reject'}
             </button>
           </div>
         </div>

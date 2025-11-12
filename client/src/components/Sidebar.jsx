@@ -268,7 +268,7 @@ function Sidebar() {
                         <div className={`inline-flex items-center gap-0.5 sm:gap-1 lg:gap-0.5 px-1.5 sm:px-2 lg:px-1 py-0.5 sm:py-1 lg:py-0.5 rounded-full text-[9px] sm:text-[10px] lg:text-[8px] font-bold flex-shrink-0 shadow-md ${
                           user?.role === 'admin'
                             ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white'
-                            : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
+                            : 'bg-gray-800 text-primary-400'
                         }`}>
                           <Shield className="w-2 h-2 sm:w-2.5 sm:h-2.5 lg:w-2 lg:h-2" />
                           <span className="capitalize">{user?.role || '-'}</span>

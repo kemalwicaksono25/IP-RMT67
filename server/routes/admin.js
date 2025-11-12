@@ -14,6 +14,8 @@ router.use(projectScope);
 router.get("/approvals", AdminController.getPendingApprovals);
 router.put("/approvals/:id/approve", adminValidator.validateApprovalId, adminValidator.validateApproveBrief, AdminController.approveBrief);
 router.put("/approvals/:id/reject", adminValidator.validateApprovalId, adminValidator.validateRejectBrief, AdminController.rejectBrief);
+router.put("/approvals/detail/:detailId/approve", AdminController.approveDetail);
+router.put("/approvals/detail/:detailId/reject", AdminController.rejectDetail);
 router.get("/calendar", AdminController.getCalendar);
 router.get("/team", AdminController.getTeam);
 router.put("/project/name", adminValidator.validateProjectName, AdminController.updateProjectName);
