@@ -28,7 +28,3 @@ export const deleteProduct = (id) => {
   return api.delete(`/products/${id}`);
 };
 
-export const analyzeProduct = (id) => {
-  return api.post(`/products/${id}/analyze`);
-};
-

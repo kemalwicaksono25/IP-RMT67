@@ -5,60 +5,6 @@ const openai = new OpenAI({
 });
 
 class AIService {
-  static async analyzeProductFromLink(product) {
-    const prompt = `Kamu adalah seorang copywriter dan marketing strategist yang ahli dalam menganalisis produk untuk content marketing.
-
-Tugas kamu adalah menganalisis produk berikut secara mendalam dan buatkan:
-1. 10 Pain Points (masalah yang dihadapi customer terkait produk ini) - harus spesifik dan relevan
-2. 10 Gains (keuntungan/benefit produk yang jelas dan spesifik) - fokus pada value yang diberikan
-3. 10 Goals (tujuan yang ingin dicapai customer dengan produk ini) - harus realistis dan achievable
-
-Informasi Produk:
-- Nama Produk: ${product.name}
-- Deskripsi: ${product.description || 'Tidak ada deskripsi'}
-- Link Produk: ${product.link || 'Tidak ada link'}
-
-${product.link ? `
-PENTING: Analisa detail produk dari link berikut: ${product.link}
-Perhatikan informasi dari link tersebut termasuk:
-- Spesifikasi produk (dimensi, berat, material, dll)
-- Fitur-fitur utama dan keunggulan produk
-- Review atau feedback customer (jika ada) - gunakan untuk memahami pain points nyata
-- Harga dan value proposition
-- Target market dan use case
-- Competitive advantage produk
-
-Gunakan informasi dari link untuk membuat analisa yang lebih akurat dan mendalam.
-` : 'Gunakan informasi yang tersedia untuk membuat analisa yang relevan.'}
-
-Buatkan analisa yang akurat, spesifik, dan relevan. Hindari generic statements. Setiap pain point, gain, dan goal harus spesifik untuk produk ini.
-
-Format output HANYA JSON (tanpa penjelasan tambahan):
-{
-  "pains": ["pain1", "pain2", "pain3", "pain4", "pain5", "pain6", "pain7", "pain8", "pain9", "pain10"],
-  "gains": ["gain1", "gain2", "gain3", "gain4", "gain5", "gain6", "gain7", "gain8", "gain9", "gain10"],
-  "goals": ["goal1", "goal2", "goal3", "goal4", "goal5", "goal6", "goal7", "goal8", "goal9", "goal10"]
-}`;
-
-    try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-      });
-
-      const content = completion.choices[0].message.content;
-      // Extract JSON from response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-      }
-      throw new Error("Invalid AI response format");
-    } catch (error) {
-      console.error("AI Service Error:", error.message);
-      throw error;
-    }
-  }
-
   static async generatePGG(product) {
     const prompt = `Kamu adalah seorang copywriter dan marketing strategist yang ahli dalam menganalisis produk untuk content marketing.
 

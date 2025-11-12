@@ -12,24 +12,8 @@ const handleTokenExpiredError = () => {
   };
 };
 
-const handleUnauthorizedError = (message = 'Unauthorized access') => {
-  return {
-    statusCode: 401,
-    message
-  };
-};
-
-const handleForbiddenError = (message = 'Forbidden access') => {
-  return {
-    statusCode: 403,
-    message
-  };
-};
-
 module.exports = {
   handleJsonWebTokenError,
-  handleTokenExpiredError,
-  handleUnauthorizedError,
-  handleForbiddenError
+  handleTokenExpiredError
 };
 

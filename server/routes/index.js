@@ -1,5 +1,4 @@
-const express = require("express");
-const router = express.Router();
+const router = require("express").Router();
 const authRoutes = require("./auth");
 const productRoutes = require("./product");
 const briefRoutes = require("./brief");

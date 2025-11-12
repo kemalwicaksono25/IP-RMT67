@@ -73,21 +73,6 @@ class BriefController {
             visualIdentityNote: (idea.visualIdentityNote && idea.visualIdentityNote.trim()) || "",
           };
 
-          // Log untuk debugging - hanya di development
-          if (process.env.NODE_ENV === 'development') {
-            const missingFields = [];
-            if (!detailData.objectiveCampaign) missingFields.push('objectiveCampaign');
-            if (!detailData.decisionTrigger) missingFields.push('decisionTrigger');
-            if (!detailData.productValueHighlight) missingFields.push('productValueHighlight');
-            if (!detailData.communicationApproach) missingFields.push('communicationApproach');
-            if (!detailData.hookOpening) missingFields.push('hookOpening');
-            if (!detailData.mainContentPoints || detailData.mainContentPoints.length === 0) missingFields.push('mainContentPoints');
-            if (!detailData.breakdownDetail) missingFields.push('breakdownDetail');
-            if (!detailData.visualIdentityNote) missingFields.push('visualIdentityNote');
-            
-            // Field validation untuk brief idea
-          }
-
           return db.BriefDetail.create({
             BriefId: brief.id,
             ProjectId: req.user.ProjectId,

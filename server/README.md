@@ -1,6 +1,6 @@
 # Content Planner & Writer Pro - Server Side
 
-Server-side application untuk Content Planner & Writer Pro menggunakan Express.js, Sequelize, dan PostgreSQL.
+Server-side application untuk Content Planner & Writer Pro menggunakan Express.js, Sequelize, PostgreSQL (Supabase), dan Cloudinary untuk file storage.
 
 ## 🚀 Setup
 
@@ -12,11 +12,10 @@ npm install
 
 ### 2. Setup Database
 
-Pastikan PostgreSQL sudah terinstall dan running. Buat database:
-
-```sql
-CREATE DATABASE content_planner_dev;
-```
+Aplikasi menggunakan Supabase (PostgreSQL cloud). Dapatkan connection string dari Supabase Dashboard:
+- Settings → Database → Connection String
+- Gunakan "Session Pooler" untuk IPv4 compatibility
+- Format: `postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-[REGION].pooler.supabase.com:5432/postgres`
 
 ### 3. Setup Environment
 
@@ -24,10 +23,14 @@ Copy `.env.example` ke `.env` dan isi dengan konfigurasi yang sesuai:
 
 ```env
 PORT=3000
-JWT_SECRET=your_jwt_secret_key_change_in_production
-OPENAI_KEY=your_openai_api_key_here
-DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/content_planner_dev
+JWT_SECRET=FILL_ME_IN
+OPENAI_KEY=FILL_ME_IN
+DATABASE_URL=FILL_ME_IN
 NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173
+CLOUDINARY_CLOUD_NAME=FILL_ME_IN
+CLOUDINARY_API_KEY=FILL_ME_IN
+CLOUDINARY_API_SECRET=FILL_ME_IN
 ```
 
 ### 4. Run Migrations
@@ -56,7 +59,7 @@ content-planner-server/
 ├── config/               # Database config
 ├── models/               # Sequelize models
 ├── controllers/          # Business logic
-├── services/             # AI, Upload, Socket services
+├── services/             # AI, Upload services
 ├── middleware/           # Auth, Authorization, Error handling
 ├── helpers/              # Utilities (bcrypt, jwt, enums)
 ├── routes/               # API routes
@@ -73,9 +76,8 @@ content-planner-server/
 ### Products
 - `GET /products` - List semua produk
 - `GET /products/:id` - Detail produk
-- `POST /products` - Tambah produk (dengan upload foto)
+- `POST /products` - Tambah produk (dengan upload foto, PGG otomatis di-generate)
 - `PUT /products/:id` - Update produk
-- `POST /products/:id/regenerate-pgg` - Regenerate Pain/Gain/Goals
 - `DELETE /products/:id` - Hapus produk
 
 ### Briefs
@@ -110,6 +112,7 @@ Pastikan `OPENAI_KEY` sudah diisi di `.env`.
 
 - Semua endpoint (kecuali register/login) memerlukan authentication header: `Authorization: Bearer <token>`
 - Data diisolasi per project (multi-tenant)
-- Upload file maksimal 5MB
-- Socket.io digunakan untuk realtime comments
+- Upload file maksimal 5MB, disimpan di Cloudinary
+- Database menggunakan Supabase (PostgreSQL cloud)
+- File upload menggunakan Cloudinary CDN
 

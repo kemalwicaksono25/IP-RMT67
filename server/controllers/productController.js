@@ -128,44 +128,6 @@ class ProductController {
     }
   }
 
-  static async analyzeProduct(req, res, next) {
-    try {
-      const { id } = req.params;
-
-      const product = await db.Product.findOne({
-        where: {
-          id,
-          ProjectId: req.user.ProjectId,
-        },
-      });
-
-      if (!product) {
-        throw new AppError("Produk tidak ditemukan", 404);
-      }
-
-      if (!product.link) {
-        throw new AppError("Link produk diperlukan untuk analisis", 400);
-      }
-
-      const pgg = await AIService.analyzeProductFromLink(product);
-      await product.update({
-        pains: Array.isArray(pgg.pains) ? pgg.pains : [],
-        gains: Array.isArray(pgg.gains) ? pgg.gains : [],
-        goals: Array.isArray(pgg.goals) ? pgg.goals : [],
-      });
-
-      await product.reload();
-
-      res.json({
-        message: "Product analyzed successfully",
-        product,
-      });
-    } catch (error) {
-      console.error("Analyze Product Error:", error);
-      next(error);
-    }
-  }
-
   static async delete(req, res, next) {
     try {
       const { id } = req.params;

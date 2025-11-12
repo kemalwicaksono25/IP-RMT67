@@ -1,25 +1,28 @@
 const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
 require("dotenv").config();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-});
+
+const allowedOrigins = process.env.NODE_ENV === "production"
+  ? (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["http://localhost:5173"])
+  : ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"];
 
 const router = require("./routes");
-const socketService = require("./services/socketService");
 const errorHandler = require("./middleware/errorHandler");
 
-app.use(cors());
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
@@ -30,7 +33,6 @@ app.get("/", (req, res) => {
   res.json({ message: "Content Planner & Writer Pro API" });
 });
 
-socketService(io);
 app.use(errorHandler);
 const fs = require("fs");
 const uploadsDir = path.join(__dirname, "uploads", "products");
@@ -40,10 +42,10 @@ if (!fs.existsSync(uploadsDir)) {
 
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📁 Environment: ${process.env.NODE_ENV || "development"}`);
 });
 
-module.exports = { app, server, io };
+module.exports = { app };
 
