@@ -189,39 +189,39 @@ export default function ProductDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Package className="w-6 h-6" />
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">{product.name}</h1>
-              <p className="text-primary-100 text-sm mt-1">Detail produk dan analisis untuk strategi konten</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold break-words">{product.name}</h1>
+              <p className="text-primary-100 text-xs sm:text-sm mt-1">Detail produk dan analisis untuk strategi konten</p>
             </div>
           </div>
-          <div className="flex gap-3 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
             <Link
               to={`/briefs/new?productId=${id}`}
-              className="px-5 py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium"
+              className="px-4 sm:px-5 py-2 sm:py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium text-sm sm:text-base justify-center"
             >
-              <FileText className="w-5 h-5" />
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
               Buat Brief Baru
             </Link>
             <Link
               to={`/products/${id}/edit`}
-              className="px-5 py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium"
+              className="px-4 sm:px-5 py-2 sm:py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium text-sm sm:text-base justify-center"
             >
-              <Edit className="w-5 h-5" />
+              <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
               Edit
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Image Section - Left Side */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">

@@ -70,60 +70,60 @@ export default function Team() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Users className="w-6 h-6" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
+              <Users className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Kelola Tim</h1>
-              <p className="text-primary-100 text-sm mt-1">Tambah dan kelola anggota tim Anda</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Kelola Tim</h1>
+              <p className="text-primary-100 text-xs sm:text-sm mt-1">Tambah dan kelola anggota tim Anda</p>
             </div>
           </div>
         </div>
 
         {/* Statistik */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Total Tim</span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 mt-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Total Tim</span>
             </div>
-            <p className="text-2xl font-bold">{teamMembers.length}</p>
-            <p className="text-xs text-primary-200 mt-1">Anggota tim</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{teamMembers.length}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Anggota tim</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <UserCheck className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Admin</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Admin</span>
             </div>
-            <p className="text-2xl font-bold">{getAdminCount()}</p>
-            <p className="text-xs text-primary-200 mt-1">Administrator</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{getAdminCount()}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Administrator</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <UserPlus className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Staff</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <UserPlus className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Staff</span>
             </div>
-            <p className="text-2xl font-bold">{getStaffCount()}</p>
-            <p className="text-xs text-primary-200 mt-1">Anggota staff</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{getStaffCount()}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Anggota staff</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Form Tambah Staff */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary-600" />
+          <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
               Tambah Staff
             </h2>
           </div>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

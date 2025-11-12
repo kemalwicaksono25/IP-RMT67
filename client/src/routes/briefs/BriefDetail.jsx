@@ -13,9 +13,10 @@ import Modal from '../../components/Modal';
 export default function BriefDetail() {
   const { id } = useParams();
   const dispatch = useDispatch();
-  const briefs = useSelector((state) => state.brief.briefs);
-  const brief = useMemo(() => briefs.find(b => b.id === parseInt(id)), [briefs, id]);
-  const [loading, setLoading] = useState(!brief);
+  const briefs = useSelector((state) => state.brief?.briefs) || [];
+  const [localBrief, setLocalBrief] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [generatingDetail, setGeneratingDetail] = useState({});
   const [editingDetail, setEditingDetail] = useState({});
   const [editingIdea, setEditingIdea] = useState({});
@@ -29,29 +30,53 @@ export default function BriefDetail() {
   const [submittingApproval, setSubmittingApproval] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState({});
   const [deletingDetailId, setDeletingDetailId] = useState(null);
-  const user = useSelector((state) => state.auth.user);
+  const user = useSelector((state) => state.auth?.user);
 
-  useEffect(() => {
-    // Jika brief tidak ada di store, fetch dari API
-    if (!brief) {
-      fetchBrief();
-    } else {
-      setLoading(false);
-    }
-  }, [id, brief]);
+  // Gunakan localBrief jika ada, jika tidak cek dari Redux store
+  // Pindahkan useMemo ke sini untuk menjaga urutan hooks
+  const briefFromStore = useMemo(() => {
+    if (!briefs || !Array.isArray(briefs) || briefs.length === 0) return null;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) return null;
+    return briefs.find(b => b && b.id === parsedId) || null;
+  }, [briefs, id]);
+  
+  const brief = localBrief || briefFromStore;
 
   const fetchBrief = async () => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
+      setError(null);
       const response = await getBriefById(id);
-      // Update Redux store
-      dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data }));
+      // Update local state dan Redux store
+      if (response?.data) {
+        const briefData = response.data;
+        setLocalBrief(briefData);
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief: briefData }));
+      }
     } catch (error) {
-      toast.error('Gagal memuat brief');
+      const errorMessage = error.response?.data?.message || 'Gagal memuat brief';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setLocalBrief(null);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Selalu fetch brief saat component mount atau id berubah
+    // Ini memastikan data selalu fresh saat refresh atau akses langsung
+    if (id) {
+      fetchBrief();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleGenerateDetail = async (detailId) => {
     // Cegah multiple request simultan untuk detail yang sama menggunakan functional update
@@ -64,9 +89,11 @@ export default function BriefDetail() {
 
     try {
       const response = await generateDetail(detailId);
-      // Update Redux store dengan brief yang sudah di-update
+      // Update Redux store dan local state dengan brief yang sudah di-update
       if (response && response.data && response.data.brief) {
-        dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data.brief }));
+        const updatedBrief = response.data.brief;
+        setLocalBrief(updatedBrief);
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
         // Force re-render dengan fetch ulang untuk memastikan data terbaru
         setTimeout(() => {
           fetchBrief();
@@ -104,23 +131,49 @@ export default function BriefDetail() {
     });
     setGeneratingDetail((prev) => ({ ...prev, ...generatingState }));
 
-    // Generate semua secara parallel
-    const promises = detailsToGenerate.map(detail => 
-      generateDetail(detail.id).catch(() => null)
-    );
+    // Generate semua secara parallel dengan error handling yang lebih baik
+    const promises = detailsToGenerate.map(async (detail) => {
+      try {
+        return await generateDetail(detail.id);
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || error.message || 'Gagal generate detail';
+        console.error(`Error generating detail ${detail.id}:`, errorMessage);
+        // Return error info instead of null
+        return { error: true, detailId: detail.id, message: errorMessage };
+      }
+    });
 
     try {
       const responses = await Promise.all(promises);
-      // Update Redux store dengan brief yang sudah di-update (ambil dari response terakhir yang valid)
-      const lastValidResponse = responses.filter(r => r && r.data && r.data.brief).pop();
-      if (lastValidResponse) {
-        dispatch(updateBrief({ id: parseInt(id), updatedBrief: lastValidResponse.data.brief }));
+      const successfulResponses = responses.filter(r => r && !r.error && r.data && r.data.brief);
+      const failedResponses = responses.filter(r => r && r.error);
+      
+      // Update Redux store dan local state dengan brief yang sudah di-update (ambil dari response terakhir yang valid)
+      if (successfulResponses.length > 0) {
+        const lastValidResponse = successfulResponses[successfulResponses.length - 1];
+        const updatedBrief = lastValidResponse.data.brief;
+        setLocalBrief(updatedBrief);
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
+        fetchBrief();
       } else {
         fetchBrief();
       }
-      toast.success(`${detailsToGenerate.length} detail berhasil di-generate`);
+      
+      // Tampilkan pesan yang lebih informatif
+      if (successfulResponses.length === detailsToGenerate.length) {
+        toast.success(`${successfulResponses.length} detail berhasil di-generate`);
+      } else if (successfulResponses.length > 0) {
+        toast.success(`${successfulResponses.length} detail berhasil di-generate`);
+        toast.error(`${failedResponses.length} detail gagal di-generate`);
+      } else {
+        toast.error('Semua detail gagal di-generate');
+        // Tampilkan error detail untuk yang pertama
+        if (failedResponses.length > 0) {
+          toast.error(failedResponses[0].message);
+        }
+      }
     } catch (error) {
-      toast.error('Beberapa detail gagal di-generate');
+      toast.error('Terjadi kesalahan saat generate detail');
     } finally {
       // Hapus semua state generating
       setGeneratingDetail((prev) => {
@@ -272,9 +325,11 @@ export default function BriefDetail() {
         hashtags: hashtagsArray,
       });
 
-      // Update Redux store dengan brief yang sudah di-update
+      // Update Redux store dan local state dengan brief yang sudah di-update
       if (response && response.data && response.data.brief) {
-        dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data.brief }));
+        const updatedBrief = response.data.brief;
+        setLocalBrief(updatedBrief);
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
       } else {
         // Jika response tidak mengembalikan brief, fetch ulang
         fetchBrief();
@@ -378,11 +433,21 @@ export default function BriefDetail() {
   const handleDeleteIdea = async (detailId) => {
     try {
       const response = await deleteBriefDetail(detailId);
-      // Update Redux store dengan brief yang sudah di-update
+      // Update Redux store dan local state dengan brief yang sudah di-update
       if (response && response.data && response.data.brief) {
-        dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data.brief }));
+        const updatedBrief = response.data.brief;
+        setLocalBrief(updatedBrief);
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
       } else {
-        fetchBrief();
+        // Fallback: update Redux store dan local state secara manual dengan menghapus detail dari array
+        if (brief && brief.details) {
+          const updatedBrief = { ...brief, details: brief.details.filter(d => d.id !== detailId) };
+          setLocalBrief(updatedBrief);
+          dispatch(updateBrief({ 
+            id: parseInt(id), 
+            updatedBrief
+          }));
+        }
       }
       toast.success('Brief berhasil dihapus');
       // Trigger event untuk update komponen lain (seperti Dashboard)
@@ -474,60 +539,84 @@ export default function BriefDetail() {
     );
   }
 
-  if (!brief) {
-    return <div>Brief tidak ditemukan</div>;
+  if (!brief && !loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-600 text-lg font-semibold">Brief tidak ditemukan</p>
+          {error && (
+            <p className="text-red-500 text-sm mt-2">{error}</p>
+          )}
+          {!error && (
+            <p className="text-gray-400 text-sm mt-2">ID: {id}</p>
+          )}
+        </div>
+      </div>
+    );
   }
-
-  const totalDetails = brief.details?.length || 0;
-  const emptyDetails = brief.details?.filter((d) => d && d.status === 'empty').length || 0;
-  const readyDetails = brief.details?.filter((d) => d && d.status === 'ready').length || 0;
-  const approvedDetails = brief.details?.filter((d) => d && (d.status === 'approved' || d.status === 'scheduled')).length || 0;
-  const rejectedDetails = brief.details?.filter((d) => d && d.status === 'rejected').length || 0;
 
   // Fungsi helper untuk memvalidasi apakah detail sudah lengkap dan siap submit
   const isDetailComplete = (detail) => {
-    if (!detail || !detail.detail || !detail.detail.type) {
+    if (!detail) {
       return false;
     }
 
-    if (!detail.caption || detail.caption.trim().length === 0) {
+    // Parse detail jika masih berupa string JSON
+    let detailObj = detail.detail;
+    if (typeof detailObj === 'string') {
+      try {
+        detailObj = JSON.parse(detailObj);
+      } catch (e) {
+        return false;
+      }
+    }
+
+    if (!detailObj || !detailObj.type) {
       return false;
     }
 
-    const detailObj = detail.detail;
+    if (!detail.caption || (typeof detail.caption === 'string' && detail.caption.trim().length === 0)) {
+      return false;
+    }
+
     const type = detailObj.type;
 
     if (type === 'video') {
-      // Untuk video, minimal harus ada scenes, visual, dan music
+      // Untuk video, minimal harus ada scenes dan visual
       const hasScenes = detailObj.scenes && 
         Array.isArray(detailObj.scenes) && 
         detailObj.scenes.length > 0 &&
-        detailObj.scenes.some(s => s && s.description && s.description.trim().length > 0);
-      const hasVisual = detailObj.visual && detailObj.visual.trim().length > 0;
-      const hasMusic = detailObj.music && detailObj.music.trim().length > 0;
+        detailObj.scenes.some(s => s && s.description && typeof s.description === 'string' && s.description.trim().length > 0);
+      const hasVisual = detailObj.visual && typeof detailObj.visual === 'string' && detailObj.visual.trim().length > 0;
       
-      return hasScenes && hasVisual && hasMusic;
+      return hasScenes && hasVisual;
     } else if (type === 'carousel') {
       // Untuk carousel, minimal harus ada slides dan visualTone
       const hasSlides = detailObj.slides && 
         Array.isArray(detailObj.slides) && 
         detailObj.slides.length > 0 &&
-        detailObj.slides.some(s => s && s.text && s.text.trim().length > 0);
-      const hasVisualTone = detailObj.visualTone && detailObj.visualTone.trim().length > 0;
+        detailObj.slides.some(s => s && s.text && typeof s.text === 'string' && s.text.trim().length > 0);
+      const hasVisualTone = detailObj.visualTone && typeof detailObj.visualTone === 'string' && detailObj.visualTone.trim().length > 0;
       
       return hasSlides && hasVisualTone;
     } else if (type === 'image') {
-      // Untuk image, minimal harus ada headline, subheadline, visual, dan layout
-      const hasHeadline = detailObj.headline && detailObj.headline.trim().length > 0;
-      const hasSubheadline = detailObj.subheadline && detailObj.subheadline.trim().length > 0;
-      const hasVisual = detailObj.visual && detailObj.visual.trim().length > 0;
-      const hasLayout = detailObj.layout && detailObj.layout.trim().length > 0;
+      // Untuk image, minimal harus ada headline, subheadline, dan visual
+      const hasHeadline = detailObj.headline && typeof detailObj.headline === 'string' && detailObj.headline.trim().length > 0;
+      const hasSubheadline = detailObj.subheadline && typeof detailObj.subheadline === 'string' && detailObj.subheadline.trim().length > 0;
+      const hasVisual = detailObj.visual && typeof detailObj.visual === 'string' && detailObj.visual.trim().length > 0;
       
-      return hasHeadline && hasSubheadline && hasVisual && hasLayout;
+      return hasHeadline && hasSubheadline && hasVisual;
     }
 
     return false;
   };
+
+  const totalDetails = brief?.details?.length || 0;
+  const emptyDetails = brief?.details?.filter((d) => d && (!d.detail || !d.detail.type)).length || 0;
+  const readyDetails = brief?.details?.filter((d) => d && d.status === 'ready' && isDetailComplete(d)).length || 0;
+  const approvedDetails = brief?.details?.filter((d) => d && (d.status === 'approved' || d.status === 'scheduled')).length || 0;
+  const rejectedDetails = brief?.details?.filter((d) => d && d.status === 'rejected').length || 0;
 
   // Fungsi helper untuk mendapatkan label dari value
   const getToneOfVoiceLabel = (value) => {
@@ -545,17 +634,17 @@ export default function BriefDetail() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <FileText className="w-6 h-6" />
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Membuat Detail Brief</h1>
-              <p className="text-primary-100 text-sm mt-1">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Membuat Detail Brief</h1>
+              <p className="text-primary-100 text-xs sm:text-sm mt-1 break-words">
                 Produk: {brief.product?.name} | Funnel: {brief.funnelStage}
               </p>
             </div>
@@ -564,75 +653,75 @@ export default function BriefDetail() {
         </div>
 
         {/* Statistik */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <FileText className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Total Ide</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mt-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Total Ide</span>
             </div>
-            <p className="text-2xl font-bold">{totalDetails}</p>
-            <p className="text-xs text-primary-200 mt-1">Ide konten</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{totalDetails}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Ide konten</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Send className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Belum Disubmit</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Send className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Belum Disubmit</span>
             </div>
-            <p className="text-2xl font-bold">{readyDetails}</p>
-            <p className="text-xs text-primary-200 mt-1">Status siap</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{readyDetails}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Status siap</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Hourglass className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Menunggu Review</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Hourglass className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Menunggu Review</span>
             </div>
-            <p className="text-2xl font-bold">{brief.details?.filter((d) => d && d.status === 'pending_approval').length || 0}</p>
-            <p className="text-xs text-primary-200 mt-1">Menunggu review</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{brief.details?.filter((d) => d && d.status === 'pending_approval').length || 0}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Menunggu review</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Disetujui</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Disetujui</span>
             </div>
-            <p className="text-2xl font-bold">{approvedDetails}</p>
-            <p className="text-xs text-primary-200 mt-1">Brief disetujui</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{approvedDetails}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Brief disetujui</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <XCircle className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Ditolak</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <XCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Ditolak</span>
             </div>
-            <p className="text-2xl font-bold">{rejectedDetails}</p>
-            <p className="text-xs text-primary-200 mt-1">Brief ditolak</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{rejectedDetails}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Brief ditolak</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Empty</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Empty</span>
             </div>
-            <p className="text-2xl font-bold">{emptyDetails}</p>
-            <p className="text-xs text-primary-200 mt-1">Siap di-generate</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{emptyDetails}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Siap di-generate</p>
           </div>
         </div>
       </div>
 
       {/* Product Card & Informasi Brief - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Product Card */}
         {brief.product && (
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+            <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
               <div className="flex items-center gap-2">
-                <Package className="w-5 h-5 text-primary-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Produk</h2>
+                <Package className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Produk</h2>
               </div>
             </div>
-            <div className="p-6">
-              <div className="flex items-start gap-4">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
                 {/* Product Image */}
                 {brief.product.imageUrl && (
-                  <div className="flex-shrink-0">
-                    <div className="w-40 h-40 rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200">
+                  <div className="flex-shrink-0 w-full sm:w-auto">
+                    <div className="w-full sm:w-32 lg:w-40 h-32 sm:h-32 lg:h-40 rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200">
                       <img
                         src={`http://localhost:3000${brief.product.imageUrl}`}
                         alt={brief.product.name}
@@ -643,19 +732,19 @@ export default function BriefDetail() {
                 )}
                 
                 {/* Product Info */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-gray-900 mb-2">{brief.product.name}</h3>
+                <div className="flex-1 min-w-0 w-full">
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2">{brief.product.name}</h3>
                   {brief.product.description && (
-                    <p className="text-sm text-gray-600 line-clamp-3 mb-3">{brief.product.description}</p>
+                    <p className="text-xs sm:text-sm text-gray-600 line-clamp-3 mb-3">{brief.product.description}</p>
                   )}
                   {brief.product.link && (
                     <a
                       href={brief.product.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                      className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs sm:text-sm font-medium"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
                       Link Produk
                     </a>
                   )}
@@ -667,25 +756,25 @@ export default function BriefDetail() {
 
         {/* Informasi Brief */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+          <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Informasi Brief</h2>
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Informasi Brief</h2>
             </div>
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
+          <div className="p-4 sm:p-6">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <span className="text-sm text-gray-600">Target Market:</span>
-                <p className="text-base font-medium text-gray-900 mt-1">{brief.targetMarket || '-'}</p>
+                <span className="text-xs sm:text-sm text-gray-600">Target Market:</span>
+                <p className="text-sm sm:text-base font-medium text-gray-900 mt-1 break-words">{brief.targetMarket || '-'}</p>
               </div>
               <div>
-                <span className="text-sm text-gray-600">Gaya Bahasa:</span>
-                <p className="text-base font-medium text-gray-900 mt-1">{getToneOfVoiceLabel(brief.toneOfVoice) || '-'}</p>
+                <span className="text-xs sm:text-sm text-gray-600">Gaya Bahasa:</span>
+                <p className="text-sm sm:text-base font-medium text-gray-900 mt-1 break-words">{getToneOfVoiceLabel(brief.toneOfVoice) || '-'}</p>
               </div>
               <div>
-                <span className="text-sm text-gray-600">Jenis Brief:</span>
-                <p className="text-base font-medium text-gray-900 mt-1">{getBriefTypeLabel(brief.briefType) || '-'}</p>
+                <span className="text-xs sm:text-sm text-gray-600">Jenis Brief:</span>
+                <p className="text-sm sm:text-base font-medium text-gray-900 mt-1 break-words">{getBriefTypeLabel(brief.briefType) || '-'}</p>
               </div>
             </div>
           </div>
@@ -694,29 +783,30 @@ export default function BriefDetail() {
 
       {/* Brief */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+        <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary-600" />
-              <h2 className="text-lg font-semibold text-gray-900">Brief</h2>
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Brief</h2>
             </div>
           </div>
         </div>
         
         {/* Info Section */}
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-blue-200/50 px-6 py-5">
-          <div className="flex items-start gap-4">
-            <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg flex-shrink-0">
-              <Info className="w-6 h-6 text-white" />
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-blue-200/50 px-4 sm:px-6 py-4 sm:py-5">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg flex-shrink-0">
+              <Info className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold text-gray-900 mb-1.5">
+            <div className="flex-1 min-w-0 w-full">
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-1.5">
                 Generate Detail Produksi
               </h3>
-              <p className="text-sm text-gray-700 leading-relaxed mb-4">
+              <p className="text-xs sm:text-sm text-gray-700 leading-relaxed mb-3 sm:mb-4">
                 Silakan klik tombol Generate Detail Produksi untuk setiap ide konten, atau gunakan tombol di bawah untuk generate semua sekaligus.
               </p>
               <button
+                type="button"
                 onClick={handleGenerateAllDetails}
                 disabled={
                   !brief?.details || 
@@ -724,7 +814,7 @@ export default function BriefDetail() {
                   brief.details.every(d => d.detail && d.detail.type) ||
                   Object.values(generatingDetail).some(v => v)
                 }
-                className="inline-flex items-center gap-2.5 px-6 py-3 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white rounded-xl hover:from-pink-600 hover:via-rose-600 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-semibold text-sm transform hover:scale-105 active:scale-100"
+                className="inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white rounded-xl hover:from-pink-600 hover:via-rose-600 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-semibold text-xs sm:text-sm transform hover:scale-105 active:scale-100 w-full sm:w-auto justify-center"
               >
                 {Object.values(generatingDetail).some(v => v) ? (
                   <>
@@ -733,7 +823,7 @@ export default function BriefDetail() {
                   </>
                 ) : (
                   <>
-                    <Zap className="w-5 h-5" />
+                    <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>Generate Semua Detail</span>
                   </>
                 )}
@@ -742,53 +832,53 @@ export default function BriefDetail() {
           </div>
         </div>
 
-        <div className="shadow-inner">
-          <table className="w-full border-collapse table-fixed">
+        <div className="shadow-inner overflow-x-auto">
+          <table className="w-full border-collapse table-fixed min-w-[1200px]">
             <thead className="bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700">
               <tr>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase sticky left-0 bg-gradient-to-r from-primary-500 to-primary-600 z-20 w-8 shadow-lg border-r border-primary-400/30">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase sticky left-0 bg-gradient-to-r from-primary-500 to-primary-600 z-20 w-8 shadow-lg border-r border-primary-400/30">
                   No
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-20">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-20">
                   Format
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-24">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-24">
                   Judul
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-20">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-20">
                   Objective
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-16">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-16">
                   Funnel
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-20">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-20">
                   Trigger
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-24">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-24">
                   Value
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-20">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-20">
                   Approach
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-24">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-24">
                   Hook
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-28">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-28">
                   Content Points
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-16">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-16">
                   CTA
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-24">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-24">
                   Breakdown
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-24">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-24">
                   Visual
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-16">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-16">
                   Status
                 </th>
-                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase sticky right-0 bg-gradient-to-r from-primary-600 to-primary-700 z-20 w-16 shadow-lg border-l border-primary-400/30">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase sticky right-0 bg-gradient-to-r from-primary-600 to-primary-700 z-20 w-16 shadow-lg border-l border-primary-400/30">
                   Aksi
                 </th>
               </tr>
@@ -1066,11 +1156,19 @@ export default function BriefDetail() {
                         {(() => {
                           const status = detail.status || 'draft';
                           const isComplete = isDetailComplete(detail);
-                          // Jika status "ready" tapi detail belum lengkap, tampilkan sebagai "Draft"
-                          // Tapi jika status "ready" dan detail sudah lengkap, tampilkan sebagai "Siap Submit"
+                          // Tampilkan status berdasarkan status di database
+                          // Jika status sudah pending_approval, scheduled, approved, atau rejected, tampilkan sesuai status
+                          // Jika status ready atau draft, cek apakah detail sudah lengkap
                           let displayStatus = status;
-                          if (status === 'ready') {
-                            displayStatus = isComplete ? 'ready' : 'draft';
+                          if (status === 'pending_approval' || status === 'scheduled' || status === 'approved' || status === 'rejected') {
+                            // Status sudah final, tampilkan sesuai status
+                            displayStatus = status;
+                          } else if (status === 'ready' && isComplete) {
+                            displayStatus = 'ready';
+                          } else if (status === 'draft' && isComplete) {
+                            displayStatus = 'ready';
+                          } else {
+                            displayStatus = 'draft';
                           }
                           return (
                             <StatusBadge status={displayStatus}>
@@ -1081,12 +1179,12 @@ export default function BriefDetail() {
                         {(() => {
                           const status = detail.status || 'draft';
                           const isComplete = isDetailComplete(detail);
-                          // Tampilkan button submit jika:
-                          // 1. Status adalah "ready" dan detail sudah lengkap, ATAU
-                          // 2. Status adalah "draft" dan detail sudah lengkap
-                          if ((status === 'ready' || status === 'draft') && isComplete) {
+                          // Tampilkan button submit hanya jika detail sudah lengkap
+                          // Baik status "ready" maupun "draft", yang penting detail sudah lengkap
+                          if (isComplete) {
                             return (
                               <button
+                                type="button"
                                 onClick={() => handleOpenApprovalModal(detail.id)}
                                 className="px-2 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-1 w-full shadow-sm hover:shadow-md"
                                 title="Submit for Approval"
@@ -1114,6 +1212,7 @@ export default function BriefDetail() {
                           <>
                             <div className="relative group">
                               <button
+                                type="button"
                                 onClick={() => handleEditIdea(detail)}
                                 className="p-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                                 title="Edit Brief"
@@ -1127,6 +1226,7 @@ export default function BriefDetail() {
                             </div>
                             <div className="relative group">
                               <button
+                                type="button"
                                 onClick={() => {
                                   if (!generatingDetail[detail.id]) {
                                     handleGenerateDetail(detail.id);
@@ -1150,6 +1250,7 @@ export default function BriefDetail() {
                             {detail.detail && detail.detail.type && (
                               <div className="relative group">
                                 <button
+                                  type="button"
                                   onClick={() => toggleDetail(detail.id)}
                                   className="p-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                                   title={expandedDetails[detail.id] ? "Sembunyikan Detail Produksi" : "Lihat Detail Produksi"}
@@ -1168,7 +1269,12 @@ export default function BriefDetail() {
                             )}
                             <div className="relative group">
                               <button
-                                onClick={() => handleOpenDeleteModal(detail.id)}
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleOpenDeleteModal(detail.id);
+                                }}
                                 className="p-1.5 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                                 title="Hapus Brief"
                               >
@@ -1185,6 +1291,7 @@ export default function BriefDetail() {
                           <>
                             <div className="relative group">
                               <button
+                                type="button"
                                 onClick={() => handleSaveIdea(detail.id)}
                                 disabled={savingIdea[detail.id]}
                                 className="p-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
@@ -1203,6 +1310,7 @@ export default function BriefDetail() {
                             </div>
                             <div className="relative group">
                               <button
+                                type="button"
                                 onClick={() => handleCancelEditIdea(detail.id)}
                                 className="p-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                                 title="Batal Edit"
@@ -1231,6 +1339,7 @@ export default function BriefDetail() {
                               <div className="flex gap-2">
                                 <div className="relative group">
                                   <button
+                                    type="button"
                                     onClick={() => handleSaveDetail(detail.id)}
                                     disabled={saving[detail.id]}
                                     className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
@@ -1249,6 +1358,7 @@ export default function BriefDetail() {
                                 </div>
                                 <div className="relative group">
                                   <button
+                                    type="button"
                                     onClick={() => handleCancelEdit(detail.id)}
                                     className="p-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                                     title="Batal Edit"
@@ -1529,6 +1639,7 @@ export default function BriefDetail() {
                               <h4 className="font-semibold text-gray-900">Detail Konten</h4>
                               <div className="relative group">
                                 <button
+                                  type="button"
                                   onClick={() => handleEditDetail(detail)}
                                   className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                                   title="Edit Detail Produksi"
@@ -1692,22 +1803,28 @@ export default function BriefDetail() {
           size="md"
         >
           <div className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800">
-                {user?.role === 'admin' 
-                  ? 'Sebagai admin, brief akan langsung dijadwalkan setelah Anda submit.'
-                  : 'Permintaan approval akan dikirim ke admin. Brief akan dijadwalkan setelah disetujui.'}
-              </p>
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-1.5 bg-primary-500 rounded-lg">
+                  <Info className="h-4 w-4 text-white" />
+                </div>
+                <p className="text-sm text-primary-800 flex-1">
+                  {user?.role === 'admin' 
+                    ? 'Sebagai admin, brief akan langsung dijadwalkan setelah Anda submit.'
+                    : 'Permintaan approval akan dikirim ke admin. Brief akan dijadwalkan setelah disetujui.'}
+                </p>
+              </div>
             </div>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary-600" />
                   Tanggal Posting <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Calendar className="h-5 w-5 text-gray-400" />
+                    <Calendar className="h-5 w-5 text-primary-500" />
                   </div>
                   <input
                     type="date"
@@ -1717,40 +1834,50 @@ export default function BriefDetail() {
                       [detail.id]: { ...approvalData[detail.id], scheduledAt: e.target.value }
                     })}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                    className="w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white text-gray-900 font-medium"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-primary-600" />
                   Waktu Posting <span className="text-red-500">*</span>
+                  <span className="text-xs font-normal text-gray-500">(Format 24 jam)</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Clock className="h-5 w-5 text-gray-400" />
+                    <Clock className="h-5 w-5 text-primary-500" />
                   </div>
                   <input
                     type="time"
+                    step="60"
                     value={approvalData[detail.id]?.scheduledTime || ''}
                     onChange={(e) => setApprovalData({
                       ...approvalData,
                       [detail.id]: { ...approvalData[detail.id], scheduledTime: e.target.value }
                     })}
-                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                    className="w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white text-gray-900 font-medium [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                    style={{ 
+                      fontVariantNumeric: 'tabular-nums',
+                      colorScheme: 'light'
+                    }}
                   />
                 </div>
+                <p className="mt-1.5 text-xs text-gray-500">Contoh: 09:00, 14:30, 23:59</p>
               </div>
             </div>
             
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <button
+                type="button"
                 onClick={() => handleCloseApprovalModal(detail.id)}
                 className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Batal
               </button>
               <button
+                type="button"
                 onClick={() => handleSubmitApproval(detail.id)}
                 disabled={submittingApproval[detail.id] || !approvalData[detail.id]?.scheduledAt || !approvalData[detail.id]?.scheduledTime}
                 className="px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-sm hover:shadow-md"
@@ -1787,13 +1914,19 @@ export default function BriefDetail() {
             </p>
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <button
+                type="button"
                 onClick={() => handleCloseDeleteModal(detail.id)}
                 className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Batal
               </button>
               <button
-                onClick={() => handleDeleteIdea(detail.id)}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDeleteIdea(detail.id);
+                }}
                 className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />

@@ -97,22 +97,22 @@ export default function ProductForm() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 rounded-lg">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
             {isEdit ? (
-              <Edit className="w-6 h-6" />
+              <Edit className="w-5 h-5 sm:w-6 sm:h-6" />
             ) : (
-              <Plus className="w-6 h-6" />
+              <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
             )}
           </div>
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
               {isEdit ? 'Edit Produk' : 'Tambah Produk Baru'}
             </h1>
-            <p className="text-primary-100 text-sm mt-1">
+            <p className="text-primary-100 text-xs sm:text-sm mt-1">
               {isEdit ? 'Perbarui informasi produk Anda' : 'Tambahkan produk baru ke dalam sistem'}
             </p>
           </div>
@@ -120,13 +120,13 @@ export default function ProductForm() {
       </div>
 
       <form onSubmit={handleSubmit} noValidate className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <Package className="w-5 h-5 text-primary-600" />
+        <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Package className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
             Informasi Produk
           </h2>
         </div>
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Nama Produk */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">

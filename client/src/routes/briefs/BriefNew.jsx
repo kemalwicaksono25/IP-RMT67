@@ -154,46 +154,46 @@ export default function BriefNew() {
   const selectedProduct = products.find((p) => p.id.toString() === formData.ProductId);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Sparkles className="w-6 h-6" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Buat Ide Brief Baru</h1>
-              <p className="text-primary-100 text-sm mt-1">Isi form di bawah untuk generate brief dengan AI</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Buat Ide Brief Baru</h1>
+              <p className="text-primary-100 text-xs sm:text-sm mt-1">Isi form di bawah untuk generate brief dengan AI</p>
             </div>
           </div>
         </div>
 
         {/* Statistik */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Package className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Total Produk</span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 mt-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Package className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Total Produk</span>
             </div>
-            <p className="text-2xl font-bold">{products?.length || 0}</p>
-            <p className="text-xs text-primary-200 mt-1">Produk tersedia</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{products?.length || 0}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Produk tersedia</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Bulan Ini</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Bulan Ini</span>
             </div>
-            <p className="text-2xl font-bold">{getBriefsThisMonth()}</p>
-            <p className="text-xs text-primary-200 mt-1">Total brief</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{getBriefsThisMonth()}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Total brief</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <FileText className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Produk dengan Brief</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Produk dengan Brief</span>
             </div>
-            <p className="text-2xl font-bold">{getProductsWithBriefs()}</p>
-            <p className="text-xs text-primary-200 mt-1">Produk aktif</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{getProductsWithBriefs()}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Produk aktif</p>
           </div>
         </div>
       </div>
@@ -234,15 +234,15 @@ export default function BriefNew() {
       )}
 
       <form onSubmit={handleSubmit} noValidate className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary-600" />
+        <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
             Formulir Brief
           </h2>
         </div>
         
-        <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                 <Package className="w-4 h-4 text-primary-600" />

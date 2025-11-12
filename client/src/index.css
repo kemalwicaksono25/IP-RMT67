@@ -16,3 +16,28 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* Force 24-hour format for time inputs */
+input[type="time"] {
+  color-scheme: light;
+  /* Force 24-hour format */
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+}
+
+/* Hide AM/PM indicator if present */
+input[type="time"]::-webkit-datetime-edit-ampm-field {
+  display: none;
+}
+
+/* Ensure time input displays in 24-hour format */
+input[type="time"]::-webkit-datetime-edit-hour-field,
+input[type="time"]::-webkit-datetime-edit-minute-field {
+  -webkit-appearance: none;
+  padding: 0;
+}

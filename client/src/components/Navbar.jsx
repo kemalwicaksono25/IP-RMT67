@@ -100,9 +100,9 @@ export default function Navbar() {
                     onClick={() => setShowNotification(!showNotification)}
                     className="relative flex items-center justify-center w-11 h-11 bg-white/80 backdrop-blur-sm rounded-xl shadow-md border border-primary-200/50 hover:shadow-lg transition-all hover:bg-white"
                   >
-                    <Clock className="w-5 h-5 text-amber-600" />
+                    <Clock className="w-5 h-5 text-gray-800" />
                     {readyToSubmitIdeas > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white rounded-full text-xs font-bold flex items-center justify-center border-2 border-white">
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white rounded-full text-xs font-bold flex items-center justify-center border-2 border-white">
                         {readyToSubmitIdeas > 9 ? '9+' : readyToSubmitIdeas}
                       </span>
                     )}
@@ -111,12 +111,12 @@ export default function Navbar() {
                   {/* Notification Dropdown */}
                   {showNotification && (
                     <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-[600px] overflow-hidden flex flex-col">
-                      <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white flex items-center justify-between">
+                      <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-4 text-white flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Clock className="w-5 h-5" />
                           <div>
                             <h3 className="font-bold text-lg">Brief Siap Submit</h3>
-                            <p className="text-xs text-amber-100">{readyToSubmitIdeas} ide konten siap</p>
+                            <p className="text-xs text-gray-300">{readyToSubmitIdeas} ide konten siap</p>
                           </div>
                         </div>
                         <button
@@ -135,12 +135,12 @@ export default function Navbar() {
                               return (
                                 <div
                                   key={brief.id}
-                                  className="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-amber-300 transition-colors"
+                                  className="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-gray-400 transition-colors"
                                 >
                                   <div className="flex items-start justify-between gap-3 mb-2">
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 mb-1">
-                                        <FileText className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                                        <FileText className="w-4 h-4 text-gray-800 flex-shrink-0" />
                                         <h4 className="text-sm font-bold text-gray-900 truncate">
                                           Brief #{brief.id}
                                         </h4>
@@ -150,11 +150,11 @@ export default function Navbar() {
                                           {brief.product.name}
                                         </p>
                                       )}
-                                      <p className="text-xs text-amber-600 font-medium">
+                                      <p className="text-xs text-gray-800 font-medium">
                                         {readyDetails.length} ide siap submit
                                       </p>
                                     </div>
-                                    <span className="px-2 py-1 bg-amber-500 text-white rounded-full text-xs font-bold flex-shrink-0">
+                                    <span className="px-2 py-1 bg-primary-600 text-white rounded-full text-xs font-bold flex-shrink-0">
                                       {readyDetails.length}
                                     </span>
                                   </div>

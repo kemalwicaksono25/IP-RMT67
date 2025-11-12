@@ -79,7 +79,7 @@ class BriefController {
             funnel: idea.funnel || funnelStageArray[0] || "awareness",
             cta: idea.cta || "BELI SEKARANG",
             detail: detailData,
-            status: BRIEF_DETAIL_STATUS.READY,
+            status: BRIEF_DETAIL_STATUS.DRAFT,
           });
         })
       );
@@ -129,7 +129,16 @@ class BriefController {
           brief.toneOfVoice || "Friendly"
         );
       } catch (aiError) {
-        console.error("Generate Detail AI Error:", aiError.message);
+        console.error("Generate Detail AI Error:", {
+          message: aiError.message,
+          stack: aiError.stack,
+          name: aiError.name,
+          detailId: briefDetail.id,
+          tag: briefDetail.tag,
+          title: briefDetail.title,
+          productId: product.id,
+          productName: product.name
+        });
         return res.status(500).json({ 
           message: aiError.message || "Gagal generate detail",
           error: process.env.NODE_ENV === 'development' ? {
@@ -337,7 +346,25 @@ class BriefController {
         scheduledAt: scheduledDateTime,
       });
 
-      res.json(briefDetail);
+      // Return updated brief dengan semua details
+      const updatedBrief = await db.Brief.findOne({
+        where: {
+          id: briefDetail.BriefId,
+          ProjectId: req.user.ProjectId,
+        },
+        include: [
+          { model: db.Product, as: "product" },
+          { model: db.User, as: "user" },
+          {
+            model: db.BriefDetail,
+            as: "details",
+            separate: true,
+            order: [["id", "ASC"]],
+          },
+        ],
+      });
+
+      res.json({ brief: updatedBrief, briefDetail });
     } catch (error) {
       next(error);
     }
@@ -353,15 +380,35 @@ class BriefController {
           id,
           ProjectId: req.user.ProjectId,
         },
+        include: [{ model: db.Brief, as: "brief" }],
       });
 
       if (!briefDetail) {
         return res.status(404).json({ message: "Detail brief tidak ditemukan" });
       }
 
+      const briefId = briefDetail.BriefId;
       await briefDetail.destroy();
 
-      res.json({ message: "Brief detail deleted successfully" });
+      // Return updated brief
+      const updatedBrief = await db.Brief.findOne({
+        where: {
+          id: briefId,
+          ProjectId: req.user.ProjectId,
+        },
+        include: [
+          { model: db.Product, as: "product" },
+          { model: db.User, as: "user" },
+          {
+            model: db.BriefDetail,
+            as: "details",
+            separate: true,
+            order: [["id", "ASC"]],
+          },
+        ],
+      });
+
+      res.json({ brief: updatedBrief, message: "Brief detail deleted successfully" });
     } catch (error) {
       next(error);
     }

@@ -77,9 +77,9 @@ export default function Register() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-pink-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-2xl font-bold text-center text-gray-900 mb-6">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-pink-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 sm:p-8">
+          <h1 className="text-xl sm:text-2xl font-bold text-center text-gray-900 mb-4 sm:mb-6">
             Daftar Akun Baru
           </h1>
           <form onSubmit={handleSubmit} noValidate className="space-y-4">

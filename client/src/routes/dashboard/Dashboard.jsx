@@ -308,188 +308,205 @@ export default function Dashboard() {
   }, [briefsWithDetails]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <TrendingUp className="w-6 h-6" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Dashboard</h1>
-              <p className="text-primary-100 text-sm mt-1">Ringkasan aktivitas dan statistik proyek Anda</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Dashboard</h1>
+              <p className="text-primary-100 text-xs sm:text-sm mt-1">Ringkasan aktivitas dan statistik proyek Anda</p>
             </div>
           </div>
         </div>
 
         {/* Statistik */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Package className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Total Produk</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mt-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Package className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Total Produk</span>
             </div>
-            <p className="text-2xl font-bold">{Array.isArray(products) ? products.length : 0}</p>
-            <p className="text-xs text-primary-200 mt-1">Produk terdaftar</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{Array.isArray(products) ? products.length : 0}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Produk terdaftar</p>
           </div>
           {/* Card Brief Belum Disubmit - Status Ready */}
           <div
-            className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20"
+            className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20"
             title="Brief dengan status siap (belum disubmit)"
           >
-            <div className="flex items-center gap-2 mb-1">
-              <Send className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Belum Disubmit</span>
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Send className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Belum Disubmit</span>
             </div>
-            <p className="text-2xl font-bold">{readyToSubmitIdeas}</p>
-            <p className="text-xs text-primary-200 mt-1">Status siap</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{readyToSubmitIdeas}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Status siap</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Hourglass className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Menunggu Review</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Hourglass className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Menunggu Review</span>
             </div>
-            <p className="text-2xl font-bold">{pendingContentIdeas}</p>
-            <p className="text-xs text-primary-200 mt-1">Menunggu review</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{pendingContentIdeas}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Menunggu review</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Disetujui</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Disetujui</span>
             </div>
-            <p className="text-2xl font-bold">{approvedContentIdeas}</p>
-            <p className="text-xs text-primary-200 mt-1">Brief disetujui</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{approvedContentIdeas}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Brief disetujui</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <XCircle className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Ditolak</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <XCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Ditolak</span>
             </div>
-            <p className="text-2xl font-bold">{rejectedContentIdeas}</p>
-            <p className="text-xs text-primary-200 mt-1">Brief ditolak</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{rejectedContentIdeas}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Brief ditolak</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Bulan Ini</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Bulan Ini</span>
             </div>
-            <p className="text-2xl font-bold">{briefsThisMonth}</p>
-            <p className="text-xs text-primary-200 mt-1">Total brief</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{briefsThisMonth}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Total brief</p>
           </div>
         </div>
       </div>
 
       {/* Aksi Cepat */}
-      <div>
-        <div className="mb-4">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary-600" />
-            Aksi Cepat
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">Mulai dengan membuat produk baru atau langsung buat ide brief untuk menghasilkan brief</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Buat Brief Baru */}
-          <Link
-            to="/briefs/new"
-            className="group relative bg-white border-2 border-primary-200 rounded-2xl shadow-lg hover:shadow-xl p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-1"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-50 rounded-full -mr-16 -mt-16 blur-2xl opacity-50"></div>
-            <div className="relative z-10">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-md">
-                  <FileText className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-2 text-gray-900">Buat Ide Brief Baru</h3>
-                <p className="text-gray-600 text-sm">Generate brief dengan AI untuk produk Anda</p>
-              </div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-primary-600 group-hover:translate-x-2 transition-transform">
-                Mulai Sekarang
-                <Sparkles className="w-4 h-4" />
-              </div>
+      <div className="relative">
+        {/* Background dengan gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-pink-50/50 to-purple-50/30 rounded-3xl -z-10"></div>
+        
+        <div className="mb-6 sm:mb-8 p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
+              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
-          </Link>
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Aksi Cepat</h2>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">Mulai dengan membuat produk baru atau langsung buat ide brief untuk menghasilkan brief</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 mt-6">
+            {/* Buat Brief Baru */}
+            <Link
+              to="/briefs/new"
+              className="group relative bg-gradient-to-br from-white via-white to-primary-50/30 border-2 border-primary-200/50 rounded-2xl shadow-lg hover:shadow-2xl p-6 sm:p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:scale-[1.02]"
+            >
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary-200/40 to-pink-200/30 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-primary-100/30 to-transparent rounded-full -ml-16 -mb-16 blur-2xl"></div>
+              
+              <div className="relative z-10">
+                <div className="mb-5">
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-xl group-hover:shadow-2xl">
+                    <FileText className="w-10 h-10 text-white" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-gray-900 group-hover:text-primary-700 transition-colors">Buat Ide Brief Baru</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">Generate brief dengan AI untuk produk Anda</p>
+                </div>
+                <div className="flex items-center gap-2 text-sm font-bold text-primary-600 group-hover:text-primary-700 bg-primary-50 rounded-xl px-4 py-3 group-hover:bg-primary-100 transition-all group-hover:translate-x-2">
+                  <span>Mulai Sekarang</span>
+                  <Sparkles className="w-4 h-4 group-hover:animate-pulse" />
+                </div>
+              </div>
+            </Link>
 
-          {/* Tambah Produk */}
-          <Link
-            to="/products/new"
-            className="group relative bg-white border-2 border-gray-200 rounded-2xl shadow-lg hover:shadow-xl p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-1"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full -mr-16 -mt-16 blur-2xl opacity-50"></div>
-            <div className="relative z-10">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-md">
-                  <Plus className="w-8 h-8 text-white" />
+            {/* Tambah Produk */}
+            <Link
+              to="/products/new"
+              className="group relative bg-gradient-to-br from-white via-white to-gray-50/50 border-2 border-gray-200/50 rounded-2xl shadow-lg hover:shadow-2xl p-6 sm:p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:scale-[1.02]"
+            >
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-gray-200/40 to-gray-300/30 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-gray-100/30 to-transparent rounded-full -ml-16 -mb-16 blur-2xl"></div>
+              
+              <div className="relative z-10">
+                <div className="mb-5">
+                  <div className="w-20 h-20 bg-gradient-to-br from-gray-600 via-gray-700 to-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-xl group-hover:shadow-2xl">
+                    <Plus className="w-10 h-10 text-white" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-gray-900 group-hover:text-gray-800 transition-colors">Tambah Produk</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">Tambahkan produk baru ke dalam sistem</p>
                 </div>
-                <h3 className="text-2xl font-bold mb-2 text-gray-900">Tambah Produk</h3>
-                <p className="text-gray-600 text-sm">Tambahkan produk baru ke dalam sistem</p>
+                <div className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 rounded-xl px-4 py-3 shadow-md group-hover:shadow-lg transition-all group-hover:translate-x-2">
+                  <span>Tambah Sekarang</span>
+                  <Package className="w-4 h-4" />
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 group-hover:translate-x-2 transition-transform">
-                Tambah Sekarang
-                <Package className="w-4 h-4" />
-              </div>
-            </div>
-          </Link>
+            </Link>
 
-          {/* Lihat Kalender */}
-          <Link
-            to="/calendar"
-            className="group relative bg-white border-2 border-gray-200 rounded-2xl shadow-lg hover:shadow-xl p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-1"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full -mr-16 -mt-16 blur-2xl opacity-50"></div>
-            <div className="relative z-10">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-md">
-                  <Calendar className="w-8 h-8 text-white" />
+            {/* Lihat Kalender */}
+            <Link
+              to="/calendar"
+              className="group relative bg-gradient-to-br from-white via-white to-gray-50/50 border-2 border-gray-200/50 rounded-2xl shadow-lg hover:shadow-2xl p-6 sm:p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:scale-[1.02]"
+            >
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-gray-200/40 to-gray-300/30 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-gray-100/30 to-transparent rounded-full -ml-16 -mb-16 blur-2xl"></div>
+              
+              <div className="relative z-10">
+                <div className="mb-5">
+                  <div className="w-20 h-20 bg-gradient-to-br from-gray-600 via-gray-700 to-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-xl group-hover:shadow-2xl">
+                    <Calendar className="w-10 h-10 text-white" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-gray-900 group-hover:text-gray-800 transition-colors">Lihat Kalender</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">Kelola jadwal posting konten Anda</p>
                 </div>
-                <h3 className="text-2xl font-bold mb-2 text-gray-900">Lihat Kalender</h3>
-                <p className="text-gray-600 text-sm">Kelola jadwal posting konten Anda</p>
+                <div className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 rounded-xl px-4 py-3 shadow-md group-hover:shadow-lg transition-all group-hover:translate-x-2">
+                  <span>Buka Kalender</span>
+                  <Calendar className="w-4 h-4" />
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 group-hover:translate-x-2 transition-transform">
-                Buka Kalender
-                <Calendar className="w-4 h-4" />
-              </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
         </div>
       </div>
 
       {/* Product Cards */}
       <div>
-        <div className="relative bg-white border-2 border-primary-200 rounded-2xl shadow-lg p-8 mb-6 overflow-hidden">
+        <div className="relative bg-white border-2 border-primary-200 rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 overflow-hidden">
           {/* Decorative Elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-30"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-50 rounded-full -ml-24 -mb-24 blur-2xl opacity-30"></div>
           
-          <div className="relative z-10 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="p-4 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl shadow-md">
-                <Package className="w-10 h-10 text-white" />
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 sm:gap-6">
+              <div className="p-2 sm:p-4 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl sm:rounded-2xl shadow-md">
+                <Package className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
               </div>
               <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h2 className="text-4xl font-bold text-gray-900">Produk Terbaru</h2>
-                  <span className="px-4 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold border border-primary-200">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Produk Terbaru</h2>
+                  <span className="px-3 sm:px-4 py-1 sm:py-1.5 bg-primary-100 text-primary-700 rounded-full text-xs sm:text-sm font-semibold border border-primary-200 w-fit">
                     {products?.length || 0} Produk
                   </span>
                 </div>
-                <p className="text-gray-600 text-base">Kelola produk dan buat brief dengan mudah</p>
+                <p className="text-gray-600 text-sm sm:text-base">Kelola produk dan buat brief dengan mudah</p>
               </div>
             </div>
             <Link
               to="/products"
-              className="px-6 py-3.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all font-bold flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-1 text-base"
+              className="px-4 sm:px-6 py-2.5 sm:py-3.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all font-bold flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-1 text-sm sm:text-base w-full sm:w-auto justify-center"
             >
-              <Package className="w-5 h-5" />
+              <Package className="w-4 h-4 sm:w-5 sm:h-5" />
               Lihat Semua
             </Link>
           </div>
         </div>
 
         {/* Search, Sort, Filter Controls */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search */}
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-2">Cari Produk</label>
@@ -576,7 +593,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 mb-4 sm:mb-6">
               {paginatedProducts.filter(p => p && p.id).map((product) => (
               <div
                 key={product.id}

@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { LayoutDashboard, Package, FileText, Calendar, Users, X, User, Mail, Shield, Folder, Edit2 } from 'lucide-react';
@@ -29,6 +29,27 @@ function Sidebar() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [projectNameInput, setProjectNameInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [navbarHeight, setNavbarHeight] = useState(80);
+
+  useEffect(() => {
+    const updateNavbarHeight = () => {
+      const navbar = document.querySelector('nav');
+      if (navbar) {
+        // Tambahkan 1px buffer untuk memastikan tidak ada tumpang tindih
+        setNavbarHeight(navbar.offsetHeight + 1);
+      }
+    };
+
+    // Tunggu sedikit untuk memastikan navbar sudah di-render
+    const timer = setTimeout(updateNavbarHeight, 100);
+    updateNavbarHeight();
+    
+    window.addEventListener('resize', updateNavbarHeight);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateNavbarHeight);
+    };
+  }, []);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -65,63 +86,94 @@ function Sidebar() {
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile overlay - hanya muncul di mobile dan ketika sidebar terbuka */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed left-0 right-0 bottom-0 bg-black bg-opacity-50 z-[40] lg:hidden"
+          style={{ top: `${navbarHeight}px` }}
           onClick={() => dispatch(toggleSidebar())}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static top-[73px] lg:top-0 bottom-0 left-0 z-40 w-64 bg-gradient-to-b from-white via-primary-50/20 to-white border-r border-primary-200/50 transform transition-transform duration-300 ease-in-out overflow-hidden shadow-xl ${
+        className={`fixed bottom-0 left-0 z-[50] w-72 sm:w-64 lg:w-64 bg-gradient-to-br from-white via-primary-50/20 to-pink-50/10 border-r border-primary-200/50 transform transition-transform duration-300 ease-in-out overflow-hidden shadow-xl ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
+        style={{ top: `${navbarHeight}px` }}
       >
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-6 lg:pt-[50px] border-b border-primary-200/50 flex-shrink-0 bg-gradient-to-r from-primary-600/5 to-primary-700/5">
-            <h2 className="text-lg font-bold text-primary-600">
-              Menu
-            </h2>
+        <div className="flex flex-col h-full relative z-10 bg-white/95">
+          <div className="flex items-center justify-between p-4 sm:p-5 lg:pt-6 border-b border-primary-200/50 flex-shrink-0 bg-gradient-to-r from-primary-600/10 via-primary-500/5 to-pink-500/5">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 sm:p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
+                <LayoutDashboard className="w-5 h-5 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <h2 className="text-base sm:text-lg font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
+                Menu
+              </h2>
+            </div>
             <button
               onClick={() => dispatch(toggleSidebar())}
-              className="lg:hidden text-gray-600 hover:text-primary-600 hover:bg-primary-50 p-2 rounded-lg transition-all"
+              className="lg:hidden text-gray-600 hover:text-primary-600 hover:bg-primary-50 p-2 rounded-lg transition-all active:scale-95"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto min-h-0">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.path);
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    active
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/30 transform scale-[1.02]'
-                      : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-pink-50 hover:shadow-md'
-                  }`}
-                >
-                  <div className={`${active ? 'bg-white/20' : 'bg-primary-100'} p-2 rounded-lg group-hover:scale-110 transition-transform`}>
-                    <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-primary-600'}`} />
+          <nav className="flex-1 p-4 sm:p-5 lg:p-4 overflow-y-auto min-h-0">
+            <div className="space-y-2.5 lg:space-y-2.5">
+              {menuItems.map((item, index) => {
+                const Icon = item.icon;
+                const active = isActive(item.path);
+                const isLastMenuItem = index === menuItems.length - 1;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => {
+                      // Auto close sidebar on mobile when clicking menu item
+                      if (window.innerWidth < 1024) {
+                        dispatch(toggleSidebar());
+                      }
+                    }}
+                    className={`group relative flex items-center gap-3.5 lg:gap-3 px-4 sm:px-5 lg:px-4 py-3.5 sm:py-4 lg:py-3.5 rounded-xl transition-all duration-300 active:scale-95 ${
+                      active
+                        ? 'bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/40 transform scale-[1.02]'
+                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50/80 hover:to-pink-50/80 hover:shadow-lg hover:scale-[1.01]'
+                    }`}
+                  >
+                  {active && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 sm:h-10 lg:h-8 bg-white rounded-r-full shadow-lg"></div>
+                  )}
+                  <div className={`relative ${active ? 'bg-white/20' : 'bg-gradient-to-br from-primary-100 to-primary-200'} p-2.5 sm:p-3 lg:p-2.5 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-md`}>
+                    <Icon className={`w-6 h-6 lg:w-5 lg:h-5 ${active ? 'text-white' : 'text-primary-600'} transition-colors`} />
+                    {active && (
+                      <div className="absolute inset-0 bg-white/20 rounded-xl animate-pulse"></div>
+                    )}
                   </div>
-                  <span className={`font-medium ${active ? 'text-white' : 'text-gray-700'}`}>
+                  <span className={`text-base sm:text-lg lg:text-base font-semibold ${active ? 'text-white' : 'text-gray-700'} transition-colors`}>
                     {item.label}
                   </span>
-                </Link>
-              );
-            })}
+                    {active && (
+                      <div className="ml-auto">
+                        <div className="w-2 h-2 bg-white rounded-full shadow-lg"></div>
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
 
             {user && user.role === 'admin' && (
               <>
-                <div className="pt-6 mt-4 border-t border-primary-200/50">
-                  <p className="px-4 text-xs font-bold text-primary-600 uppercase mb-3 tracking-wider">
-                    Admin Panel
-                  </p>
+                <div className="mt-10 sm:mt-16 lg:mt-10 border-t-2 border-primary-200/50 relative">
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary-300 to-transparent"></div>
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                    <div className="bg-gradient-to-r from-primary-500 to-pink-500 text-white px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shadow-md">
+                      Admin Panel
+                    </div>
+                  </div>
+                  <div className="pt-6 sm:pt-7"></div>
                 </div>
                 {adminMenuItems.map((item) => {
                   const Icon = item.icon;
@@ -130,18 +182,35 @@ function Sidebar() {
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                      onClick={() => {
+                        // Auto close sidebar on mobile when clicking menu item
+                        if (window.innerWidth < 1024) {
+                          dispatch(toggleSidebar());
+                        }
+                      }}
+                      className={`group relative flex items-center gap-3.5 lg:gap-3 px-4 sm:px-5 lg:px-4 py-3.5 sm:py-4 lg:py-3.5 rounded-xl transition-all duration-300 active:scale-95 ${
                         active
-                          ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/30 transform scale-[1.02]'
-                          : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-pink-50 hover:shadow-md'
+                          ? 'bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/40 transform scale-[1.02]'
+                          : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50/80 hover:to-pink-50/80 hover:shadow-lg hover:scale-[1.01]'
                       }`}
                     >
-                      <div className={`${active ? 'bg-white/20' : 'bg-primary-100'} p-2 rounded-lg group-hover:scale-110 transition-transform`}>
-                        <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-primary-600'}`} />
+                      {active && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 lg:h-8 bg-white rounded-r-full shadow-lg"></div>
+                      )}
+                      <div className={`relative ${active ? 'bg-white/20' : 'bg-gradient-to-br from-primary-100 to-primary-200'} p-2.5 sm:p-3 lg:p-2.5 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-md`}>
+                        <Icon className={`w-6 h-6 lg:w-5 lg:h-5 ${active ? 'text-white' : 'text-primary-600'} transition-colors`} />
+                        {active && (
+                          <div className="absolute inset-0 bg-white/20 rounded-xl animate-pulse"></div>
+                        )}
                       </div>
-                      <span className={`font-medium ${active ? 'text-white' : 'text-gray-700'}`}>
+                      <span className={`text-base sm:text-lg lg:text-base font-semibold ${active ? 'text-white' : 'text-gray-700'} transition-colors`}>
                         {item.label}
                       </span>
+                      {active && (
+                        <div className="ml-auto">
+                          <div className="w-2 h-2 bg-white rounded-full shadow-lg"></div>
+                        </div>
+                      )}
                     </Link>
                   );
                 })}
@@ -151,53 +220,57 @@ function Sidebar() {
 
           {/* Detail Akun di Bawah Sidebar */}
           {user && (
-            <div className="border-t border-primary-200/50 p-2 bg-gradient-to-br from-white via-primary-50/30 to-white flex-shrink-0 backdrop-blur-sm">
-              <h3 className="text-[10px] font-bold text-primary-600 uppercase mb-1.5 tracking-wider px-1">Detail Akun</h3>
-              <div className="space-y-1.5">
+            <div className="border-t-2 border-primary-200/50 p-3 sm:p-4 lg:p-2 bg-gradient-to-br from-white via-primary-50/20 to-pink-50/10 flex-shrink-0 shadow-inner relative">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary-300 to-transparent"></div>
+              <div className="flex items-center gap-2 lg:gap-1.5 mb-2 sm:mb-3 lg:mb-1.5">
+                <div className="p-1.5 lg:p-1 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-md">
+                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-3 lg:h-3 text-white" />
+                </div>
+                <h3 className="text-[10px] sm:text-xs lg:text-[10px] font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent uppercase tracking-wider">
+                  Detail Akun
+                </h3>
+              </div>
+              <div className="space-y-1.5 sm:space-y-2 lg:space-y-1">
                 {/* Project Name */}
-                <div className="group relative bg-white/60 backdrop-blur-sm rounded-lg p-1.5 border border-primary-200/50 hover:border-primary-300/50 hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-1.5">
-                    <div className="p-1 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg">
-                      <Folder className="w-3 h-3 text-primary-600" />
+                <div className="group relative bg-white rounded-lg sm:rounded-xl lg:rounded-lg p-2 sm:p-3 lg:p-1.5 border-2 border-primary-200/50 hover:border-primary-400/70 hover:shadow-lg transition-all duration-300 active:scale-95">
+                  <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-1.5">
+                    <div className="p-1.5 sm:p-2 lg:p-1 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg sm:rounded-xl lg:rounded-lg shadow-md group-hover:scale-110 transition-transform">
+                      <Folder className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-3 lg:h-3 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[9px] text-gray-500 mb-0.5">Project</p>
-                      <p className="text-[11px] font-semibold text-gray-900 truncate" title={user?.projectName || 'Belum ada project'}>
+                      <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0.5 sm:mb-1 lg:mb-0.5 font-medium">Project</p>
+                      <p className="text-[11px] sm:text-xs lg:text-[10px] font-bold text-gray-900 truncate" title={user?.projectName || 'Belum ada project'}>
                         {user?.projectName || 'Belum ada project'}
                       </p>
                     </div>
                     {user?.role === 'admin' && (
                       <button
                         onClick={handleOpenEdit}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-100 rounded-lg"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 sm:p-1.5 lg:p-0.5 hover:bg-primary-100 rounded-lg hover:scale-110 active:scale-95"
                         title="Edit nama project"
                       >
-                        <Edit2 className="w-2.5 h-2.5 text-primary-600" />
+                        <Edit2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-2.5 lg:h-2.5 text-primary-600" />
                       </button>
                     )}
                   </div>
                 </div>
 
                 {/* User Name & Role */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-1.5 border border-primary-200/50 hover:border-primary-300/50 hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-1.5">
-                    <div className="p-1 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg">
-                      <User className="w-3 h-3 text-primary-600" />
+                <div className="bg-white rounded-lg sm:rounded-xl lg:rounded-lg p-2 sm:p-3 lg:p-1.5 border-2 border-primary-200/50 hover:border-primary-400/70 hover:shadow-lg transition-all duration-300 active:scale-95">
+                  <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-1.5">
+                    <div className="p-1.5 sm:p-2 lg:p-1 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg sm:rounded-xl lg:rounded-lg shadow-md">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-3 lg:h-3 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[9px] text-gray-500 mb-0.5">Nama</p>
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-[11px] font-semibold text-gray-900 truncate">{user?.name || '-'}</p>
-                        <div className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0 ${
+                      <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0.5 sm:mb-1 lg:mb-0.5 font-medium">Nama</p>
+                      <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-1 flex-wrap">
+                        <p className="text-[11px] sm:text-xs lg:text-[10px] font-bold text-gray-900 truncate">{user?.name || '-'}</p>
+                        <div className={`inline-flex items-center gap-0.5 sm:gap-1 lg:gap-0.5 px-1.5 sm:px-2 lg:px-1 py-0.5 sm:py-1 lg:py-0.5 rounded-full text-[9px] sm:text-[10px] lg:text-[8px] font-bold flex-shrink-0 shadow-md ${
                           user?.role === 'admin'
-                            ? 'bg-primary-100 text-primary-700'
-                            : 'bg-emerald-100 text-emerald-700'
+                            ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
+                            : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
                         }`}>
-                          <Shield className={`w-2 h-2 ${
-                            user?.role === 'admin'
-                              ? 'text-primary-600'
-                              : 'text-emerald-600'
-                          }`} />
+                          <Shield className="w-2 h-2 sm:w-2.5 sm:h-2.5 lg:w-2 lg:h-2" />
                           <span className="capitalize">{user?.role || '-'}</span>
                         </div>
                       </div>
@@ -206,14 +279,14 @@ function Sidebar() {
                 </div>
 
                 {/* Email */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-1.5 border border-primary-200/50 hover:border-primary-300/50 hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-1.5">
-                    <div className="p-1 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg">
-                      <Mail className="w-3 h-3 text-primary-600" />
+                <div className="bg-white rounded-lg sm:rounded-xl lg:rounded-lg p-2 sm:p-3 lg:p-1.5 border-2 border-primary-200/50 hover:border-primary-400/70 hover:shadow-lg transition-all duration-300 active:scale-95">
+                  <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-1.5">
+                    <div className="p-1.5 sm:p-2 lg:p-1 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg sm:rounded-xl lg:rounded-lg shadow-md">
+                      <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-3 lg:h-3 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[9px] text-gray-500 mb-0.5">Email</p>
-                      <p className="text-[11px] font-semibold text-gray-900 truncate">{user?.email || '-'}</p>
+                      <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0.5 sm:mb-1 lg:mb-0.5 font-medium">Email</p>
+                      <p className="text-[11px] sm:text-xs lg:text-[10px] font-bold text-gray-900 truncate">{user?.email || '-'}</p>
                     </div>
                   </div>
                 </div>

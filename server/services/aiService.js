@@ -478,19 +478,47 @@ Format output JSON (HARUS EXACT FORMAT INI):
     }
 
     try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are a helpful assistant that always responds with valid JSON format only. Return ONLY the JSON object, no markdown, no code blocks, no explanations. The JSON must be complete and valid. Ensure all string values are properly closed with quotes." },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 16000,
-      });
+      let completion;
+      try {
+        completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are a helpful assistant that always responds with valid JSON format only. Return ONLY the JSON object, no markdown, no code blocks, no explanations. The JSON must be complete and valid. Ensure all string values are properly closed with quotes." },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 16000,
+        });
+      } catch (apiError) {
+        console.error("OpenAI API Error:", {
+          message: apiError.message,
+          status: apiError.status,
+          code: apiError.code,
+          type: apiError.type,
+          tag: briefRow.tag,
+          title: briefRow.title
+        });
+        if (apiError.status === 429) {
+          throw new Error("Quota OpenAI habis. Silakan coba lagi nanti.");
+        } else if (apiError.status === 401) {
+          throw new Error("API key OpenAI tidak valid.");
+        } else if (apiError.status === 500 || apiError.status === 503) {
+          throw new Error("Server OpenAI sedang bermasalah. Silakan coba lagi.");
+        }
+        throw new Error(`Error API OpenAI: ${apiError.message || 'Silakan coba lagi.'}`);
+      }
+
+      if (!completion.choices || !completion.choices[0] || !completion.choices[0].message || !completion.choices[0].message.content) {
+        throw new Error("Respons AI kosong. Silakan coba lagi.");
+      }
 
       const content = completion.choices[0].message.content;
       const contentLength = content.length;
       const wasTruncated = completion.choices[0].finish_reason === 'length';
+      
+      if (!content || content.trim().length === 0) {
+        throw new Error("Respons AI kosong. Silakan coba lagi.");
+      }
       
       // Clean content: remove markdown code blocks if present
       let jsonString = content.trim();
@@ -756,7 +784,34 @@ Format output JSON (HARUS EXACT FORMAT INI):
           try {
             parsed = JSON.parse(fixedJson);
           } catch (e) {
-            throw new Error("Format respons AI tidak valid. Silakan coba lagi.");
+            // Jika masih gagal, coba extract JSON dengan cara yang lebih agresif
+            console.error("Failed to parse fixed JSON, trying aggressive extraction:", e.message);
+            // Coba cari JSON object dengan regex yang lebih permisif
+            const jsonMatch = fixedJson.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                parsed = JSON.parse(jsonMatch[0]);
+              } catch (e2) {
+                // Jika masih gagal, coba perbaiki dengan menghapus trailing comma dan karakter tidak valid
+                let cleanedJson = jsonMatch[0]
+                  .replace(/,\s*}/g, '}')  // Remove trailing comma before }
+                  .replace(/,\s*]/g, ']')  // Remove trailing comma before ]
+                  .replace(/([^\\])\\([^"\\/bfnrt])/g, '$1\\\\$2'); // Fix invalid escape sequences
+                try {
+                  parsed = JSON.parse(cleanedJson);
+                } catch (e3) {
+                  console.error("All JSON parsing attempts failed:", {
+                    originalError: e.message,
+                    regexError: e2.message,
+                    cleanedError: e3.message,
+                    jsonPreview: jsonMatch[0].substring(0, 500)
+                  });
+                  throw new Error("Format respons AI tidak valid. Silakan coba lagi.");
+                }
+              }
+            } else {
+              throw new Error("Format respons AI tidak valid. Silakan coba lagi.");
+            }
           }
         } else {
           // No JSON object found, try regex as fallback
@@ -765,9 +820,26 @@ Format output JSON (HARUS EXACT FORMAT INI):
             try {
               parsed = JSON.parse(jsonMatch[0]);
             } catch (e) {
-              throw new Error("Format respons AI tidak valid. Silakan coba lagi.");
+              // Coba perbaiki dengan menghapus trailing comma
+              let cleanedJson = jsonMatch[0]
+                .replace(/,\s*}/g, '}')
+                .replace(/,\s*]/g, ']')
+                .replace(/([^\\])\\([^"\\/bfnrt])/g, '$1\\\\$2');
+              try {
+                parsed = JSON.parse(cleanedJson);
+              } catch (e2) {
+                console.error("Failed to parse extracted JSON:", {
+                  error: e2.message,
+                  jsonPreview: jsonMatch[0].substring(0, 500)
+                });
+                throw new Error("Format respons AI tidak valid. Silakan coba lagi.");
+              }
             }
           } else {
+            console.error("No JSON object found in response:", {
+              contentPreview: jsonString.substring(0, 500),
+              contentLength: jsonString.length
+            });
             throw new Error("Respons AI tidak valid. Silakan coba lagi.");
           }
         }
@@ -801,29 +873,68 @@ Format output JSON (HARUS EXACT FORMAT INI):
         parsed.caption = fallbackCaption;
       }
       
-      // Validate type-specific fields
+      // Validate type-specific fields dengan fallback
       if (parsed.detail.type === 'video') {
-        if (!parsed.detail.scenes || !Array.isArray(parsed.detail.scenes)) {
+        if (!parsed.detail.scenes || !Array.isArray(parsed.detail.scenes) || parsed.detail.scenes.length === 0) {
           throw new Error("Data scene video tidak lengkap. Silakan coba lagi.");
         }
+        // Pastikan minimal ada satu scene dengan description
+        const hasValidScene = parsed.detail.scenes.some(s => s && s.description && typeof s.description === 'string' && s.description.trim().length > 0);
+        if (!hasValidScene) {
+          throw new Error("Data scene video tidak lengkap. Silakan coba lagi.");
+        }
+        // Pastikan ada visual description
+        if (!parsed.detail.visual || typeof parsed.detail.visual !== 'string' || parsed.detail.visual.trim().length === 0) {
+          throw new Error("Deskripsi visual video tidak ditemukan. Silakan coba lagi.");
+        }
       } else if (parsed.detail.type === 'image') {
-        if (!parsed.detail.headline) {
+        if (!parsed.detail.headline || typeof parsed.detail.headline !== 'string' || parsed.detail.headline.trim().length === 0) {
           throw new Error("Headline tidak ditemukan. Silakan coba lagi.");
         }
-        if (!parsed.detail.subheadline) {
+        if (!parsed.detail.subheadline || typeof parsed.detail.subheadline !== 'string' || parsed.detail.subheadline.trim().length === 0) {
           throw new Error("Subheadline tidak ditemukan. Silakan coba lagi.");
         }
+        // Pastikan ada visual description
+        if (!parsed.detail.visual || typeof parsed.detail.visual !== 'string' || parsed.detail.visual.trim().length === 0) {
+          throw new Error("Deskripsi visual image tidak ditemukan. Silakan coba lagi.");
+        }
       } else if (parsed.detail.type === 'carousel') {
-        if (!parsed.detail.slides || !Array.isArray(parsed.detail.slides)) {
+        if (!parsed.detail.slides || !Array.isArray(parsed.detail.slides) || parsed.detail.slides.length === 0) {
           throw new Error("Data slide carousel tidak lengkap. Silakan coba lagi.");
+        }
+        // Pastikan minimal ada satu slide dengan text
+        const hasValidSlide = parsed.detail.slides.some(s => s && s.text && typeof s.text === 'string' && s.text.trim().length > 0);
+        if (!hasValidSlide) {
+          throw new Error("Data slide carousel tidak lengkap. Silakan coba lagi.");
+        }
+        // Pastikan ada visualTone
+        if (!parsed.detail.visualTone || typeof parsed.detail.visualTone !== 'string' || parsed.detail.visualTone.trim().length === 0) {
+          throw new Error("Deskripsi visual tone carousel tidak ditemukan. Silakan coba lagi.");
         }
       }
 
       return parsed;
     } catch (error) {
-      console.error("AI Service Error:", error.message);
-      // Return user-friendly error message
-      if (error.message.includes("Gagal generate detail")) {
+      console.error("AI Service Error:", {
+        message: error.message,
+        stack: error.stack,
+        tag: briefRow.tag,
+        title: briefRow.title,
+        productName: product.name
+      });
+      // Return user-friendly error message, tapi tetap throw error asli untuk logging
+      if (error.message.includes("Gagal generate detail") || 
+          error.message.includes("Respons AI") ||
+          error.message.includes("Format respons") ||
+          error.message.includes("Data scene") ||
+          error.message.includes("Data slide") ||
+          error.message.includes("Headline") ||
+          error.message.includes("Subheadline") ||
+          error.message.includes("Deskripsi visual") ||
+          error.message.includes("Quota OpenAI") ||
+          error.message.includes("API key") ||
+          error.message.includes("Server OpenAI") ||
+          error.message.includes("Error API OpenAI")) {
         throw error;
       }
       throw new Error("Gagal generate detail. Silakan coba lagi.");

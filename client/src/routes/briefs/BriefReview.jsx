@@ -331,54 +331,54 @@ export default function BriefReview() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <FileText className="w-6 h-6" />
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Review Approval</h1>
-              <p className="text-primary-100 text-sm mt-1">Review dan approve brief yang menunggu persetujuan</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Review Approval</h1>
+              <p className="text-primary-100 text-xs sm:text-sm mt-1">Review dan approve brief yang menunggu persetujuan</p>
             </div>
           </div>
         </div>
 
         {/* Statistik */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Hourglass className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Menunggu Review</span>
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mt-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Hourglass className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Menunggu Review</span>
             </div>
-            <p className="text-2xl font-bold">{getPendingDetailsCount}</p>
-            <p className="text-xs text-primary-200 mt-1">Menunggu review</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{getPendingDetailsCount}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Menunggu review</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Disetujui</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Disetujui</span>
             </div>
-            <p className="text-2xl font-bold">{getApprovedCount()}</p>
-            <p className="text-xs text-primary-200 mt-1">Brief disetujui</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{getApprovedCount()}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Brief disetujui</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <XCircle className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Ditolak</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <XCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Ditolak</span>
             </div>
-            <p className="text-2xl font-bold">{getRejectedCount()}</p>
-            <p className="text-xs text-primary-200 mt-1">Brief ditolak</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{getRejectedCount()}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Brief ditolak</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Bulan Ini</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Brief Bulan Ini</span>
             </div>
-            <p className="text-2xl font-bold">{getBriefsThisMonth()}</p>
-            <p className="text-xs text-primary-200 mt-1">Total brief</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{getBriefsThisMonth()}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Total brief</p>
           </div>
         </div>
       </div>
@@ -393,7 +393,7 @@ export default function BriefReview() {
       ) : (
         <div className="space-y-6">
           {pendingBriefs.map((brief) => (
-            <div key={brief.id} className="bg-white rounded-lg shadow-lg p-6 space-y-6">
+            <div key={brief.id} className="bg-white rounded-lg shadow-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Brief Info Header */}
               <div className="flex items-center justify-between">
                 <div>
@@ -530,7 +530,7 @@ export default function BriefReview() {
 
                     {/* Expanded Content */}
                     {expandedDetails[detail.id] && (
-                      <div className="p-6 bg-white space-y-6">
+                      <div className="p-4 sm:p-6 bg-white space-y-4 sm:space-y-6">
                         {/* Informasi Ide Konten */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {detail.detail?.objectiveCampaign && (

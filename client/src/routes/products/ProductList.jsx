@@ -135,60 +135,60 @@ export default function ProductList() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Package className="w-6 h-6" />
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Daftar Produk</h1>
-              <p className="text-primary-100 text-sm mt-1">Kelola semua produk Anda di satu tempat</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Daftar Produk</h1>
+              <p className="text-primary-100 text-xs sm:text-sm mt-1">Kelola semua produk Anda di satu tempat</p>
             </div>
           </div>
           <Link
             to="/products/new"
-            className="px-5 py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium"
+            className="px-4 sm:px-5 py-2 sm:py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium text-sm sm:text-base w-full sm:w-auto justify-center"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
             Tambah Produk
           </Link>
         </div>
 
         {/* Statistik */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Package className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Total Produk</span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 mt-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Package className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Total Produk</span>
             </div>
-            <p className="text-2xl font-bold">{Array.isArray(products) ? products.length : 0}</p>
-            <p className="text-xs text-primary-200 mt-1">Produk terdaftar</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{Array.isArray(products) ? products.length : 0}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Produk terdaftar</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Dengan Gambar</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Dengan Gambar</span>
             </div>
-            <p className="text-2xl font-bold">{Array.isArray(products) ? products.filter(p => p && p.imageUrl).length : 0}</p>
-            <p className="text-xs text-primary-200 mt-1">Produk</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{Array.isArray(products) ? products.filter(p => p && p.imageUrl).length : 0}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Produk</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <LinkIcon className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Dengan Link</span>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-4 border border-white/20">
+            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+              <LinkIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm text-primary-100">Dengan Link</span>
             </div>
-            <p className="text-2xl font-bold">{Array.isArray(products) ? products.filter(p => p && p.link).length : 0}</p>
-            <p className="text-xs text-primary-200 mt-1">Produk</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold">{Array.isArray(products) ? products.filter(p => p && p.link).length : 0}</p>
+            <p className="text-[10px] sm:text-xs text-primary-200 mt-1">Produk</p>
           </div>
         </div>
       </div>
 
       {/* Search, Sort, Filter Controls */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
           <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Cari Produk</label>
@@ -275,7 +275,7 @@ export default function ProductList() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 mb-4 sm:mb-6">
             {paginatedProducts.filter(p => p && p.id).map((product) => (
             <div
               key={product.id}
