@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { store, persistor } from '../../store';
 import { login as loginAction } from '../../store/authSlice';
-import { login } from '../../services/auth.api';
+import { login, googleLogin } from '../../services/auth.api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 
@@ -23,6 +23,104 @@ export default function Login() {
       navigate('/dashboard', { replace: true });
     }
   }, [token, navigate]);
+
+  const handleGoogleSignIn = useCallback(async (response) => {
+    if (!response.credential) {
+      toast.error('Gagal mendapatkan token dari Google');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await googleLogin(response.credential);
+      
+      const { access_token, user: userFromResponse } = result.data;
+
+      if (!access_token) {
+        toast.error('Token tidak diterima dari server');
+        setLoading(false);
+        return;
+      }
+
+      let userData;
+      if (userFromResponse) {
+        userData = userFromResponse;
+      } else {
+        try {
+          const payload = JSON.parse(atob(access_token.split('.')[1]));
+          userData = {
+            id: payload.id,
+            email: payload.email,
+            name: payload.name || payload.email.split('@')[0],
+            role: payload.role,
+            ProjectId: payload.ProjectId,
+            projectName: null,
+          };
+        } catch (error) {
+          userData = {
+            email: userFromResponse?.email || '',
+            name: userFromResponse?.name || '',
+            role: 'staff',
+            projectName: null,
+          };
+        }
+      }
+
+      dispatch(loginAction({
+        user: userData,
+        token: access_token,
+      }));
+
+      await persistor.flush();
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const currentState = store.getState();
+      if (!currentState.auth.token || currentState.auth.token.trim() === '') {
+        toast.error('Gagal menyimpan session. Silakan coba lagi.');
+        setLoading(false);
+        return;
+      }
+
+      toast.success('Login berhasil!');
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      navigate('/dashboard', { replace: true });
+    } catch (error) {
+      if (error.response) {
+        const errorMessage = error.response.data?.message || 'Login dengan Google gagal';
+        toast.error(errorMessage);
+      } else if (error.request) {
+        toast.error('Tidak dapat terhubung ke server');
+      } else {
+        toast.error('Login dengan Google gagal. Silakan coba lagi.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [dispatch, navigate]);
+
+  // Initialize Google Sign-In
+  useEffect(() => {
+    // Only initialize if we're on login page and not already logged in
+    if (token) {
+      return;
+    }
+
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleSignIn,
+      });
+      const buttonDiv = document.getElementById('google-signin-button');
+      if (buttonDiv) {
+        window.google.accounts.id.renderButton(buttonDiv, {
+          theme: 'outline',
+          size: 'large',
+        });
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -180,6 +278,24 @@ export default function Login() {
             {loading ? <Loader size="sm" /> : 'Login'}
           </button>
         </form>
+        
+        <div className="mt-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">atau</span>
+            </div>
+          </div>
+          
+          {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+            <div className="mt-4">
+              <div id="google-signin-button" className="flex justify-center w-full"></div>
+            </div>
+          )}
+        </div>
+        
         <p className="mt-4 text-center text-sm text-gray-600">
           Belum punya akun?{' '}
           <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">

@@ -7,6 +7,7 @@ const { auth: authValidator } = require("../middleware/validators");
 
 router.post("/register", authValidator.validateRegister, AuthController.register);
 router.post("/login", authValidator.validateLogin, AuthController.login);
+router.post("/login/google", AuthController.googleLogin);
 
 router.post(
   "/staff/add",
