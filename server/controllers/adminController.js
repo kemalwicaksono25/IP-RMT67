@@ -1,6 +1,7 @@
 const db = require("../models");
 const { Sequelize } = require("sequelize");
 const { BRIEF_DETAIL_STATUS } = require("../helpers/enums");
+const AppError = require("../errors/AppError");
 
 class AdminController {
   static async getPendingApprovals(req, res, next) {
@@ -82,7 +83,7 @@ class AdminController {
       });
 
       if (!brief) {
-        return res.status(404).json({ message: "Brief tidak ditemukan" });
+        throw new AppError("Brief tidak ditemukan", 404);
       }
 
       const details = await db.BriefDetail.findAll({
@@ -144,7 +145,7 @@ class AdminController {
       });
 
       if (!brief) {
-        return res.status(404).json({ message: "Brief tidak ditemukan" });
+        throw new AppError("Brief tidak ditemukan", 404);
       }
 
       const details = await db.BriefDetail.findAll({
@@ -202,7 +203,7 @@ class AdminController {
       });
 
       if (!detail) {
-        return res.status(404).json({ message: "Detail brief tidak ditemukan atau tidak dalam status pending approval" });
+        throw new AppError("Detail brief tidak ditemukan atau tidak dalam status pending approval", 404);
       }
 
       let scheduledDateTime = null;
@@ -251,7 +252,7 @@ class AdminController {
       });
 
       if (!detail) {
-        return res.status(404).json({ message: "Detail brief tidak ditemukan atau tidak dalam status pending approval" });
+        throw new AppError("Detail brief tidak ditemukan atau tidak dalam status pending approval", 404);
       }
 
       await detail.update({ 
@@ -353,7 +354,7 @@ class AdminController {
       const project = await db.Project.findByPk(req.user.ProjectId);
 
       if (!project) {
-        return res.status(404).json({ message: "Project tidak ditemukan" });
+        throw new AppError("Project tidak ditemukan", 404);
       }
 
       await project.update({

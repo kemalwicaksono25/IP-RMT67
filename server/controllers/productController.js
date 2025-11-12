@@ -1,5 +1,6 @@
 const db = require("../models");
 const AIService = require("../services/aiService");
+const AppError = require("../errors/AppError");
 
 class ProductController {
   static async getAll(req, res, next) {
@@ -27,7 +28,7 @@ class ProductController {
       });
 
       if (!product) {
-        return res.status(404).json({ message: "Produk tidak ditemukan" });
+        throw new AppError("Produk tidak ditemukan", 404);
       }
 
       res.json(product);
@@ -82,7 +83,7 @@ class ProductController {
       });
 
       if (!product) {
-        return res.status(404).json({ message: "Produk tidak ditemukan" });
+        throw new AppError("Produk tidak ditemukan", 404);
       }
 
       const updateData = {};
@@ -139,11 +140,11 @@ class ProductController {
       });
 
       if (!product) {
-        return res.status(404).json({ message: "Produk tidak ditemukan" });
+        throw new AppError("Produk tidak ditemukan", 404);
       }
 
       if (!product.link) {
-        return res.status(400).json({ message: "Link produk diperlukan untuk analisis" });
+        throw new AppError("Link produk diperlukan untuk analisis", 400);
       }
 
       const pgg = await AIService.analyzeProductFromLink(product);
@@ -177,7 +178,7 @@ class ProductController {
       });
 
       if (!product) {
-        return res.status(404).json({ message: "Produk tidak ditemukan" });
+        throw new AppError("Produk tidak ditemukan", 404);
       }
 
       await product.destroy();

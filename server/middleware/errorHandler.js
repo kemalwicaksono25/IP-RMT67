@@ -16,6 +16,8 @@ const {
   handleDefaultError
 } = require('../errors/handlers/generalErrorHandler');
 
+const AppError = require('../errors/AppError');
+
 module.exports = (err, req, res, next) => {
   console.error("Error:", {
     name: err.name,
@@ -25,7 +27,12 @@ module.exports = (err, req, res, next) => {
 
   let errorResponse;
 
-  if (err.name === "SequelizeValidationError") {
+  if (err instanceof AppError) {
+    errorResponse = {
+      statusCode: err.statusCode,
+      message: err.message
+    };
+  } else if (err.name === "SequelizeValidationError") {
     errorResponse = handleSequelizeValidationError(err);
   } else if (err.name === "SequelizeUniqueConstraintError") {
     errorResponse = handleSequelizeUniqueConstraintError(err);

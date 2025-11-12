@@ -1,6 +1,7 @@
 const db = require("../models");
 const AIService = require("../services/aiService");
 const { BRIEF_STATUS, BRIEF_DETAIL_STATUS } = require("../helpers/enums");
+const AppError = require("../errors/AppError");
 
 class BriefController {
   static async generateBrief(req, res, next) {
@@ -22,7 +23,7 @@ class BriefController {
       });
 
       if (!product) {
-        return res.status(404).json({ message: "Produk tidak ditemukan" });
+        throw new AppError("Produk tidak ditemukan", 404);
       }
 
       let briefTypeArray = briefType;
@@ -128,14 +129,14 @@ class BriefController {
       });
 
       if (!briefDetail) {
-        return res.status(404).json({ message: "Detail brief tidak ditemukan" });
+        throw new AppError("Detail brief tidak ditemukan", 404);
       }
 
       const brief = briefDetail.brief;
       const product = await db.Product.findByPk(brief.ProductId);
 
       if (!product) {
-        return res.status(404).json({ message: "Produk tidak ditemukan" });
+        throw new AppError("Produk tidak ditemukan", 404);
       }
 
       let aiResult;
@@ -146,14 +147,7 @@ class BriefController {
           brief.toneOfVoice || "Friendly"
         );
       } catch (aiError) {
-        return res.status(500).json({ 
-          message: aiError.message || "Gagal generate detail",
-          error: process.env.NODE_ENV === 'development' ? {
-            stack: aiError.stack,
-            name: aiError.name,
-            details: aiError.toString()
-          } : undefined
-        });
+        throw new AppError(aiError.message || "Gagal generate detail", 500);
       }
 
       let captionText = aiResult.caption || "";
@@ -214,7 +208,7 @@ class BriefController {
         });
 
         if (!updatedBrief) {
-          return res.status(404).json({ message: "Brief tidak ditemukan" });
+          throw new AppError("Brief tidak ditemukan", 404);
         }
 
         res.json({ brief: updatedBrief });
@@ -280,7 +274,7 @@ class BriefController {
       });
 
       if (!brief) {
-        return res.status(404).json({ message: "Brief tidak ditemukan" });
+        throw new AppError("Brief tidak ditemukan", 404);
       }
 
       res.json(brief);
@@ -302,7 +296,7 @@ class BriefController {
       });
 
       if (!briefDetail) {
-        return res.status(404).json({ message: "Detail brief tidak ditemukan" });
+        throw new AppError("Detail brief tidak ditemukan", 404);
       }
 
       const updateData = {};
@@ -358,7 +352,7 @@ class BriefController {
       });
 
       if (!briefDetail) {
-        return res.status(404).json({ message: "Detail brief tidak ditemukan" });
+        throw new AppError("Detail brief tidak ditemukan", 404);
       }
 
       const isAdmin = req.user.role === "admin";
@@ -416,7 +410,7 @@ class BriefController {
       });
 
       if (!briefDetail) {
-        return res.status(404).json({ message: "Detail brief tidak ditemukan" });
+        throw new AppError("Detail brief tidak ditemukan", 404);
       }
 
       const briefId = briefDetail.BriefId;

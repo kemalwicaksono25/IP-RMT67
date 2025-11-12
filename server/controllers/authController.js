@@ -2,6 +2,7 @@ const db = require("../models");
 const { hashPassword, comparePassword } = require("../helpers/bcrypt");
 const { generateToken } = require("../helpers/jwt");
 const { USER_ROLE } = require("../helpers/enums");
+const AppError = require("../errors/AppError");
 
 class AuthController {
   static async register(req, res, next) {
@@ -10,7 +11,7 @@ class AuthController {
 
       const existingUser = await db.User.findOne({ where: { email } });
       if (existingUser) {
-        return res.status(400).json({ message: "Email sudah terdaftar" });
+        throw new AppError("Email sudah terdaftar", 400);
       }
 
       const project = await db.Project.create({
@@ -56,7 +57,7 @@ class AuthController {
       });
 
       if (!user || !comparePassword(password, user.password)) {
-        return res.status(401).json({ message: "Email atau password salah" });
+        throw new AppError("Email atau password salah", 401);
       }
 
       const access_token = generateToken({
@@ -89,7 +90,7 @@ class AuthController {
 
       const existingUser = await db.User.findOne({ where: { email } });
       if (existingUser) {
-        return res.status(400).json({ message: "Email sudah terdaftar" });
+        throw new AppError("Email sudah terdaftar", 400);
       }
 
       const staff = await db.User.create({
