@@ -246,7 +246,7 @@ export default function BriefNew() {
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                 <Package className="w-4 h-4 text-primary-600" />
-                Pilih Produk *
+                Pilih Produk <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.ProductId}
@@ -285,7 +285,7 @@ export default function BriefNew() {
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                 <Hash className="w-4 h-4 text-primary-600" />
-                Jumlah Brief *
+                Jumlah Brief <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -300,7 +300,7 @@ export default function BriefNew() {
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                 <Palette className="w-4 h-4 text-primary-600" />
-                Gaya Bahasa *
+                Gaya Bahasa <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.toneOfVoice}
@@ -320,7 +320,7 @@ export default function BriefNew() {
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
                 <TrendingUp className="w-4 h-4 text-primary-600" />
-                Funnel Stage * (Pilih satu atau lebih)
+                Funnel Stage <span className="text-red-500">*</span> (Pilih satu atau lebih)
               </label>
               <div className="border-2 border-gray-200 rounded-xl p-4 max-h-80 overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
                 <div className="grid grid-cols-1 gap-2.5">
@@ -373,7 +373,7 @@ export default function BriefNew() {
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
                 <FileText className="w-4 h-4 text-primary-600" />
-                Jenis Brief * (Pilih satu atau lebih)
+                Jenis Brief <span className="text-red-500">*</span> (Pilih satu atau lebih)
               </label>
               <div className="border-2 border-gray-200 rounded-xl p-4 max-h-80 overflow-y-auto bg-gradient-to-br from-gray-50 to-white">
                 <div className="grid grid-cols-1 gap-2.5">

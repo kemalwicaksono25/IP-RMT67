@@ -127,7 +127,7 @@ export default function Team() {
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nama *
+                  Nama <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -138,7 +138,7 @@ export default function Team() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email *
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -149,7 +149,7 @@ export default function Team() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password *
+                  Password <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="password"

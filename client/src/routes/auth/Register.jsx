@@ -151,7 +151,7 @@ export default function Register() {
           </p>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nama Project *
+              Nama Project <span className="text-red-500">*</span>
             </label>
             <input
               type="text"

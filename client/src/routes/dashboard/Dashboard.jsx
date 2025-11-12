@@ -149,13 +149,11 @@ export default function Dashboard() {
     if (!products || !Array.isArray(products)) return [];
     let filtered = products.filter(p => p != null); // Filter produk null/undefined
 
-    // Filter berdasarkan query pencarian
+    // Filter berdasarkan query pencarian (hanya berdasarkan nama/judul)
     if (searchQuery.trim()) {
       filtered = filtered.filter((product) => {
         if (!product || !product.name) return false;
-        const nameMatch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const descMatch = product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase());
-        return nameMatch || descMatch;
+        return product.name.toLowerCase().includes(searchQuery.toLowerCase());
       });
     }
 
@@ -499,7 +497,7 @@ export default function Dashboard() {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-500" />
                 <input
                   type="text"
-                  placeholder="Cari berdasarkan nama atau deskripsi..."
+                  placeholder="Cari berdasarkan nama produk..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-white border-2 border-primary-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all shadow-sm hover:shadow-md"
