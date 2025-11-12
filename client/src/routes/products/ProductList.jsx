@@ -1,14 +1,16 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import { Plus, Eye, Trash2, Package, Sparkles, Link as LinkIcon, Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useProductStore } from '../../store/product.store';
+import { setProducts, deleteProduct as deleteProductAction } from '../../store/productSlice';
 import { getProducts, deleteProduct } from '../../services/product.api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
 
 export default function ProductList() {
-  const { products, setProducts } = useProductStore();
+  const products = useSelector((state) => state.product.products);
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
@@ -23,7 +25,7 @@ export default function ProductList() {
   const fetchProducts = async () => {
     try {
       const response = await getProducts();
-      setProducts(response.data);
+      dispatch(setProducts(response.data));
     } catch (error) {
       toast.error('Gagal memuat produk');
     } finally {
@@ -31,34 +33,60 @@ export default function ProductList() {
     }
   };
 
-  // Filter, Sort, and Paginate products
+  // Filter, Sort, dan Paginate produk
   const filteredAndSortedProducts = useMemo(() => {
+    if (!products || !Array.isArray(products)) {
+      return [];
+    }
+    
     let filtered = [...products];
 
-    // Filter by search query
+    // Filter berdasarkan query pencarian
     if (searchQuery.trim()) {
-      filtered = filtered.filter((product) =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+      filtered = filtered.filter((product) => {
+        if (!product) return false;
+        const nameMatch = product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const descMatch = product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase());
+        return nameMatch || descMatch;
+      });
     }
 
-    // Filter by type
+    // Filter berdasarkan tipe
     if (filterBy === 'withImage') {
-      filtered = filtered.filter((p) => p.imageUrl);
+      filtered = filtered.filter((p) => p && p.imageUrl);
     } else if (filterBy === 'withLink') {
-      filtered = filtered.filter((p) => p.link);
+      filtered = filtered.filter((p) => p && p.link);
     }
 
     // Sort
-    if (sortBy === 'newest') {
-      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    } else if (sortBy === 'oldest') {
-      filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    } else if (sortBy === 'nameAsc') {
-      filtered.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortBy === 'nameDesc') {
-      filtered.sort((a, b) => b.name.localeCompare(a.name));
+    try {
+      if (sortBy === 'newest') {
+        filtered.sort((a, b) => {
+          if (!a || !b) return 0;
+          const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return bDate - aDate;
+        });
+      } else if (sortBy === 'oldest') {
+        filtered.sort((a, b) => {
+          if (!a || !b) return 0;
+          const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return aDate - bDate;
+        });
+      } else if (sortBy === 'nameAsc') {
+        filtered.sort((a, b) => {
+          if (!a || !b || !a.name || !b.name) return 0;
+          return a.name.localeCompare(b.name);
+        });
+      } else if (sortBy === 'nameDesc') {
+        filtered.sort((a, b) => {
+          if (!a || !b || !a.name || !b.name) return 0;
+          return b.name.localeCompare(a.name);
+        });
+      }
+    } catch (error) {
+      // Error sorting, skip
     }
 
     return filtered;
@@ -70,7 +98,7 @@ export default function ProductList() {
   const paginatedProducts = filteredAndSortedProducts.slice(startIndex, startIndex + itemsPerPage);
 
   useEffect(() => {
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1); // Reset ke halaman pertama ketika filter berubah
   }, [searchQuery, sortBy, filterBy]);
 
   const handleDelete = async (id) => {
@@ -78,6 +106,7 @@ export default function ProductList() {
 
     try {
       await deleteProduct(id);
+      dispatch(deleteProductAction(id));
       toast.success('Produk berhasil dihapus');
       fetchProducts();
     } catch (error) {
@@ -123,7 +152,7 @@ export default function ProductList() {
               <Package className="w-4 h-4" />
               <span className="text-sm text-primary-100">Total Produk</span>
             </div>
-            <p className="text-2xl font-bold">{products.length}</p>
+            <p className="text-2xl font-bold">{Array.isArray(products) ? products.length : 0}</p>
             <p className="text-xs text-primary-200 mt-1">Produk terdaftar</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
@@ -131,7 +160,7 @@ export default function ProductList() {
               <Sparkles className="w-4 h-4" />
               <span className="text-sm text-primary-100">Dengan Gambar</span>
             </div>
-            <p className="text-2xl font-bold">{products.filter(p => p.imageUrl).length}</p>
+            <p className="text-2xl font-bold">{Array.isArray(products) ? products.filter(p => p && p.imageUrl).length : 0}</p>
             <p className="text-xs text-primary-200 mt-1">Produk</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
@@ -139,7 +168,7 @@ export default function ProductList() {
               <LinkIcon className="w-4 h-4" />
               <span className="text-sm text-primary-100">Dengan Link</span>
             </div>
-            <p className="text-2xl font-bold">{products.filter(p => p.link).length}</p>
+            <p className="text-2xl font-bold">{Array.isArray(products) ? products.filter(p => p && p.link).length : 0}</p>
             <p className="text-xs text-primary-200 mt-1">Produk</p>
           </div>
         </div>
@@ -235,7 +264,7 @@ export default function ProductList() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
-            {paginatedProducts.map((product) => (
+            {paginatedProducts.filter(p => p && p.id).map((product) => (
             <div
               key={product.id}
               className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full border border-gray-100 group"

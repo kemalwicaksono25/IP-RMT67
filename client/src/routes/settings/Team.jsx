@@ -25,7 +25,7 @@ export default function Team() {
       const response = await getTeam();
       setTeamMembers(response.data);
     } catch (error) {
-      // Silent fail
+      // Gagal diam-diam
     }
   };
 
@@ -37,7 +37,7 @@ export default function Team() {
       await addStaff(formData);
       toast.success('Staff berhasil ditambahkan');
       setFormData({ name: '', email: '', password: '' });
-      fetchTeam(); // Refresh team list
+      fetchTeam(); // Refresh daftar tim
     } catch (error) {
       toast.error(error.response?.data?.message || 'Gagal menambahkan staff');
     } finally {

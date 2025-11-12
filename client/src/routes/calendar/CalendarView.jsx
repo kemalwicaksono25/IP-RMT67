@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
 import Modal from '../../components/Modal';
-import { formatDate, formatDateTime } from '../../utils/format';
+import { formatDateTime } from '../../utils/format';
 import { PLATFORM_COLORS, FUNNEL_STAGES } from '../../utils/constants';
 
 export default function CalendarView() {
@@ -39,7 +39,6 @@ export default function CalendarView() {
       const response = await getCalendar();
       setEvents(response.data || []);
     } catch (error) {
-      console.error('Calendar error:', error);
       toast.error('Gagal memuat kalender');
     } finally {
       setLoading(false);
@@ -330,27 +329,20 @@ export default function CalendarView() {
   return (
     <div className="space-y-6">
       {/* Header dengan Gradient */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-2xl shadow-xl">
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}
-        ></div>
-        <div className="relative p-8 text-white">
-          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <Calendar className="w-8 h-8" />
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Calendar className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold mb-2">Kalender Konten</h1>
-                <p className="text-primary-100 text-base">Kelola jadwal posting konten yang sudah di-approve</p>
+                <h1 className="text-3xl font-bold">Kalender Konten</h1>
+                <p className="text-primary-100 text-sm mt-1">Kelola jadwal posting konten yang sudah di-approve</p>
               </div>
             </div>
             <button
               onClick={goToToday}
-              className="px-5 py-3 bg-white text-primary-700 rounded-xl hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl font-medium flex items-center gap-2"
+              className="px-5 py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium"
             >
               <Clock className="w-5 h-5" />
               Hari Ini
@@ -358,49 +350,48 @@ export default function CalendarView() {
           </div>
 
           {/* Statistik */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/30 shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-5 h-5" />
-                <span className="text-sm font-medium text-primary-100">Total Konten</span>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm text-primary-100">Total Konten</span>
               </div>
-              <p className="text-3xl font-bold mb-1">{stats.total}</p>
-              <p className="text-xs text-primary-200">Bulan ini</p>
+              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-xs text-primary-200 mt-1">Bulan ini</p>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/30 shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Video className="w-5 h-5" />
-                <span className="text-sm font-medium text-primary-100">Video</span>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center gap-2 mb-1">
+                <Video className="w-4 h-4" />
+                <span className="text-sm text-primary-100">Video</span>
               </div>
-              <p className="text-3xl font-bold mb-1">{stats.byTag.video || 0}</p>
-              <p className="text-xs text-primary-200">Konten</p>
+              <p className="text-2xl font-bold">{stats.byTag.video || 0}</p>
+              <p className="text-xs text-primary-200 mt-1">Konten</p>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/30 shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Layers className="w-5 h-5" />
-                <span className="text-sm font-medium text-primary-100">Carousel</span>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center gap-2 mb-1">
+                <Layers className="w-4 h-4" />
+                <span className="text-sm text-primary-100">Carousel</span>
               </div>
-              <p className="text-3xl font-bold mb-1">{stats.byTag.carousel || 0}</p>
-              <p className="text-xs text-primary-200">Konten</p>
+              <p className="text-2xl font-bold">{stats.byTag.carousel || 0}</p>
+              <p className="text-xs text-primary-200 mt-1">Konten</p>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/30 shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <ImageIcon className="w-5 h-5" />
-                <span className="text-sm font-medium text-primary-100">Image</span>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center gap-2 mb-1">
+                <ImageIcon className="w-4 h-4" />
+                <span className="text-sm text-primary-100">Image</span>
               </div>
-              <p className="text-3xl font-bold mb-1">{stats.byTag.image || 0}</p>
-              <p className="text-xs text-primary-200">Konten</p>
+              <p className="text-2xl font-bold">{stats.byTag.image || 0}</p>
+              <p className="text-xs text-primary-200 mt-1">Konten</p>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/30 shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <CalendarIcon className="w-5 h-5" />
-                <span className="text-sm font-medium text-primary-100">Periode</span>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center gap-2 mb-1">
+                <CalendarIcon className="w-4 h-4" />
+                <span className="text-sm text-primary-100">Periode</span>
               </div>
-              <p className="text-xl font-bold mb-1">{monthNames[currentMonth.getMonth()]}</p>
-              <p className="text-xs text-primary-200">{currentMonth.getFullYear()}</p>
+              <p className="text-2xl font-bold">{monthNames[currentMonth.getMonth()]}</p>
+              <p className="text-xs text-primary-200 mt-1">{currentMonth.getFullYear()}</p>
             </div>
           </div>
-        </div>
       </div>
 
       {/* Navigation Controls */}

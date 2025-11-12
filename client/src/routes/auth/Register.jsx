@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuthStore } from '../../store/auth.store';
+import { useSelector, useDispatch } from 'react-redux';
+import { login as loginAction } from '../../store/authSlice';
 import { register } from '../../services/auth.api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
@@ -8,7 +9,8 @@ import Modal from '../../components/Modal';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { login: setAuth, token } = useAuthStore();
+  const token = useSelector((state) => state.auth.token);
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -36,7 +38,7 @@ export default function Register() {
       return;
     }
 
-    // Simpan data form dan tampilkan modal project name
+    // Simpan data form dan tampilkan modal nama project
     setTempFormData(formData);
     setShowProjectModal(true);
   };
@@ -57,18 +59,17 @@ export default function Register() {
       });
       const { access_token, id, email, name, role, ProjectId, projectName: projectNameFromResponse } = response.data;
 
-      setAuth({
-        token: access_token,
+      dispatch(loginAction({
         user: { id, email, name, role, ProjectId, projectName: projectNameFromResponse },
-      });
+        token: access_token,
+      }));
 
       toast.success('Registrasi berhasil!');
       navigate('/dashboard');
     } catch (error) {
-      console.error('Register error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Registrasi gagal. Pastikan server berjalan di http://localhost:3000';
+      const errorMessage = error.response?.data?.message || 'Registrasi gagal. Silakan coba lagi.';
       toast.error(errorMessage);
-      setShowProjectModal(true); // Tampilkan kembali modal jika error
+      setShowProjectModal(true); // Tampilkan kembali modal jika terjadi error
     } finally {
       setLoading(false);
     }

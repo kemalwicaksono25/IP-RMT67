@@ -1,25 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Edit, ExternalLink, Sparkles, Plus, X, Save, Info, AlertCircle, FileText, Package, Target, TrendingUp, Heart, Zap, Award } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Edit, ExternalLink, Sparkles, Plus, X, Save, Info, AlertCircle, FileText, Package, Target, TrendingUp, Heart } from 'lucide-react';
 import { getProductById, analyzeProduct, updateProduct } from '../../services/product.api';
-import { useProductStore } from '../../store/product.store';
+import { updateProduct as updateProductAction } from '../../store/productSlice';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const { setSelectedProduct } = useProductStore();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const products = useSelector((state) => state.product.products);
+  const product = useMemo(() => products.find(p => p.id === parseInt(id)), [products, id]);
+  const [loading, setLoading] = useState(!product);
   const [analyzing, setAnalyzing] = useState(false);
   const [editingPGG, setEditingPGG] = useState({ pains: false, gains: false, goals: false });
   const [pggData, setPggData] = useState({ pains: [], gains: [], goals: [] });
   const [saving, setSaving] = useState(false);
 
-  // Helper function to check if PGG contains placeholder/default values
+  // Fungsi helper untuk mengecek apakah PGG berisi nilai placeholder/default
   const isPlaceholderPGG = (items) => {
     if (!items || items.length === 0) return true;
-    // Check if all items are placeholder patterns
+    // Cek apakah semua item adalah pola placeholder
     const placeholderPatterns = [
       /^Masalah umum \d+$/i,
       /^Keuntungan \d+$/i,
@@ -31,16 +33,26 @@ export default function ProductDetail() {
   };
 
   useEffect(() => {
-    fetchProduct();
-  }, [id]);
+    // Jika product tidak ada di store, fetch dari API
+    if (!product) {
+      fetchProduct();
+    } else {
+      // Jika product sudah ada di store, set PGG data
+      setPggData({
+        pains: Array.isArray(product.pains) ? product.pains : [],
+        gains: Array.isArray(product.gains) ? product.gains : [],
+        goals: Array.isArray(product.goals) ? product.goals : [],
+      });
+    }
+  }, [id, product]);
 
   const fetchProduct = async () => {
     try {
       setLoading(true);
       const response = await getProductById(id);
       if (response && response.data) {
-        setProduct(response.data);
-        setSelectedProduct(response.data);
+        // Update Redux store
+        dispatch(updateProductAction({ id: parseInt(id), updatedProduct: response.data }));
         setPggData({
           pains: Array.isArray(response.data.pains) ? response.data.pains : [],
           gains: Array.isArray(response.data.gains) ? response.data.gains : [],
@@ -48,12 +60,9 @@ export default function ProductDetail() {
         });
       } else {
         toast.error('Data produk tidak valid');
-        setProduct(null);
       }
     } catch (error) {
-      console.error('Error fetching product:', error);
       toast.error('Gagal memuat produk');
-      setProduct(null);
     } finally {
       setLoading(false);
     }
@@ -79,11 +88,17 @@ export default function ProductDetail() {
           gains: Array.isArray(response.data.gains) ? response.data.gains : [],
           goals: Array.isArray(response.data.goals) ? response.data.goals : [],
         });
+        // Update Redux store dengan data yang sudah dianalisa
+        const updatedProduct = {
+          ...product,
+          pains: Array.isArray(response.data.pains) ? response.data.pains : product.pains || [],
+          gains: Array.isArray(response.data.gains) ? response.data.gains : product.gains || [],
+          goals: Array.isArray(response.data.goals) ? response.data.goals : product.goals || [],
+        };
+        dispatch(updateProductAction({ id: parseInt(id), updatedProduct }));
         toast.success('Produk berhasil dianalisa');
-        fetchProduct(); // Refresh product data
       }
     } catch (error) {
-      console.error('Analyze product error:', error);
       toast.error(error.response?.data?.message || 'Gagal menganalisa produk');
     } finally {
       setAnalyzing(false);
@@ -96,7 +111,7 @@ export default function ProductDetail() {
 
   const handleCancelEdit = (type) => {
     setEditingPGG({ ...editingPGG, [type]: false });
-    // Reset to original data
+    // Reset ke data original
     setPggData({
       pains: product?.pains || [],
       gains: product?.gains || [],
@@ -135,12 +150,18 @@ export default function ProductDetail() {
       formData.append('gains', JSON.stringify((pggData.gains || []).filter(g => g && g.trim() !== '')));
       formData.append('goals', JSON.stringify((pggData.goals || []).filter(g => g && g.trim() !== '')));
 
-      await updateProduct(id, formData);
+      const response = await updateProduct(id, formData);
+      // Update Redux store
+      dispatch(updateProductAction({ id: parseInt(id), updatedProduct: response.data }));
       toast.success(`${type === 'pains' ? 'Pain points' : type === 'gains' ? 'Gains' : 'Goals'} berhasil disimpan`);
       setEditingPGG({ ...editingPGG, [type]: false });
-      fetchProduct(); // Refresh product data
+      // Update PGG data dari response
+      setPggData({
+        pains: Array.isArray(response.data.pains) ? response.data.pains : [],
+        gains: Array.isArray(response.data.gains) ? response.data.gains : [],
+        goals: Array.isArray(response.data.goals) ? response.data.goals : [],
+      });
     } catch (error) {
-      console.error('Save PGG error:', error);
       toast.error('Gagal menyimpan data');
     } finally {
       setSaving(false);
@@ -169,41 +190,33 @@ export default function ProductDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Header Section with Gradient */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-2xl shadow-xl">
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}
-        ></div>
-        <div className="relative px-8 py-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
-                  <Package className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="text-3xl font-bold text-white truncate">{product.name}</h1>
-              </div>
-              <p className="text-primary-100 text-sm">Detail produk dan analisis untuk strategi konten</p>
+      {/* Header dengan Gradient */}
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <Package className="w-6 h-6" />
             </div>
-            <div className="flex gap-3 flex-shrink-0">
-              <Link
-                to={`/briefs/new?productId=${id}`}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white text-primary-700 rounded-xl hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl font-medium"
-              >
-                <FileText className="w-4 h-4" />
-                Buat Brief Baru
-              </Link>
-              <Link
-                to={`/products/${id}/edit`}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all border border-white/30"
-              >
-                <Edit className="w-4 h-4" />
-                Edit
-              </Link>
+            <div>
+              <h1 className="text-3xl font-bold">{product.name}</h1>
+              <p className="text-primary-100 text-sm mt-1">Detail produk dan analisis untuk strategi konten</p>
             </div>
+          </div>
+          <div className="flex gap-3 flex-shrink-0">
+            <Link
+              to={`/briefs/new?productId=${id}`}
+              className="px-5 py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium"
+            >
+              <FileText className="w-5 h-5" />
+              Buat Brief Baru
+            </Link>
+            <Link
+              to={`/products/${id}/edit`}
+              className="px-5 py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium"
+            >
+              <Edit className="w-5 h-5" />
+              Edit
+            </Link>
           </div>
         </div>
       </div>

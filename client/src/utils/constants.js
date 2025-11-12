@@ -46,10 +46,10 @@ export const BRIEF_TYPES = [
 export const getStatusLabel = (status) => {
   const statusLabels = {
     draft: 'Draft',
-    ready: 'Ready',
+    ready: 'Siap Submit',
     approved: 'Approved',
     scheduled: 'Scheduled',
-    pending_approval: 'Pending Approval',
+    pending_approval: 'Pending Review',
     rejected: 'Rejected',
   };
   return statusLabels[status] || status;

@@ -1,16 +1,19 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, FileText, CheckCircle, Eye, Plus, Calendar, Sparkles, TrendingUp, Clock, Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight, XCircle } from 'lucide-react';
-import { useProductStore } from '../../store/product.store';
-import { useBriefStore } from '../../store/brief.store';
+import { useSelector, useDispatch } from 'react-redux';
+import { Package, FileText, CheckCircle, Eye, Plus, Calendar, Sparkles, TrendingUp, Clock, Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight, XCircle, Send, Hourglass } from 'lucide-react';
+import { setProducts } from '../../store/productSlice';
+import { setBriefs } from '../../store/briefSlice';
 import { getProducts } from '../../services/product.api';
 import { getBriefs } from '../../services/brief.api';
 import toast from 'react-hot-toast';
 import EmptyState from '../../components/EmptyState';
 
 export default function Dashboard() {
-  const { products, setProducts } = useProductStore();
-  const { briefs, setBriefs } = useBriefStore();
+  const products = useSelector((state) => state.product.products);
+  const briefs = useSelector((state) => state.brief.briefs);
+  const token = useSelector((state) => state.auth.token);
+  const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [filterBy, setFilterBy] = useState('all');
@@ -18,42 +21,110 @@ export default function Dashboard() {
   const itemsPerPage = 10;
 
   const fetchData = async () => {
+    // Pastikan token tersedia sebelum fetch
+    // API interceptor akan membaca dari localStorage jika token belum di Redux state
+    // Tapi kita tetap cek untuk menghindari request yang tidak perlu
+    let hasToken = !!token;
+    
+    if (!hasToken) {
+      // Coba ambil dari localStorage sebagai fallback
+      const authStorage = localStorage.getItem('persist:auth-storage');
+      if (authStorage) {
+        try {
+          const parsed = JSON.parse(authStorage);
+          const authData = JSON.parse(parsed.auth);
+          hasToken = !!authData.token;
+        } catch (e) {
+          // Error parsing, akan di-handle oleh API interceptor
+        }
+      }
+    }
+
+    if (!hasToken) {
+      // Token tidak tersedia, skip fetch (akan di-retry setelah token tersedia)
+      return;
+    }
+
     try {
       const [productsRes, briefsRes] = await Promise.all([
         getProducts(),
         getBriefs(),
       ]);
-      setProducts(Array.isArray(productsRes?.data) ? productsRes.data : []);
-      // Ensure all briefs and their details are valid
+      dispatch(setProducts(Array.isArray(productsRes?.data) ? productsRes.data : []));
+      // Pastikan semua brief dan detailnya valid
       const validBriefs = (Array.isArray(briefsRes?.data) ? briefsRes.data : []).filter(brief => brief != null).map(brief => ({
         ...brief,
         details: Array.isArray(brief.details) ? brief.details.filter(d => d != null) : []
       }));
-      setBriefs(validBriefs);
+      
+      dispatch(setBriefs(validBriefs));
     } catch (error) {
-      console.error('Error fetching data:', error);
       toast.error('Gagal memuat data');
-      setProducts([]);
-      setBriefs([]);
+      dispatch(setProducts([]));
+      dispatch(setBriefs([]));
     }
   };
 
   useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+    // Pastikan token tersedia sebelum fetch
+    let hasToken = !!token;
+    
+    if (!hasToken) {
+      // Coba ambil dari localStorage
+      const authStorage = localStorage.getItem('persist:auth-storage');
+      if (authStorage) {
+        try {
+          const parsed = JSON.parse(authStorage);
+          const authData = JSON.parse(parsed.auth);
+          hasToken = !!authData.token && authData.token.trim() !== '';
+        } catch (e) {
+          // Error parsing
+        }
+      }
+    }
 
-  // Auto-refresh data every 5 seconds to keep stats updated
+    if (hasToken) {
+      fetchData();
+    } else {
+      // Token belum tersedia, coba lagi setelah delay
+      const timer = setTimeout(() => {
+        fetchData();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]); // Re-run ketika token tersedia
+
+  // Auto-refresh data setiap 5 detik untuk menjaga statistik tetap update
   useEffect(() => {
+    // Hanya setup interval jika token tersedia
+    let hasToken = !!token;
+    if (!hasToken) {
+      const authStorage = localStorage.getItem('persist:auth-storage');
+      if (authStorage) {
+        try {
+          const parsed = JSON.parse(authStorage);
+          const authData = JSON.parse(parsed.auth);
+          hasToken = !!authData.token && authData.token.trim() !== '';
+        } catch (e) {
+          // Error parsing
+        }
+      }
+    }
+
+    if (!hasToken) {
+      return; // Jangan setup interval jika token tidak tersedia
+    }
+
     const interval = setInterval(() => {
       fetchData();
-    }, 5000); // 5 seconds for faster updates
+    }, 5000); // 5 detik untuk update yang lebih cepat
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only set up interval once
+  }, [token]); // Re-run ketika token tersedia
 
-  // Listen for storage events to refresh when data changes in other tabs/windows
+  // Dengarkan event storage untuk refresh ketika data berubah di tab/window lain
   useEffect(() => {
     const handleStorageChange = () => {
       fetchData();
@@ -61,7 +132,7 @@ export default function Dashboard() {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Also listen for custom events (for same-tab updates)
+    // Juga dengarkan custom events (untuk update di tab yang sama)
     window.addEventListener('briefsUpdated', handleStorageChange);
     window.addEventListener('productsUpdated', handleStorageChange);
     
@@ -71,14 +142,14 @@ export default function Dashboard() {
       window.removeEventListener('productsUpdated', handleStorageChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only set up listeners once
+  }, []); // Hanya setup listeners sekali
 
-  // Filter, Sort, and Paginate products
+  // Filter, Sort, dan Paginate produk
   const filteredAndSortedProducts = useMemo(() => {
     if (!products || !Array.isArray(products)) return [];
-    let filtered = products.filter(p => p != null); // Filter out null/undefined products
+    let filtered = products.filter(p => p != null); // Filter produk null/undefined
 
-    // Filter by search query
+    // Filter berdasarkan query pencarian
     if (searchQuery.trim()) {
       filtered = filtered.filter((product) => {
         if (!product || !product.name) return false;
@@ -88,7 +159,7 @@ export default function Dashboard() {
       });
     }
 
-    // Filter by type
+    // Filter berdasarkan tipe
     if (filterBy === 'withImage') {
       filtered = filtered.filter((p) => p && p.imageUrl);
     } else if (filterBy === 'withLink') {
@@ -127,7 +198,7 @@ export default function Dashboard() {
         });
       }
     } catch (error) {
-      console.error('Error sorting products:', error);
+      // Error sorting, skip
     }
 
     return filtered;
@@ -139,25 +210,65 @@ export default function Dashboard() {
   const paginatedProducts = filteredAndSortedProducts.slice(startIndex, startIndex + itemsPerPage);
 
   useEffect(() => {
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1); // Reset ke halaman pertama ketika filter berubah
   }, [searchQuery, sortBy, filterBy]);
 
-  // Filter out briefs that have no details (all content ideas deleted)
+  // Filter brief yang tidak memiliki detail (semua ide konten dihapus)
   const briefsWithDetails = useMemo(() => {
     if (!briefs || !Array.isArray(briefs)) return [];
     return briefs.filter(brief => brief && brief.details && Array.isArray(brief.details) && brief.details.length > 0);
   }, [briefs]);
   
-  // Count ide konten (BriefDetail) dengan status 'ready' (pending approval)
+  // Hitung ide konten (BriefDetail) dengan status 'ready' (belum disubmit)
+  const readyToSubmitIdeas = useMemo(() => {
+    if (!briefsWithDetails || briefsWithDetails.length === 0) return 0;
+    const count = briefsWithDetails.reduce((total, brief) => {
+      if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
+      const readyDetails = brief.details.filter(d => d && d.status === 'ready');
+      return total + readyDetails.length;
+    }, 0);
+    return count;
+  }, [briefsWithDetails]);
+
+  // Hitung ide konten (BriefDetail) dengan status 'pending_approval' (sudah disubmit, menunggu review)
   const pendingContentIdeas = useMemo(() => {
     if (!briefsWithDetails || briefsWithDetails.length === 0) return 0;
-    return briefsWithDetails.reduce((total, brief) => {
+    const count = briefsWithDetails.reduce((total, brief) => {
       if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
-      return total + (brief.details.filter(d => d && d.status === 'ready').length || 0);
+      const pendingDetails = brief.details.filter(d => d && d.status === 'pending_approval');
+      return total + pendingDetails.length;
     }, 0);
+    return count;
+  }, [briefsWithDetails]);
+
+  // Dapatkan brief yang memiliki detail dengan status 'ready' (belum disubmit)
+  const briefsReadyToSubmit = useMemo(() => {
+    if (!briefsWithDetails || briefsWithDetails.length === 0) {
+      return [];
+    }
+    try {
+      const filtered = briefsWithDetails
+        .filter(brief => {
+          if (!brief || !brief.details || !Array.isArray(brief.details)) return false;
+          return brief.details.some(d => d && d.status === 'ready');
+        })
+        .map(brief => ({
+          ...brief,
+          readyDetails: brief.details.filter(d => d && d.status === 'ready'),
+        }))
+        .sort((a, b) => {
+          if (!a || !b) return 0;
+          const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return bDate - aDate;
+        });
+      return filtered;
+    } catch (error) {
+      return [];
+    }
   }, [briefsWithDetails]);
   
-  // Count ide konten (BriefDetail) dengan status 'approved' atau 'scheduled'
+  // Hitung ide konten (BriefDetail) dengan status 'approved' atau 'scheduled'
   const approvedContentIdeas = useMemo(() => {
     if (!briefsWithDetails || briefsWithDetails.length === 0) return 0;
     return briefsWithDetails.reduce((total, brief) => {
@@ -166,7 +277,7 @@ export default function Dashboard() {
     }, 0);
   }, [briefsWithDetails]);
   
-  // Count ide konten (BriefDetail) dengan status 'rejected'
+  // Hitung ide konten (BriefDetail) dengan status 'rejected'
   const rejectedContentIdeas = useMemo(() => {
     if (!briefsWithDetails || briefsWithDetails.length === 0) return 0;
     return briefsWithDetails.reduce((total, brief) => {
@@ -180,9 +291,9 @@ export default function Dashboard() {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    monthEnd.setHours(23, 59, 59, 999); // Include end of day
+    monthEnd.setHours(23, 59, 59, 999); // Sertakan akhir hari
     
-    // Count total content ideas (details) created this month based on detail.createdAt
+    // Hitung total ide konten (details) yang dibuat bulan ini berdasarkan detail.createdAt
     return briefsWithDetails.reduce((total, brief) => {
       if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
       
@@ -192,7 +303,6 @@ export default function Dashboard() {
           const detailDate = new Date(detail.createdAt);
           return detailDate >= monthStart && detailDate <= monthEnd;
         } catch (error) {
-          console.error('Error parsing detail date:', error);
           return false;
         }
       }).length;
@@ -216,19 +326,31 @@ export default function Dashboard() {
         </div>
 
         {/* Statistik */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
               <Package className="w-4 h-4" />
               <span className="text-sm text-primary-100">Total Produk</span>
             </div>
-            <p className="text-2xl font-bold">{products?.length || 0}</p>
+            <p className="text-2xl font-bold">{Array.isArray(products) ? products.length : 0}</p>
             <p className="text-xs text-primary-200 mt-1">Produk terdaftar</p>
+          </div>
+          {/* Card Brief Belum Disubmit - Status Ready */}
+          <div
+            className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20"
+            title="Brief dengan status siap (belum disubmit)"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Send className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Brief Belum Disubmit</span>
+            </div>
+            <p className="text-2xl font-bold">{readyToSubmitIdeas}</p>
+            <p className="text-xs text-primary-200 mt-1">Status siap</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Pending</span>
+              <Hourglass className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Menunggu Review</span>
             </div>
             <p className="text-2xl font-bold">{pendingContentIdeas}</p>
             <p className="text-xs text-primary-200 mt-1">Menunggu review</p>
@@ -236,7 +358,7 @@ export default function Dashboard() {
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Approved</span>
+              <span className="text-sm text-primary-100">Brief Disetujui</span>
             </div>
             <p className="text-2xl font-bold">{approvedContentIdeas}</p>
             <p className="text-xs text-primary-200 mt-1">Brief disetujui</p>
@@ -244,7 +366,7 @@ export default function Dashboard() {
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
               <XCircle className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Rejected</span>
+              <span className="text-sm text-primary-100">Brief Ditolak</span>
             </div>
             <p className="text-2xl font-bold">{rejectedContentIdeas}</p>
             <p className="text-xs text-primary-200 mt-1">Brief ditolak</p>

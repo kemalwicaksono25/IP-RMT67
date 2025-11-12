@@ -1,8 +1,9 @@
 import { memo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, FileText, Calendar, Users, Menu, X, User, Mail, Shield, Folder, Edit2 } from 'lucide-react';
-import { useUIStore } from '../store/ui.store';
-import { useAuthStore } from '../store/auth.store';
+import { useSelector, useDispatch } from 'react-redux';
+import { LayoutDashboard, Package, FileText, Calendar, Users, X, User, Mail, Shield, Folder, Edit2 } from 'lucide-react';
+import { toggleSidebar } from '../store/uiSlice';
+import { setUser } from '../store/authSlice';
 import { updateProjectName } from '../services/admin.api';
 import toast from 'react-hot-toast';
 import Modal from './Modal';
@@ -22,8 +23,9 @@ const adminMenuItems = [
 
 function Sidebar() {
   const location = useLocation();
-  const { sidebarOpen, toggleSidebar } = useUIStore();
-  const { user, setUser } = useAuthStore();
+  const sidebarOpen = useSelector((state) => state.ui.sidebarOpen);
+  const user = useSelector((state) => state.auth.user);
+  const dispatch = useDispatch();
   const [showEditModal, setShowEditModal] = useState(false);
   const [projectNameInput, setProjectNameInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,16 +48,15 @@ function Sidebar() {
       const response = await updateProjectName(projectNameInput.trim());
       const updatedProjectName = response.data.name;
 
-      // Update user in store
-      setUser({
+      // Update user di store
+      dispatch(setUser({
         ...user,
         projectName: updatedProjectName,
-      });
+      }));
 
       toast.success('Nama project berhasil diupdate');
       setShowEditModal(false);
     } catch (error) {
-      console.error('Update project name error:', error);
       toast.error(error.response?.data?.message || 'Gagal mengupdate nama project');
     } finally {
       setLoading(false);
@@ -68,7 +69,7 @@ function Sidebar() {
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={toggleSidebar}
+          onClick={() => dispatch(toggleSidebar())}
         />
       )}
 
@@ -84,7 +85,7 @@ function Sidebar() {
               Menu
             </h2>
             <button
-              onClick={toggleSidebar}
+              onClick={() => dispatch(toggleSidebar())}
               className="lg:hidden text-gray-600 hover:text-primary-600 hover:bg-primary-50 p-2 rounded-lg transition-all"
             >
               <X className="w-5 h-5" />
@@ -150,87 +151,69 @@ function Sidebar() {
 
           {/* Detail Akun di Bawah Sidebar */}
           {user && (
-            <div className="border-t border-primary-200/50 p-3 bg-gradient-to-br from-white via-primary-50/30 to-white flex-shrink-0 backdrop-blur-sm">
-              <h3 className="text-xs font-bold text-primary-600 uppercase mb-2.5 tracking-wider px-1">Detail Akun</h3>
-              <div className="space-y-2">
+            <div className="border-t border-primary-200/50 p-2 bg-gradient-to-br from-white via-primary-50/30 to-white flex-shrink-0 backdrop-blur-sm">
+              <h3 className="text-[10px] font-bold text-primary-600 uppercase mb-1.5 tracking-wider px-1">Detail Akun</h3>
+              <div className="space-y-1.5">
                 {/* Project Name */}
-                <div className="group relative bg-white/60 backdrop-blur-sm rounded-lg p-2 border border-primary-200/50 hover:border-primary-300/50 hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg">
-                      <Folder className="w-3.5 h-3.5 text-primary-600" />
+                <div className="group relative bg-white/60 backdrop-blur-sm rounded-lg p-1.5 border border-primary-200/50 hover:border-primary-300/50 hover:shadow-sm transition-all">
+                  <div className="flex items-center gap-1.5">
+                    <div className="p-1 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg">
+                      <Folder className="w-3 h-3 text-primary-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-500 mb-0.5">Project</p>
-                      <p className="text-xs font-semibold text-gray-900 truncate" title={user?.projectName || 'Belum ada project'}>
+                      <p className="text-[9px] text-gray-500 mb-0.5">Project</p>
+                      <p className="text-[11px] font-semibold text-gray-900 truncate" title={user?.projectName || 'Belum ada project'}>
                         {user?.projectName || 'Belum ada project'}
                       </p>
                     </div>
                     {user?.role === 'admin' && (
                       <button
                         onClick={handleOpenEdit}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-primary-100 rounded-lg"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-primary-100 rounded-lg"
                         title="Edit nama project"
                       >
-                        <Edit2 className="w-3 h-3 text-primary-600" />
+                        <Edit2 className="w-2.5 h-2.5 text-primary-600" />
                       </button>
                     )}
                   </div>
                 </div>
 
-                {/* User Name */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-2 border border-primary-200/50 hover:border-primary-300/50 hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg">
-                      <User className="w-3.5 h-3.5 text-primary-600" />
+                {/* User Name & Role */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-1.5 border border-primary-200/50 hover:border-primary-300/50 hover:shadow-sm transition-all">
+                  <div className="flex items-center gap-1.5">
+                    <div className="p-1 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg">
+                      <User className="w-3 h-3 text-primary-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-500 mb-0.5">Nama</p>
-                      <p className="text-xs font-semibold text-gray-900 truncate">{user?.name || '-'}</p>
+                      <p className="text-[9px] text-gray-500 mb-0.5">Nama</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[11px] font-semibold text-gray-900 truncate">{user?.name || '-'}</p>
+                        <div className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0 ${
+                          user?.role === 'admin'
+                            ? 'bg-primary-100 text-primary-700'
+                            : 'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          <Shield className={`w-2 h-2 ${
+                            user?.role === 'admin'
+                              ? 'text-primary-600'
+                              : 'text-emerald-600'
+                          }`} />
+                          <span className="capitalize">{user?.role || '-'}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Email */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-2 border border-primary-200/50 hover:border-primary-300/50 hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg">
-                      <Mail className="w-3.5 h-3.5 text-primary-600" />
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-1.5 border border-primary-200/50 hover:border-primary-300/50 hover:shadow-sm transition-all">
+                  <div className="flex items-center gap-1.5">
+                    <div className="p-1 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg">
+                      <Mail className="w-3 h-3 text-primary-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-500 mb-0.5">Email</p>
-                      <p className="text-xs font-semibold text-gray-900 truncate">{user?.email || '-'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Role Badge */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-2 border border-primary-200/50 hover:border-primary-300/50 hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-lg ${
-                      user?.role === 'admin'
-                        ? 'bg-gradient-to-br from-primary-100 to-primary-200'
-                        : 'bg-gradient-to-br from-emerald-100 to-emerald-200'
-                    }`}>
-                      <Shield className={`w-3.5 h-3.5 ${
-                        user?.role === 'admin'
-                          ? 'text-primary-600'
-                          : 'text-emerald-600'
-                      }`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-500 mb-0.5">Role</p>
-                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        user?.role === 'admin'
-                          ? 'bg-primary-100 text-primary-700'
-                          : 'bg-emerald-100 text-emerald-700'
-                      }`}>
-                        <Shield className={`w-2.5 h-2.5 ${
-                          user?.role === 'admin'
-                            ? 'text-primary-600'
-                            : 'text-emerald-600'
-                        }`} />
-                        <span className="capitalize">{user?.role || '-'}</span>
-                      </div>
+                      <p className="text-[9px] text-gray-500 mb-0.5">Email</p>
+                      <p className="text-[11px] font-semibold text-gray-900 truncate">{user?.email || '-'}</p>
                     </div>
                   </div>
                 </div>

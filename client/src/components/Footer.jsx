@@ -1,11 +1,4 @@
-import { useAuthStore } from '../store/auth.store';
-import { useLocation } from 'react-router-dom';
-
 export default function Footer() {
-  const { user, token } = useAuthStore();
-  const location = useLocation();
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
-
   // Tampilkan footer di semua halaman (termasuk login/register)
   return (
     <footer className="bg-white border-t border-gray-200 mt-12">

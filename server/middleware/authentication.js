@@ -6,7 +6,7 @@ module.exports = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Invalid token" });
+      return res.status(401).json({ message: "Token tidak valid" });
     }
 
     const token = authHeader.split(" ")[1];
@@ -17,7 +17,7 @@ module.exports = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid token" });
+      return res.status(401).json({ message: "Token tidak valid" });
     }
 
     req.user = {
@@ -30,7 +30,7 @@ module.exports = async (req, res, next) => {
 
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json({ message: "Token tidak valid" });
   }
 };
 

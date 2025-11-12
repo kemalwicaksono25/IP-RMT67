@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { getPendingApprovals, approveBrief, rejectBrief } from '../../services/admin.api';
 import { getBriefs } from '../../services/brief.api';
-import { FileText, Clock, CheckCircle, Sparkles, ChevronDown, ChevronUp, Target, TrendingUp, MessageSquare, Zap, Eye, Package, Image, Video, Layers, XCircle, ExternalLink, AlertTriangle } from 'lucide-react';
+import { setBriefs } from '../../store/briefSlice';
+import { FileText, Clock, CheckCircle, Sparkles, ChevronDown, ChevronUp, Target, TrendingUp, MessageSquare, Zap, Eye, Package, Image, Video, Layers, XCircle, ExternalLink, AlertTriangle, Hourglass } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
@@ -12,8 +14,9 @@ import { FUNNEL_STAGES, getStatusLabel } from '../../utils/constants';
 import { formatDateTime } from '../../utils/format';
 
 export default function BriefReview() {
-  const [briefs, setBriefs] = useState([]);
-  const [allBriefs, setAllBriefs] = useState([]);
+  const [pendingBriefs, setPendingBriefs] = useState([]);
+  const allBriefs = useSelector((state) => state.brief.briefs);
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
   const [selectedBrief, setSelectedBrief] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -24,12 +27,41 @@ export default function BriefReview() {
     fetchAllBriefs();
   }, []);
 
+  // Auto-refresh data setiap 5 detik untuk menjaga statistik tetap update (sama seperti Dashboard)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchApprovals();
+      fetchAllBriefs();
+    }, 5000); // 5 detik untuk update yang lebih cepat
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Dengarkan event storage untuk refresh ketika data berubah di tab/window lain (sama seperti Dashboard)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      fetchApprovals();
+      fetchAllBriefs();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Juga dengarkan custom events (untuk update di tab yang sama)
+    window.addEventListener('briefsUpdated', handleStorageChange);
+    window.addEventListener('productsUpdated', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('briefsUpdated', handleStorageChange);
+      window.removeEventListener('productsUpdated', handleStorageChange);
+    };
+  }, []);
+
   const fetchApprovals = async () => {
     try {
       const response = await getPendingApprovals();
-      setBriefs(response.data);
+      setPendingBriefs(response.data);
     } catch (error) {
-      console.error('Error fetching approvals:', error);
       toast.error(error?.response?.data?.message || 'Gagal memuat approvals');
     } finally {
       setLoading(false);
@@ -39,9 +71,9 @@ export default function BriefReview() {
   const fetchAllBriefs = async () => {
     try {
       const response = await getBriefs();
-      setAllBriefs(response.data);
+      dispatch(setBriefs(response.data));
     } catch (error) {
-      // Silent fail
+      // Gagal diam-diam
     }
   };
 
@@ -49,9 +81,9 @@ export default function BriefReview() {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    monthEnd.setHours(23, 59, 59, 999); // Include end of day
+    monthEnd.setHours(23, 59, 59, 999); // Sertakan akhir hari
     
-    // Count total content ideas (details) created this month based on detail.createdAt
+    // Hitung total ide konten (details) yang dibuat bulan ini berdasarkan detail.createdAt
     return allBriefs.reduce((total, brief) => {
       if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
       
@@ -67,15 +99,27 @@ export default function BriefReview() {
     }, 0);
   };
 
-  const getTotalDetails = () => {
-    return briefs.reduce((total, brief) => {
-      return total + (brief.details?.length || 0);
+
+  // Filter brief yang memiliki details (sama seperti Dashboard)
+  const briefsWithDetails = useMemo(() => {
+    if (!allBriefs || !Array.isArray(allBriefs)) return [];
+    return allBriefs.filter(brief => 
+      brief && brief.details && Array.isArray(brief.details) && brief.details.length > 0
+    );
+  }, [allBriefs]);
+
+  const getPendingDetailsCount = useMemo(() => {
+    // Hitung total detail dengan status 'pending_approval' (konsisten dengan Dashboard)
+    if (!briefsWithDetails || briefsWithDetails.length === 0) return 0;
+    return briefsWithDetails.reduce((total, brief) => {
+      if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
+      return total + brief.details.filter(d => d && d.status === 'pending_approval').length;
     }, 0);
-  };
+  }, [briefsWithDetails]);
 
   const getApprovedCount = () => {
-    // Count brief details with status 'approved' or 'scheduled'
-    // Status is only managed at BriefDetail level, not parent Brief
+    // Hitung detail brief dengan status 'approved' atau 'scheduled'
+    // Status hanya dikelola di level BriefDetail, bukan parent Brief
     return allBriefs.reduce((total, brief) => {
       if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
       
@@ -86,8 +130,8 @@ export default function BriefReview() {
   };
 
   const getRejectedCount = () => {
-    // Count brief details with status 'rejected'
-    // Status is only managed at BriefDetail level, not parent Brief
+    // Hitung detail brief dengan status 'rejected'
+    // Status hanya dikelola di level BriefDetail, bukan parent Brief
     return allBriefs.reduce((total, brief) => {
       if (brief.details && Array.isArray(brief.details)) {
         return total + brief.details.filter(d => d && d.status === 'rejected').length;
@@ -108,7 +152,7 @@ export default function BriefReview() {
     const now = new Date();
     const diffTime = scheduledDate - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    // Urgent if scheduled within 3 days (including today)
+    // Urgent jika dijadwalkan dalam 3 hari (termasuk hari ini)
     return diffDays >= 0 && diffDays <= 3;
   };
 
@@ -128,7 +172,7 @@ export default function BriefReview() {
       );
     }
 
-    // Video type
+    // Tipe video
     if (detail.type === 'video') {
       let scenes = detail.scenes || [];
       if (!Array.isArray(scenes)) {
@@ -175,7 +219,7 @@ export default function BriefReview() {
       );
     }
 
-    // Carousel type
+    // Tipe carousel
     if (detail.type === 'carousel') {
       return (
         <div className="space-y-4">
@@ -208,7 +252,7 @@ export default function BriefReview() {
       );
     }
 
-    // Image type
+    // Tipe image
     if (detail.type === 'image') {
       return (
         <div className="space-y-4">
@@ -253,7 +297,7 @@ export default function BriefReview() {
       toast.success('Brief berhasil di-approve');
       fetchApprovals();
       fetchAllBriefs();
-      // Trigger event to update calendar
+      // Trigger event untuk update kalender
       window.dispatchEvent(new Event('briefsUpdated'));
     } catch (error) {
       toast.error('Gagal approve brief');
@@ -303,14 +347,14 @@ export default function BriefReview() {
         </div>
 
         {/* Statistik */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Brief Pending</span>
+              <Hourglass className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Menunggu Review</span>
             </div>
-            <p className="text-2xl font-bold">{briefs.length}</p>
-            <p className="text-xs text-primary-200 mt-1">Brief menunggu</p>
+            <p className="text-2xl font-bold">{getPendingDetailsCount}</p>
+            <p className="text-xs text-primary-200 mt-1">Menunggu review</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
@@ -318,7 +362,7 @@ export default function BriefReview() {
               <span className="text-sm text-primary-100">Brief Disetujui</span>
             </div>
             <p className="text-2xl font-bold">{getApprovedCount()}</p>
-            <p className="text-xs text-primary-200 mt-1">Total disetujui</p>
+            <p className="text-xs text-primary-200 mt-1">Brief disetujui</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
@@ -326,7 +370,7 @@ export default function BriefReview() {
               <span className="text-sm text-primary-100">Brief Ditolak</span>
             </div>
             <p className="text-2xl font-bold">{getRejectedCount()}</p>
-            <p className="text-xs text-primary-200 mt-1">Total ditolak</p>
+            <p className="text-xs text-primary-200 mt-1">Brief ditolak</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
@@ -336,18 +380,10 @@ export default function BriefReview() {
             <p className="text-2xl font-bold">{getBriefsThisMonth()}</p>
             <p className="text-xs text-primary-200 mt-1">Total brief</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <FileText className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Total Pending</span>
-            </div>
-            <p className="text-2xl font-bold">{getTotalDetails()}</p>
-            <p className="text-xs text-primary-200 mt-1">Detail pending</p>
-          </div>
         </div>
       </div>
 
-      {briefs.length === 0 ? (
+      {pendingBriefs.length === 0 ? (
         <div className="bg-white rounded-xl shadow-lg p-12">
           <EmptyState
             title="Tidak ada brief yang pending"
@@ -356,7 +392,7 @@ export default function BriefReview() {
         </div>
       ) : (
         <div className="space-y-6">
-          {briefs.map((brief) => (
+          {pendingBriefs.map((brief) => (
             <div key={brief.id} className="bg-white rounded-lg shadow-lg p-6 space-y-6">
               {/* Brief Info Header */}
               <div className="flex items-center justify-between">

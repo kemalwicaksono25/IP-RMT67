@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import { getBriefById, generateDetail, updateBriefDetail, submitDetailForApproval, deleteBriefDetail } from '../../services/brief.api';
-import { FileText, Sparkles, CheckCircle, Edit2, Save, X, Eye, ChevronUp, Trash2, Send, Package, ExternalLink, Calendar, Clock, Info, Zap } from 'lucide-react';
+import { updateBrief } from '../../store/briefSlice';
+import { FileText, Sparkles, CheckCircle, Edit2, Save, X, Eye, ChevronUp, Trash2, Send, Package, ExternalLink, Calendar, Clock, Info, Zap, Hourglass, XCircle } from 'lucide-react';
 import { TONE_OF_VOICE, BRIEF_TYPES, FUNNEL_STAGES, getStatusLabel } from '../../utils/constants';
-import { useAuthStore } from '../../store/auth.store';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 import StatusBadge from '../../components/StatusBadge';
@@ -12,9 +12,10 @@ import Modal from '../../components/Modal';
 
 export default function BriefDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [brief, setBrief] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const briefs = useSelector((state) => state.brief.briefs);
+  const brief = useMemo(() => briefs.find(b => b.id === parseInt(id)), [briefs, id]);
+  const [loading, setLoading] = useState(!brief);
   const [generatingDetail, setGeneratingDetail] = useState({});
   const [editingDetail, setEditingDetail] = useState({});
   const [editingIdea, setEditingIdea] = useState({});
@@ -26,16 +27,23 @@ export default function BriefDetail() {
   const [showApprovalModal, setShowApprovalModal] = useState({});
   const [approvalData, setApprovalData] = useState({});
   const [submittingApproval, setSubmittingApproval] = useState({});
-  const { user } = useAuthStore();
+  const user = useSelector((state) => state.auth.user);
 
   useEffect(() => {
-    fetchBrief();
-  }, [id]);
+    // Jika brief tidak ada di store, fetch dari API
+    if (!brief) {
+      fetchBrief();
+    } else {
+      setLoading(false);
+    }
+  }, [id, brief]);
 
   const fetchBrief = async () => {
     try {
+      setLoading(true);
       const response = await getBriefById(id);
-      setBrief(response.data);
+      // Update Redux store
+      dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data }));
     } catch (error) {
       toast.error('Gagal memuat brief');
     } finally {
@@ -44,20 +52,30 @@ export default function BriefDetail() {
   };
 
   const handleGenerateDetail = async (detailId) => {
-    // Prevent multiple simultaneous requests for the same detail using functional update
+    // Cegah multiple request simultan untuk detail yang sama menggunakan functional update
     setGeneratingDetail((prev) => {
       if (prev[detailId]) {
-        return prev; // Already generating, don't update
+        return prev; // Sudah sedang generate, jangan update
       }
       return { ...prev, [detailId]: true };
     });
 
     try {
-      await generateDetail(detailId);
+      const response = await generateDetail(detailId);
+      // Update Redux store dengan brief yang sudah di-update
+      if (response && response.data && response.data.brief) {
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data.brief }));
+        // Force re-render dengan fetch ulang untuk memastikan data terbaru
+        setTimeout(() => {
+          fetchBrief();
+        }, 500);
+      } else {
+        fetchBrief();
+      }
       toast.success('Detail berhasil di-generate');
-      fetchBrief();
     } catch (error) {
-      toast.error('Gagal generate detail');
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal generate detail';
+      toast.error(errorMessage);
     } finally {
       setGeneratingDetail((prev) => ({ ...prev, [detailId]: false }));
     }
@@ -69,7 +87,7 @@ export default function BriefDetail() {
       return;
     }
 
-    // Filter details that don't have detail yet
+    // Filter detail yang belum memiliki detail
     const detailsToGenerate = brief.details.filter(d => !d.detail || !d.detail.type);
     
     if (detailsToGenerate.length === 0) {
@@ -77,29 +95,32 @@ export default function BriefDetail() {
       return;
     }
 
-    // Set all to generating
+    // Set semua ke generating
     const generatingState = {};
     detailsToGenerate.forEach(d => {
       generatingState[d.id] = true;
     });
     setGeneratingDetail((prev) => ({ ...prev, ...generatingState }));
 
-    // Generate all in parallel
+    // Generate semua secara parallel
     const promises = detailsToGenerate.map(detail => 
-      generateDetail(detail.id).catch(error => {
-        console.error(`Failed to generate detail ${detail.id}:`, error);
-        return null;
-      })
+      generateDetail(detail.id).catch(() => null)
     );
 
     try {
-      await Promise.all(promises);
+      const responses = await Promise.all(promises);
+      // Update Redux store dengan brief yang sudah di-update (ambil dari response terakhir yang valid)
+      const lastValidResponse = responses.filter(r => r && r.data && r.data.brief).pop();
+      if (lastValidResponse) {
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief: lastValidResponse.data.brief }));
+      } else {
+        fetchBrief();
+      }
       toast.success(`${detailsToGenerate.length} detail berhasil di-generate`);
-      fetchBrief();
     } catch (error) {
       toast.error('Beberapa detail gagal di-generate');
     } finally {
-      // Clear all generating states
+      // Hapus semua state generating
       setGeneratingDetail((prev) => {
         const newState = { ...prev };
         detailsToGenerate.forEach(d => {
@@ -121,12 +142,12 @@ export default function BriefDetail() {
     setEditingDetail({ ...editingDetail, [detail.id]: true });
     const detailObj = detail.detail || {};
     
-    // Initialize edit data based on detail type
+    // Inisialisasi data edit berdasarkan tipe detail
     if (detailObj.type === 'video') {
-      // Handle scenes - convert object to array if needed
+      // Handle scenes - konversi object ke array jika diperlukan
       let scenes = detailObj.scenes || [];
       if (!Array.isArray(scenes)) {
-        // If scenes is an object, convert to array
+        // Jika scenes adalah object, konversi ke array
         scenes = Object.keys(scenes).map(key => {
           const scene = scenes[key];
           return typeof scene === 'object' ? scene : { time: key, description: scene || '' };
@@ -174,7 +195,7 @@ export default function BriefDetail() {
         },
       });
     } else {
-      // Fallback to JSON if type unknown
+      // Fallback ke JSON jika tipe tidak diketahui
       setEditData({
         ...editData,
         [detail.id]: {
@@ -198,7 +219,7 @@ export default function BriefDetail() {
       const data = editData[detailId];
       let detailJson = null;
 
-      // Build detail JSON based on type
+      // Build detail JSON berdasarkan tipe
       if (data.type === 'video') {
         detailJson = {
           type: 'video',
@@ -233,26 +254,33 @@ export default function BriefDetail() {
         }
       }
 
-      // Extract hashtags from captionWithHashtags
+      // Ekstrak hashtags dari captionWithHashtags
       const captionWithHashtags = data.captionWithHashtags || '';
       const hashtagRegex = /#[\w]+/g;
       const foundHashtags = captionWithHashtags.match(hashtagRegex) || [];
       const hashtagsArray = foundHashtags.map(t => t.trim()).filter(t => t);
       
-      // Remove hashtags from caption (optional, or keep them in caption)
-      // For now, keep hashtags in caption
+      // Hapus hashtags dari caption (opsional, atau tetap simpan di caption)
+      // Untuk sekarang, tetap simpan hashtags di caption
       const captionText = captionWithHashtags;
 
-      await updateBriefDetail(detailId, {
+      const response = await updateBriefDetail(detailId, {
         detail: detailJson,
         caption: captionText,
         hashtags: hashtagsArray,
       });
 
+      // Update Redux store dengan brief yang sudah di-update
+      if (response && response.data && response.data.brief) {
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data.brief }));
+      } else {
+        // Jika response tidak mengembalikan brief, fetch ulang
+        fetchBrief();
+      }
+
       toast.success('Detail berhasil disimpan');
       setEditingDetail({ ...editingDetail, [detailId]: false });
       setEditData({ ...editData, [detailId]: null });
-      fetchBrief();
     } catch (error) {
       toast.error('Gagal menyimpan detail');
     } finally {
@@ -299,7 +327,7 @@ export default function BriefDetail() {
       const currentDetail = brief.details?.find(d => d.id === detailId);
       const existingDetail = currentDetail?.detail || {};
       
-      await updateBriefDetail(detailId, {
+      const response = await updateBriefDetail(detailId, {
         platform: data.platform,
         tag: data.tag,
         title: data.title,
@@ -317,10 +345,17 @@ export default function BriefDetail() {
           visualIdentityNote: data.visualIdentityNote,
         },
       });
+      
+      // Update Redux store dengan brief yang sudah di-update
+      if (response && response.data && response.data.brief) {
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data.brief }));
+      } else {
+        fetchBrief();
+      }
+      
       toast.success('Brief berhasil disimpan');
       setEditingIdea({ ...editingIdea, [detailId]: false });
       setIdeaEditData({ ...ideaEditData, [detailId]: null });
-      fetchBrief();
     } catch (error) {
       toast.error('Gagal menyimpan brief');
     } finally {
@@ -332,10 +367,15 @@ export default function BriefDetail() {
     if (!confirm('Yakin ingin menghapus brief ini?')) return;
 
     try {
-      await deleteBriefDetail(detailId);
+      const response = await deleteBriefDetail(detailId);
+      // Update Redux store dengan brief yang sudah di-update
+      if (response && response.data && response.data.brief) {
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data.brief }));
+      } else {
+        fetchBrief();
+      }
       toast.success('Brief berhasil dihapus');
-      fetchBrief();
-      // Trigger event to update other components (like Dashboard)
+      // Trigger event untuk update komponen lain (seperti Dashboard)
       window.dispatchEvent(new Event('briefsUpdated'));
     } catch (error) {
       toast.error('Gagal menghapus brief');
@@ -364,15 +404,20 @@ export default function BriefDetail() {
   const handleSubmitApproval = async (detailId) => {
     const data = approvalData[detailId];
     
-    // Validate date and time are filled
+    // Validasi tanggal dan waktu sudah diisi
     if (!data?.scheduledAt || !data?.scheduledTime) {
       toast.error('Tanggal dan waktu posting wajib diisi');
       return;
     }
 
-    // Validate date is not in the past
-    const scheduledDateTime = new Date(`${data.scheduledAt}T${data.scheduledTime}`);
-    if (scheduledDateTime < new Date()) {
+    // Validasi tanggal tidak di masa lalu
+    // Gabungkan tanggal dan waktu dengan mempertimbangkan timezone lokal
+    const [year, month, day] = data.scheduledAt.split('-').map(Number);
+    const [hours, minutes] = data.scheduledTime.split(':').map(Number);
+    const scheduledDateTime = new Date(year, month - 1, day, hours, minutes);
+    const now = new Date();
+    
+    if (scheduledDateTime < now) {
       toast.error('Tanggal dan waktu posting tidak boleh di masa lalu');
       return;
     }
@@ -384,7 +429,14 @@ export default function BriefDetail() {
         scheduledTime: data.scheduledTime,
       });
       
-      // Check if user is admin (status will be SCHEDULED for admin)
+      // Update Redux store dengan brief yang sudah di-update
+      if (response && response.data && response.data.brief) {
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data.brief }));
+      } else {
+        fetchBrief();
+      }
+      
+      // Cek apakah user adalah admin (status akan menjadi SCHEDULED untuk admin)
       const isAdmin = user?.role === 'admin';
       if (isAdmin) {
         toast.success('Brief berhasil dijadwalkan dan langsung tampil di kalender');
@@ -393,8 +445,7 @@ export default function BriefDetail() {
       }
       
       handleCloseApprovalModal(detailId);
-      fetchBrief();
-      // Trigger event to update calendar
+      // Trigger event untuk update kalender
       window.dispatchEvent(new Event('briefsUpdated'));
     } catch (error) {
       const message = error.response?.data?.message || 'Gagal submit approval';
@@ -417,10 +468,57 @@ export default function BriefDetail() {
   }
 
   const totalDetails = brief.details?.length || 0;
-  const generatedDetails = brief.details?.filter((d) => d.detail && d.caption).length || 0;
-  const readyDetails = brief.details?.filter((d) => d.status === 'ready').length || 0;
+  const emptyDetails = brief.details?.filter((d) => d && d.status === 'empty').length || 0;
+  const readyDetails = brief.details?.filter((d) => d && d.status === 'ready').length || 0;
+  const approvedDetails = brief.details?.filter((d) => d && (d.status === 'approved' || d.status === 'scheduled')).length || 0;
+  const rejectedDetails = brief.details?.filter((d) => d && d.status === 'rejected').length || 0;
 
-  // Helper function to get label from value
+  // Fungsi helper untuk memvalidasi apakah detail sudah lengkap dan siap submit
+  const isDetailComplete = (detail) => {
+    if (!detail || !detail.detail || !detail.detail.type) {
+      return false;
+    }
+
+    if (!detail.caption || detail.caption.trim().length === 0) {
+      return false;
+    }
+
+    const detailObj = detail.detail;
+    const type = detailObj.type;
+
+    if (type === 'video') {
+      // Untuk video, minimal harus ada scenes, visual, dan music
+      const hasScenes = detailObj.scenes && 
+        Array.isArray(detailObj.scenes) && 
+        detailObj.scenes.length > 0 &&
+        detailObj.scenes.some(s => s && s.description && s.description.trim().length > 0);
+      const hasVisual = detailObj.visual && detailObj.visual.trim().length > 0;
+      const hasMusic = detailObj.music && detailObj.music.trim().length > 0;
+      
+      return hasScenes && hasVisual && hasMusic;
+    } else if (type === 'carousel') {
+      // Untuk carousel, minimal harus ada slides dan visualTone
+      const hasSlides = detailObj.slides && 
+        Array.isArray(detailObj.slides) && 
+        detailObj.slides.length > 0 &&
+        detailObj.slides.some(s => s && s.text && s.text.trim().length > 0);
+      const hasVisualTone = detailObj.visualTone && detailObj.visualTone.trim().length > 0;
+      
+      return hasSlides && hasVisualTone;
+    } else if (type === 'image') {
+      // Untuk image, minimal harus ada headline, subheadline, visual, dan layout
+      const hasHeadline = detailObj.headline && detailObj.headline.trim().length > 0;
+      const hasSubheadline = detailObj.subheadline && detailObj.subheadline.trim().length > 0;
+      const hasVisual = detailObj.visual && detailObj.visual.trim().length > 0;
+      const hasLayout = detailObj.layout && detailObj.layout.trim().length > 0;
+      
+      return hasHeadline && hasSubheadline && hasVisual && hasLayout;
+    }
+
+    return false;
+  };
+
+  // Fungsi helper untuk mendapatkan label dari value
   const getToneOfVoiceLabel = (value) => {
     const tone = TONE_OF_VOICE.find(t => t.value === value);
     return tone ? tone.label : value;
@@ -455,30 +553,54 @@ export default function BriefDetail() {
         </div>
 
         {/* Statistik */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
               <FileText className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Total Brief</span>
+              <span className="text-sm text-primary-100">Total Ide</span>
             </div>
             <p className="text-2xl font-bold">{totalDetails}</p>
-            <p className="text-xs text-primary-200 mt-1">Brief</p>
+            <p className="text-xs text-primary-200 mt-1">Ide konten</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Detail Generated</span>
+              <Send className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Brief Belum Disubmit</span>
             </div>
-            <p className="text-2xl font-bold">{generatedDetails}</p>
-            <p className="text-xs text-primary-200 mt-1">Konten siap</p>
+            <p className="text-2xl font-bold">{readyDetails}</p>
+            <p className="text-xs text-primary-200 mt-1">Status siap</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Hourglass className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Menunggu Review</span>
+            </div>
+            <p className="text-2xl font-bold">{brief.details?.filter((d) => d && d.status === 'pending_approval').length || 0}</p>
+            <p className="text-xs text-primary-200 mt-1">Menunggu review</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle className="w-4 h-4" />
-              <span className="text-sm text-primary-100">Status Ready</span>
+              <span className="text-sm text-primary-100">Brief Disetujui</span>
             </div>
-            <p className="text-2xl font-bold">{readyDetails}</p>
-            <p className="text-xs text-primary-200 mt-1">Konten ready</p>
+            <p className="text-2xl font-bold">{approvedDetails}</p>
+            <p className="text-xs text-primary-200 mt-1">Brief disetujui</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <XCircle className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Brief Ditolak</span>
+            </div>
+            <p className="text-2xl font-bold">{rejectedDetails}</p>
+            <p className="text-xs text-primary-200 mt-1">Brief ditolak</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4" />
+              <span className="text-sm text-primary-100">Empty</span>
+            </div>
+            <p className="text-2xl font-bold">{emptyDetails}</p>
+            <p className="text-xs text-primary-200 mt-1">Siap di-generate</p>
           </div>
         </div>
       </div>
@@ -609,71 +731,71 @@ export default function BriefDetail() {
           </div>
         </div>
 
-        <div className="overflow-x-auto shadow-inner">
-          <table className="w-full border-collapse">
+        <div className="shadow-inner">
+          <table className="w-full border-collapse table-fixed">
             <thead className="bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700">
               <tr>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase sticky left-0 bg-gradient-to-r from-primary-500 to-primary-600 z-20 w-12 shadow-lg border-r border-primary-400/30">
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase sticky left-0 bg-gradient-to-r from-primary-500 to-primary-600 z-20 w-8 shadow-lg border-r border-primary-400/30">
                   No
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-32">
-                  Format Konten
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-20">
+                  Format
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
-                  Judul Konten
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-24">
+                  Judul
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
-                  Objective Campaign
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-20">
+                  Objective
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-32">
-                  Audience Funnel
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-16">
+                  Funnel
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
-                  Decision Trigger
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-20">
+                  Trigger
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
-                  Product Value Highlight
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-24">
+                  Value
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-40">
-                  Communication Approach
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-20">
+                  Approach
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
-                  Hook/Opening
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-24">
+                  Hook
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-56">
-                  Main Content Points
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-28">
+                  Content Points
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-32">
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-16">
                   CTA
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-56">
-                  Breakdown Detail
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-24">
+                  Breakdown
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-48">
-                  Visual Identity Note
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-24">
+                  Visual
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase w-24">
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase w-16">
                   Status
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-white uppercase sticky right-0 bg-gradient-to-r from-primary-600 to-primary-700 z-20 w-32 shadow-lg border-l border-primary-400/30">
+                <th className="px-1.5 py-2 text-left text-xs font-bold text-white uppercase sticky right-0 bg-gradient-to-r from-primary-600 to-primary-700 z-20 w-16 shadow-lg border-l border-primary-400/30">
                   Aksi
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {brief.details?.map((detail, index) => (
-                <React.Fragment key={detail.id}>
-                  <tr className={`transition-colors duration-150 ${
-                    editingIdea[detail.id] 
-                      ? 'bg-blue-50/50 hover:bg-blue-50' 
-                      : 'hover:bg-gray-50/80'
-                  } ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                    <td className="px-4 py-5 text-sm font-semibold text-gray-700 sticky left-0 bg-inherit z-10 w-12 border-r border-gray-200/50">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 text-primary-700">
+                <>
+                  <tr key={detail.id} className={`transition-colors duration-150 ${
+                      editingIdea[detail.id] 
+                        ? 'bg-blue-50/50 hover:bg-blue-50' 
+                        : 'hover:bg-gray-50/80'
+                    } ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+                    <td className="px-1.5 py-2 text-xs font-semibold text-gray-700 sticky left-0 bg-inherit z-10 w-8 border-r border-gray-200/50">
+                      <div className="flex items-center justify-center w-5 h-5 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 text-primary-700 text-xs">
                         {index + 1}
                       </div>
                     </td>
-                    <td className="px-4 py-5 text-sm w-32 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs w-20 border-r border-gray-200/50 text-center">
                       {editingIdea[detail.id] ? (
                         <div className="space-y-2">
                           <select
@@ -682,7 +804,7 @@ export default function BriefDetail() {
                               ...ideaEditData,
                               [detail.id]: { ...ideaEditData[detail.id], platform: e.target.value }
                             })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
+                            className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
                           >
                             <option value="TikTok">TikTok</option>
                             <option value="Instagram">Instagram</option>
@@ -696,7 +818,7 @@ export default function BriefDetail() {
                               ...ideaEditData,
                               [detail.id]: { ...ideaEditData[detail.id], tag: e.target.value }
                             })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
+                            className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
                           >
                             <option value="video">Video</option>
                             <option value="carousel">Carousel</option>
@@ -704,21 +826,25 @@ export default function BriefDetail() {
                           </select>
                         </div>
                       ) : (
-                        <div className="flex flex-col gap-2 items-center">
-                          <span className="font-semibold text-gray-900">{detail.platform}</span>
-                          <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize text-center shadow-sm ${
-                            detail.tag === 'video' 
-                              ? 'bg-red-100 text-red-700 border border-red-200' 
-                              : detail.tag === 'carousel'
-                              ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                              : 'bg-blue-100 text-blue-700 border border-blue-200'
-                          }`}>
-                            {detail.tag}
-                          </span>
-                        </div>
+                        <>
+                          <div className="text-center mb-1">
+                            <span className="font-semibold text-gray-900 text-xs whitespace-nowrap">{detail.platform}</span>
+                          </div>
+                          <div className="text-center">
+                            <span className={`px-2 py-1 rounded-lg text-xs font-semibold capitalize shadow-sm whitespace-nowrap inline-block ${
+                              detail.tag === 'video' 
+                                ? 'bg-red-100 text-red-700 border border-red-200' 
+                                : detail.tag === 'carousel'
+                                ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                : 'bg-blue-100 text-blue-700 border border-blue-200'
+                            }`}>
+                              {detail.tag}
+                            </span>
+                          </div>
+                        </>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm w-48 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs w-24 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <input
                           type="text"
@@ -727,14 +853,14 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], title: e.target.value }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
-                          placeholder="Judul konten..."
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
+                          placeholder="Judul..."
                         />
                       ) : (
-                        <span className="font-semibold text-gray-900 whitespace-normal break-words">{detail.title}</span>
+                        <span className="font-semibold text-gray-900 whitespace-normal break-words text-xs leading-tight">{detail.title}</span>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm text-gray-700 w-48 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs text-gray-700 w-20 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <textarea
                           value={ideaEditData[detail.id]?.objectiveCampaign || ''}
@@ -742,15 +868,15 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], objectiveCampaign: e.target.value }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
                           rows="2"
-                          placeholder="Objective campaign..."
+                          placeholder="Objective..."
                         />
                       ) : (
-                        <span className="whitespace-normal break-words leading-relaxed">{detail.detail?.objectiveCampaign || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">{detail.detail?.objectiveCampaign || '-'}</span>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm text-gray-700 w-32 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs text-gray-700 w-16 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <select
                           value={ideaEditData[detail.id]?.funnel || 'awareness'}
@@ -758,7 +884,7 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], funnel: e.target.value }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
                         >
                           {FUNNEL_STAGES.map((stage) => (
                             <option key={stage.value} value={stage.value}>
@@ -767,10 +893,10 @@ export default function BriefDetail() {
                           ))}
                         </select>
                       ) : (
-                        <span className="whitespace-normal break-words leading-relaxed">{getFunnelLabel(detail.funnel)}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">{getFunnelLabel(detail.funnel)}</span>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm text-gray-700 w-48 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs text-gray-700 w-20 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <input
                           type="text"
@@ -779,14 +905,14 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], decisionTrigger: e.target.value }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
-                          placeholder="Decision trigger..."
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
+                          placeholder="Trigger..."
                         />
                       ) : (
-                        <span className="whitespace-normal break-words leading-relaxed">{detail.detail?.decisionTrigger || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">{detail.detail?.decisionTrigger || '-'}</span>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm text-gray-700 w-48 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs text-gray-700 w-24 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <textarea
                           value={ideaEditData[detail.id]?.productValueHighlight || ''}
@@ -794,15 +920,15 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], productValueHighlight: e.target.value }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
                           rows="2"
-                          placeholder="Product value highlight..."
+                          placeholder="Value..."
                         />
                       ) : (
-                        <span className="whitespace-normal break-words leading-relaxed">{detail.detail?.productValueHighlight || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">{detail.detail?.productValueHighlight || '-'}</span>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm text-gray-700 w-40 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs text-gray-700 w-20 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <input
                           type="text"
@@ -811,14 +937,14 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], communicationApproach: e.target.value }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
-                          placeholder="Communication approach..."
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
+                          placeholder="Approach..."
                         />
                       ) : (
-                        <span className="whitespace-normal break-words leading-relaxed">{detail.detail?.communicationApproach || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">{detail.detail?.communicationApproach || '-'}</span>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm text-gray-700 w-48 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs text-gray-700 w-24 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <textarea
                           value={ideaEditData[detail.id]?.hookOpening || ''}
@@ -826,15 +952,15 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], hookOpening: e.target.value }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
                           rows="2"
-                          placeholder="Hook/opening..."
+                          placeholder="Hook..."
                         />
                       ) : (
-                        <span className="whitespace-normal break-words leading-relaxed">{detail.detail?.hookOpening || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight">{detail.detail?.hookOpening || '-'}</span>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm text-gray-700 w-56 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs text-gray-700 w-28 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <textarea
                           value={Array.isArray(ideaEditData[detail.id]?.mainContentPoints) ? ideaEditData[detail.id].mainContentPoints.join('\n') : ''}
@@ -842,23 +968,23 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], mainContentPoints: e.target.value.split('\n').filter(p => p.trim()) }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
-                          rows="3"
-                          placeholder="Main content points (one per line)..."
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
+                          rows="2"
+                          placeholder="Content points..."
                         />
                       ) : (
-                        <div className="space-y-1.5">
+                        <div className="space-y-0.5">
                           {Array.isArray(detail.detail?.mainContentPoints) && detail.detail.mainContentPoints.length > 0 ? (
                             detail.detail.mainContentPoints.map((point, i) => (
-                              <div key={`point-${detail.id}-${i}`} className="text-xs text-gray-700 leading-relaxed">• {point}</div>
+                              <div key={`point-${detail.id}-${i}`} className="text-xs text-gray-700 leading-tight">• {point}</div>
                             ))
                           ) : (
-                            <span className="text-gray-400">-</span>
+                            <span className="text-gray-400 text-xs">-</span>
                           )}
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm text-gray-700 w-32 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs text-gray-700 w-16 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <input
                           type="text"
@@ -867,14 +993,14 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], cta: e.target.value }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
                           placeholder="CTA..."
                         />
                       ) : (
-                        <span className="font-medium whitespace-normal break-words leading-relaxed">{detail.cta || '-'}</span>
+                        <span className="whitespace-normal break-words text-xs leading-tight font-medium">{detail.cta || '-'}</span>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm text-gray-700 w-56 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs text-gray-700 w-24 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <textarea
                           value={ideaEditData[detail.id]?.breakdownDetail || ''}
@@ -882,12 +1008,12 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], breakdownDetail: e.target.value }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
-                          rows="3"
-                          placeholder="Breakdown detail..."
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
+                          rows="2"
+                          placeholder="Breakdown..."
                         />
                       ) : (
-                        <span className="text-xs whitespace-normal break-words leading-relaxed">
+                        <span className="text-xs whitespace-normal break-words leading-tight">
                           {(() => {
                             const value = detail.detail?.breakdownDetail;
                             if (!value) return '-';
@@ -899,7 +1025,7 @@ export default function BriefDetail() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm text-gray-700 w-48 border-r border-gray-200/50">
+                    <td className="px-1.5 py-2 text-xs text-gray-700 w-24 border-r border-gray-200/50">
                       {editingIdea[detail.id] ? (
                         <textarea
                           value={ideaEditData[detail.id]?.visualIdentityNote || ''}
@@ -907,12 +1033,12 @@ export default function BriefDetail() {
                             ...ideaEditData,
                             [detail.id]: { ...ideaEditData[detail.id], visualIdentityNote: e.target.value }
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white shadow-sm"
+                          className="w-full px-1.5 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-xs bg-white shadow-sm"
                           rows="2"
-                          placeholder="Visual identity note..."
+                          placeholder="Visual..."
                         />
                       ) : (
-                        <span className="text-xs whitespace-normal break-words leading-relaxed">
+                        <span className="text-xs whitespace-normal break-words leading-tight">
                           {(() => {
                             const value = detail.detail?.visualIdentityNote;
                             if (!value) return '-';
@@ -924,21 +1050,43 @@ export default function BriefDetail() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-5 text-sm w-24 border-r border-gray-200/50">
-                      <div className="flex flex-col gap-2 items-center">
-                        <StatusBadge status={detail.status || 'draft'}>
-                          {getStatusLabel(detail.status || 'draft')}
-                        </StatusBadge>
-                        {(detail.status === 'draft' || detail.status === 'ready') && detail.detail && detail.caption && (
-                          <button
-                            onClick={() => handleOpenApprovalModal(detail.id)}
-                            className="px-3 py-1.5 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-1 w-full shadow-sm hover:shadow-md"
-                            title="Submit for Approval"
-                          >
-                            <Send className="w-3 h-3" />
-                            Submit
-                          </button>
-                        )}
+                    <td className="px-1.5 py-2 text-xs w-16 border-r border-gray-200/50 text-center">
+                      <div className="flex flex-col gap-1 items-center">
+                        {(() => {
+                          const status = detail.status || 'draft';
+                          const isComplete = isDetailComplete(detail);
+                          // Jika status "ready" tapi detail belum lengkap, tampilkan sebagai "Draft"
+                          // Tapi jika status "ready" dan detail sudah lengkap, tampilkan sebagai "Siap Submit"
+                          let displayStatus = status;
+                          if (status === 'ready') {
+                            displayStatus = isComplete ? 'ready' : 'draft';
+                          }
+                          return (
+                            <StatusBadge status={displayStatus}>
+                              {getStatusLabel(displayStatus)}
+                            </StatusBadge>
+                          );
+                        })()}
+                        {(() => {
+                          const status = detail.status || 'draft';
+                          const isComplete = isDetailComplete(detail);
+                          // Tampilkan button submit jika:
+                          // 1. Status adalah "ready" dan detail sudah lengkap, ATAU
+                          // 2. Status adalah "draft" dan detail sudah lengkap
+                          if ((status === 'ready' || status === 'draft') && isComplete) {
+                            return (
+                              <button
+                                onClick={() => handleOpenApprovalModal(detail.id)}
+                                className="px-2 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-1 w-full shadow-sm hover:shadow-md"
+                                title="Submit for Approval"
+                              >
+                                <Send className="w-3 h-3" />
+                                Submit
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
                         {detail.status === 'scheduled' && detail.scheduledAt && (
                           <span className="text-xs text-gray-500 text-center">
                             {new Date(detail.scheduledAt).toLocaleString('id-ID', {
@@ -949,17 +1097,17 @@ export default function BriefDetail() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-5 text-sm sticky right-0 bg-inherit z-10 w-32 border-l border-gray-200/50">
-                      <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <td className="px-1 py-2 text-xs sticky right-0 bg-inherit z-10 w-16 border-l border-gray-200/50">
+                      <div className="flex flex-col items-center justify-center gap-1">
                         {!editingIdea[detail.id] && (
                           <>
                             <div className="relative group">
                               <button
                                 onClick={() => handleEditIdea(detail)}
-                                className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                className="p-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                                 title="Edit Brief"
                               >
-                                <Edit2 className="w-4 h-4" />
+                                <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                 Edit Brief
@@ -974,13 +1122,13 @@ export default function BriefDetail() {
                                   }
                                 }}
                                 disabled={generatingDetail[detail.id]}
-                                className="p-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+                                className="p-1.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
                                 title="Generate Detail Produksi"
                               >
                                 {generatingDetail[detail.id] ? (
                                   <Loader size="sm" />
                                 ) : (
-                                  <Sparkles className="w-4 h-4" />
+                                  <Sparkles className="w-3.5 h-3.5" />
                                 )}
                               </button>
                               <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
@@ -992,13 +1140,13 @@ export default function BriefDetail() {
                               <div className="relative group">
                                 <button
                                   onClick={() => toggleDetail(detail.id)}
-                                  className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                  className="p-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                                   title={expandedDetails[detail.id] ? "Sembunyikan Detail Produksi" : "Lihat Detail Produksi"}
                                 >
                                   {expandedDetails[detail.id] ? (
-                                    <ChevronUp className="w-4 h-4" />
+                                    <ChevronUp className="w-3.5 h-3.5" />
                                   ) : (
-                                    <Eye className="w-4 h-4" />
+                                    <Eye className="w-3.5 h-3.5" />
                                   )}
                                 </button>
                                 <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
@@ -1010,10 +1158,10 @@ export default function BriefDetail() {
                             <div className="relative group">
                               <button
                                 onClick={() => handleDeleteIdea(detail.id)}
-                                className="p-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                className="p-1.5 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                                 title="Hapus Brief"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                               <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                 Hapus Brief
@@ -1028,13 +1176,13 @@ export default function BriefDetail() {
                               <button
                                 onClick={() => handleSaveIdea(detail.id)}
                                 disabled={savingIdea[detail.id]}
-                                className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                                className="p-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
                                 title={savingIdea[detail.id] ? "Menyimpan..." : "Simpan Perubahan"}
                               >
                                 {savingIdea[detail.id] ? (
                                   <Loader size="sm" />
                                 ) : (
-                                  <Save className="w-4 h-4" />
+                                  <Save className="w-3.5 h-3.5" />
                                 )}
                               </button>
                               <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
@@ -1045,10 +1193,10 @@ export default function BriefDetail() {
                             <div className="relative group">
                               <button
                                 onClick={() => handleCancelEditIdea(detail.id)}
-                                className="p-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                                className="p-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                                 title="Batal Edit"
                               >
-                                <X className="w-4 h-4" />
+                                <X className="w-3.5 h-3.5" />
                               </button>
                               <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                 Batal Edit
@@ -1516,7 +1664,7 @@ export default function BriefDetail() {
                     </td>
                   </tr>
                   )}
-                </React.Fragment>
+                </>
               ))}
             </tbody>
           </table>

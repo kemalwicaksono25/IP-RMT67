@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { createProduct, updateProduct, getProductById } from '../../services/product.api';
+import { addProduct, updateProduct as updateProductAction } from '../../store/productSlice';
 import { Package, Plus, Edit, FileText, Link as LinkIcon, Image as ImageIcon, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
@@ -9,6 +11,7 @@ export default function ProductForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -66,10 +69,12 @@ export default function ProductForm() {
       }
 
       if (isEdit) {
-        await updateProduct(id, formDataToSend);
+        const response = await updateProduct(id, formDataToSend);
+        dispatch(updateProductAction({ id: parseInt(id), updatedProduct: response.data }));
         toast.success('Produk berhasil diperbarui');
       } else {
-        await createProduct(formDataToSend);
+        const response = await createProduct(formDataToSend);
+        dispatch(addProduct(response.data));
         toast.success('Produk berhasil dibuat');
       }
       navigate('/products');

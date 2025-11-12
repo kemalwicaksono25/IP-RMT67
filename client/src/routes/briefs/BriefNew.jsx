@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useProductStore } from '../../store/product.store';
+import { useSelector, useDispatch } from 'react-redux';
+import { setProducts } from '../../store/productSlice';
+import { setBriefs, addBrief } from '../../store/briefSlice';
 import { generateBrief, getBriefs } from '../../services/brief.api';
 import { getProducts, getProductById } from '../../services/product.api';
 import { FUNNEL_STAGES, BRIEF_TYPES, TONE_OF_VOICE } from '../../utils/constants';
@@ -12,10 +14,11 @@ export default function BriefNew() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const productIdFromUrl = searchParams.get('productId');
-  const { products, setProducts, setSelectedProduct } = useProductStore();
+  const products = useSelector((state) => state.product.products);
+  const briefs = useSelector((state) => state.brief.briefs);
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [fetchingProduct, setFetchingProduct] = useState(false);
-  const [briefs, setBriefs] = useState([]);
   const [formData, setFormData] = useState({
     ProductId: productIdFromUrl || '',
     funnelStage: ['awareness'],
@@ -39,7 +42,7 @@ export default function BriefNew() {
   const fetchProducts = async () => {
     try {
       const response = await getProducts();
-      setProducts(response.data);
+      dispatch(setProducts(response.data));
     } catch (error) {
       toast.error('Gagal memuat produk');
     }
@@ -48,9 +51,9 @@ export default function BriefNew() {
   const fetchBriefs = async () => {
     try {
       const response = await getBriefs();
-      setBriefs(response.data);
+      dispatch(setBriefs(response.data));
     } catch (error) {
-      // Silent fail
+      // Gagal diam-diam
     }
   };
 
@@ -59,9 +62,9 @@ export default function BriefNew() {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    monthEnd.setHours(23, 59, 59, 999); // Include end of day
+    monthEnd.setHours(23, 59, 59, 999); // Sertakan akhir hari
     
-    // Count total content ideas (details) created this month based on detail.createdAt
+    // Hitung total ide konten (details) yang dibuat bulan ini berdasarkan detail.createdAt
     return briefs.reduce((total, brief) => {
       if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
       
@@ -79,7 +82,7 @@ export default function BriefNew() {
 
   const getProductsWithBriefs = () => {
     if (!briefs || !Array.isArray(briefs)) return 0;
-    // Count products that have at least one content idea
+    // Hitung produk yang memiliki setidaknya satu ide konten
     const productIdsWithBriefs = new Set();
     briefs.forEach(brief => {
       if (brief && brief.details && brief.details.length > 0) {
@@ -94,9 +97,8 @@ export default function BriefNew() {
     try {
       const response = await getProductById(productId);
       const product = response.data;
-      setSelectedProduct(product);
       
-      // Pre-fill form dengan data produk
+      // Pre-isi form dengan data produk
       setFormData((prev) => ({
         ...prev,
         ProductId: product.id.toString(),
@@ -124,15 +126,17 @@ export default function BriefNew() {
     setLoading(true);
 
     try {
-      // Convert arrays to comma-separated strings for backend
+      // Konversi array ke string yang dipisahkan koma untuk backend
       const submitData = {
         ...formData,
         briefType: formData.briefType.join(','),
         funnelStage: formData.funnelStage.join(','),
       };
       const response = await generateBrief(submitData);
+      // Update Redux store
+      dispatch(addBrief(response.data));
       toast.success('Brief berhasil di-generate!');
-      // Trigger event to update other components (like ProductDetail)
+      // Trigger event untuk update komponen lain (seperti ProductDetail)
       window.dispatchEvent(new Event('briefsUpdated'));
       navigate(`/briefs/${response.data.id}`);
     } catch (error) {

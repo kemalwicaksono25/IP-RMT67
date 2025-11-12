@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
 import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ErrorBoundary';
+import { store, persistor } from './store';
 import RootLayout from './routes/RootLayout';
 import Protected from './routes/Protected';
 import Login from './routes/auth/Login';
@@ -14,11 +17,14 @@ import BriefDetail from './routes/briefs/BriefDetail';
 import BriefReview from './routes/briefs/BriefReview';
 import CalendarView from './routes/calendar/CalendarView';
 import Team from './routes/settings/Team';
+import Loader from './components/Loader';
 
 function App() {
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
+    <Provider store={store}>
+      <PersistGate loading={<Loader />} persistor={persistor}>
+        <ErrorBoundary>
+          <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -56,10 +62,12 @@ function App() {
               }
             />
           </Route>
-        </Routes>
-      </BrowserRouter>
-      <Toaster position="top-right" />
-    </ErrorBoundary>
+          </Routes>
+        </BrowserRouter>
+        <Toaster position="top-right" />
+      </ErrorBoundary>
+      </PersistGate>
+    </Provider>
   );
 }
 

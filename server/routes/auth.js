@@ -4,16 +4,16 @@ const AuthController = require("../controllers/authController");
 const authentication = require("../middleware/authentication");
 const authorization = require("../middleware/authorization");
 const { USER_ROLE } = require("../helpers/enums");
+const { auth: authValidator } = require("../middleware/validators");
 
-// Public routes
-router.post("/register", AuthController.register);
-router.post("/login", AuthController.login);
+router.post("/register", authValidator.validateRegister, AuthController.register);
+router.post("/login", authValidator.validateLogin, AuthController.login);
 
-// Admin only
 router.post(
   "/staff/add",
   authentication,
   authorization(USER_ROLE.ADMIN),
+  authValidator.validateAddStaff,
   AuthController.addStaff
 );
 

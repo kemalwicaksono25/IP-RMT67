@@ -12,7 +12,6 @@ router.use("/products", productRoutes);
 router.use("/briefs", briefRoutes);
 router.use("/admin", adminRoutes);
 
-// Calendar route (accessible by all authenticated users)
 const AdminController = require("../controllers/adminController");
 router.get("/calendar", authentication, projectScope, AdminController.getCalendar);
 

@@ -27,7 +27,7 @@ class ProductController {
       });
 
       if (!product) {
-        return res.status(404).json({ message: "Product not found" });
+        return res.status(404).json({ message: "Produk tidak ditemukan" });
       }
 
       res.json(product);
@@ -43,11 +43,6 @@ class ProductController {
         ? `/uploads/products/${req.file.filename}`
         : null;
 
-      if (!name) {
-        return res.status(400).json({ message: "Product name is required" });
-      }
-
-      // Create product
       const product = await db.Product.create({
         name,
         description: description || "",
@@ -56,10 +51,8 @@ class ProductController {
         ProjectId: req.user.ProjectId,
       });
 
-      // Generate PGG (Pain, Gain, Goals) using AI
       try {
         const pgg = await AIService.generatePGG(product);
-        // Ensure all fields are saved to database
         await product.update({
           pains: Array.isArray(pgg.pains) ? pgg.pains : [],
           gains: Array.isArray(pgg.gains) ? pgg.gains : [],
@@ -67,10 +60,7 @@ class ProductController {
         });
       } catch (aiError) {
         console.error("AI Generation Error:", aiError);
-        // Continue even if AI fails
       }
-
-      // Reload product to get updated PGG
       await product.reload();
 
       res.status(201).json(product);
@@ -92,7 +82,7 @@ class ProductController {
       });
 
       if (!product) {
-        return res.status(404).json({ message: "Product not found" });
+        return res.status(404).json({ message: "Produk tidak ditemukan" });
       }
 
       const updateData = {};
@@ -100,7 +90,6 @@ class ProductController {
       if (description !== undefined) updateData.description = description;
       if (link !== undefined) updateData.link = link;
       
-      // Update PGG if provided (handle JSON string from FormData)
       if (pains !== undefined) {
         try {
           updateData.pains = typeof pains === 'string' ? JSON.parse(pains) : pains;
@@ -150,17 +139,14 @@ class ProductController {
       });
 
       if (!product) {
-        return res.status(404).json({ message: "Product not found" });
+        return res.status(404).json({ message: "Produk tidak ditemukan" });
       }
 
       if (!product.link) {
-        return res.status(400).json({ message: "Product link is required for analysis" });
+        return res.status(400).json({ message: "Link produk diperlukan untuk analisis" });
       }
 
-      // Analyze product from link using AI
       const pgg = await AIService.analyzeProductFromLink(product);
-      
-      // Ensure all fields are saved to database
       await product.update({
         pains: Array.isArray(pgg.pains) ? pgg.pains : [],
         gains: Array.isArray(pgg.gains) ? pgg.gains : [],
@@ -191,7 +177,7 @@ class ProductController {
       });
 
       if (!product) {
-        return res.status(404).json({ message: "Product not found" });
+        return res.status(404).json({ message: "Produk tidak ditemukan" });
       }
 
       await product.destroy();

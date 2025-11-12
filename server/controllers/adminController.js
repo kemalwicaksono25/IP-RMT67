@@ -1,12 +1,10 @@
 const db = require("../models");
 const { Sequelize } = require("sequelize");
-const { BRIEF_STATUS, BRIEF_DETAIL_STATUS } = require("../helpers/enums");
+const { BRIEF_DETAIL_STATUS } = require("../helpers/enums");
 
 class AdminController {
   static async getPendingApprovals(req, res, next) {
     try {
-      // Find all BriefDetails with status PENDING_APPROVAL (staff submitted for approval)
-      // READY status means detail is ready but not yet submitted, so it shouldn't appear in approval page
       const pendingDetails = await db.BriefDetail.findAll({
         where: {
           ProjectId: req.user.ProjectId,
@@ -19,14 +17,11 @@ class AdminController {
       });
 
       const briefIdsWithPending = [...new Set(pendingDetails.map(d => d.BriefId))];
-
-      // Get briefs that have details with status PENDING_APPROVAL
-      // Status is only managed at BriefDetail level, not parent Brief
       const briefs = await db.Brief.findAll({
         where: {
           ProjectId: req.user.ProjectId,
           id: {
-            [Sequelize.Op.in]: briefIdsWithPending.length > 0 ? briefIdsWithPending : [0], // Return empty if no pending details
+            [Sequelize.Op.in]: briefIdsWithPending.length > 0 ? briefIdsWithPending : [0],
           },
         },
         include: [
@@ -42,7 +37,7 @@ class AdminController {
                 ],
               },
             },
-            required: true, // Only include briefs with pending details
+            required: true,
             order: [["id", "ASC"]],
           },
           {
@@ -66,7 +61,7 @@ class AdminController {
   static async approveBrief(req, res, next) {
     try {
       const { id } = req.params;
-      const { scheduledAt, scheduledTime } = req.body; // Optional: admin can set schedule when approving
+      const { scheduledAt, scheduledTime } = req.body;
 
       const brief = await db.Brief.findOne({
         where: {
@@ -77,11 +72,9 @@ class AdminController {
       });
 
       if (!brief) {
-        return res.status(404).json({ message: "Brief not found" });
+        return res.status(404).json({ message: "Brief tidak ditemukan" });
       }
 
-      // Status is only managed at BriefDetail level, not parent Brief
-      // Update all brief details with PENDING_APPROVAL status (only staff-submitted briefs appear here)
       const details = await db.BriefDetail.findAll({
         where: { 
           BriefId: brief.id,
@@ -93,15 +86,12 @@ class AdminController {
         }
       });
 
-      // Combine scheduledAt and scheduledTime if provided
       let scheduledDateTime = null;
       if (scheduledAt && scheduledTime) {
         scheduledDateTime = new Date(`${scheduledAt}T${scheduledTime}`);
       }
 
       for (const detail of details) {
-        // If scheduledAt exists (from detail or from request), set to SCHEDULED
-        // Otherwise set to APPROVED
         const finalScheduledAt = scheduledDateTime || detail.scheduledAt;
         
         if (finalScheduledAt) {
@@ -144,12 +134,9 @@ class AdminController {
       });
 
       if (!brief) {
-        return res.status(404).json({ message: "Brief not found" });
+        return res.status(404).json({ message: "Brief tidak ditemukan" });
       }
 
-      // Status is only managed at BriefDetail level, not parent Brief
-      // Update all brief details with PENDING_APPROVAL status to REJECTED
-      // READY status means detail is ready but not yet submitted, so it shouldn't be rejected
       const details = await db.BriefDetail.findAll({
         where: { 
           BriefId: brief.id,
@@ -167,7 +154,6 @@ class AdminController {
         });
       }
 
-      // Update rejection reason on brief
       await brief.update({
         rejectionReason: rejectionReason || "",
       });
@@ -188,10 +174,6 @@ class AdminController {
 
   static async getCalendar(req, res, next) {
     try {
-      // Get all brief details that should appear in calendar:
-      // 1. Status is SCHEDULED (admin submitted directly or admin approved with scheduledAt)
-      // 2. Status is APPROVED with scheduledAt (staff approved and scheduled)
-      // Must have scheduledAt to appear in calendar
       const briefDetails = await db.BriefDetail.findAll({
         where: {
           ProjectId: req.user.ProjectId,
@@ -202,7 +184,7 @@ class AdminController {
             ],
           },
           scheduledAt: {
-            [Sequelize.Op.ne]: null, // Only get items with scheduledAt
+            [Sequelize.Op.ne]: null,
           },
         },
         include: [
@@ -214,13 +196,12 @@ class AdminController {
               model: db.Product, 
               as: "product",
               required: false
-            }],
+            }]
           },
         ],
         order: [["scheduledAt", "ASC"]],
       });
 
-      // Format for calendar
       const calendarData = briefDetails.map((detail) => ({
         id: detail.id,
         title: detail.title,
@@ -230,7 +211,7 @@ class AdminController {
         cta: detail.cta,
         caption: detail.caption,
         hashtags: detail.hashtags,
-        detail: detail.detail, // JSONB field with all production details
+        detail: detail.detail,
         scheduledAt: detail.scheduledAt,
         status: detail.status,
         brief: detail.brief ? {
@@ -246,44 +227,14 @@ class AdminController {
     }
   }
 
-  static async scheduleBriefDetail(req, res, next) {
-    try {
-      const { id } = req.params;
-      const { scheduledAt } = req.body;
-
-      const briefDetail = await db.BriefDetail.findOne({
-        where: {
-          id,
-          ProjectId: req.user.ProjectId,
-        },
-      });
-
-      if (!briefDetail) {
-        return res.status(404).json({ message: "Brief detail not found" });
-      }
-
-      await briefDetail.update({
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-        status: scheduledAt
-          ? BRIEF_DETAIL_STATUS.SCHEDULED
-          : BRIEF_DETAIL_STATUS.APPROVED,
-      });
-
-      res.json(briefDetail);
-    } catch (error) {
-      next(error);
-    }
-  }
-
   static async getTeam(req, res, next) {
     try {
-      // Get all users (admin + staff) in the same project
       const team = await db.User.findAll({
         where: {
           ProjectId: req.user.ProjectId,
         },
         attributes: {
-          exclude: ["password"], // Don't return password
+          exclude: ["password"]
         },
         order: [["createdAt", "DESC"]],
       });
@@ -298,18 +249,12 @@ class AdminController {
     try {
       const { projectName } = req.body;
 
-      if (!projectName || projectName.trim() === '') {
-        return res.status(400).json({ message: "Project name is required" });
-      }
-
-      // Get project by ProjectId
       const project = await db.Project.findByPk(req.user.ProjectId);
 
       if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+        return res.status(404).json({ message: "Project tidak ditemukan" });
       }
 
-      // Update project name
       await project.update({
         name: projectName.trim(),
       });

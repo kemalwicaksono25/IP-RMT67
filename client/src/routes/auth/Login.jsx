@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuthStore } from '../../store/auth.store';
+import { useSelector, useDispatch } from 'react-redux';
+import { store, persistor } from '../../store';
+import { login as loginAction } from '../../store/authSlice';
 import { login } from '../../services/auth.api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login: setAuth, token } = useAuthStore();
+  const token = useSelector((state) => state.auth.token);
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
 
   // Redirect jika sudah login
   useEffect(() => {
@@ -16,57 +23,106 @@ export default function Login() {
       navigate('/dashboard', { replace: true });
     }
   }, [token, navigate]);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-            const response = await login(formData);
-            const { access_token, user: userFromResponse } = response.data;
+      const response = await login(formData);
+      
+      const { access_token, user: userFromResponse } = response.data;
 
-            // Use user data from response if available, otherwise decode from JWT
-            let userData;
-            if (userFromResponse) {
-              userData = userFromResponse;
-            } else {
-              // Decode JWT to get user info
-              try {
-                const payload = JSON.parse(atob(access_token.split('.')[1]));
-                userData = {
-                  id: payload.id,
-                  email: payload.email,
-                  name: payload.name || formData.email.split('@')[0],
-                  role: payload.role,
-                  ProjectId: payload.ProjectId,
-                  projectName: null, // Will be fetched if needed
-                };
-              } catch (error) {
-                console.error('Error decoding JWT:', error);
-                // Fallback
-                userData = {
-                  email: formData.email,
-                  name: formData.email.split('@')[0],
-                  role: 'staff',
-                  projectName: null,
-                };
-              }
+      if (!access_token) {
+        toast.error('Token tidak diterima dari server');
+        setLoading(false);
+        return;
+      }
+
+      // Gunakan data user dari response jika tersedia, jika tidak decode dari JWT
+      let userData;
+      if (userFromResponse) {
+        userData = userFromResponse;
+      } else {
+        try {
+          const payload = JSON.parse(atob(access_token.split('.')[1]));
+          userData = {
+            id: payload.id,
+            email: payload.email,
+            name: payload.name || formData.email.split('@')[0],
+            role: payload.role,
+            ProjectId: payload.ProjectId,
+            projectName: null,
+          };
+        } catch (error) {
+          userData = {
+            email: formData.email,
+            name: formData.email.split('@')[0],
+            role: 'staff',
+            projectName: null,
+          };
+        }
+      }
+
+      // Dispatch login action
+      dispatch(loginAction({
+        user: userData,
+        token: access_token,
+      }));
+
+      // Force flush Redux Persist untuk memastikan data tersimpan ke localStorage
+      await persistor.flush();
+
+      // Tunggu lebih lama untuk memastikan Redux Persist menyimpan dan rehydrate
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verifikasi token tersimpan dengan membaca dari store
+      const currentState = store.getState();
+      
+      // Verifikasi juga dari localStorage
+      const authStorage = localStorage.getItem('persist:auth-storage');
+      
+      if (!currentState.auth.token || currentState.auth.token.trim() === '') {
+        // Coba ambil dari localStorage sebagai fallback
+        if (authStorage) {
+          try {
+            const parsed = JSON.parse(authStorage);
+            const authData = JSON.parse(parsed.auth);
+            if (!authData.token || authData.token.trim() === '') {
+              toast.error('Gagal menyimpan session. Silakan coba lagi.');
+              setLoading(false);
+              return;
             }
-
-            setAuth({
-              token: access_token,
-              user: userData,
-            });
+          } catch (e) {
+            toast.error('Gagal menyimpan session. Silakan coba lagi.');
+            setLoading(false);
+            return;
+          }
+        } else {
+          toast.error('Gagal menyimpan session. Silakan coba lagi.');
+          setLoading(false);
+          return;
+        }
+      }
 
       toast.success('Login berhasil!');
-      navigate('/dashboard');
+      setFormData({ email: '', password: '' });
+      
+      // Tunggu sebentar lagi sebelum navigate untuk memastikan semua state ter-update
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Redirect ke dashboard - Protected route akan handle token check
+      navigate('/dashboard', { replace: true });
     } catch (error) {
-      console.error('Login error:', error);
-      toast.error(error.response?.data?.message || 'Login gagal');
+      if (error.response) {
+        // Server responded with error status
+        const errorMessage = error.response.data?.message || 'Email atau password salah';
+        toast.error(errorMessage);
+      } else if (error.request) {
+        toast.error('Tidak dapat terhubung ke server');
+      } else {
+        toast.error('Login gagal. Silakan coba lagi.');
+      }
     } finally {
       setLoading(false);
     }
@@ -86,6 +142,7 @@ export default function Login() {
             <input
               type="email"
               required
+              autoComplete="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -99,6 +156,7 @@ export default function Login() {
             <input
               type="password"
               required
+              autoComplete="current-password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -123,4 +181,3 @@ export default function Login() {
     </div>
   );
 }
-

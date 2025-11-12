@@ -8,26 +8,14 @@ class AuthController {
     try {
       const { name, email, password, projectName } = req.body;
 
-      if (!name || !email || !password) {
-        return res.status(400).json({ message: "All fields are required" });
-      }
-
-      if (!projectName || projectName.trim() === '') {
-        return res.status(400).json({ message: "Project name is required" });
-      }
-
-      // Check if email already exists
       const existingUser = await db.User.findOne({ where: { email } });
       if (existingUser) {
-        return res.status(400).json({ message: "Email already exists" });
+        return res.status(400).json({ message: "Email sudah terdaftar" });
       }
 
-      // Create project first
       const project = await db.Project.create({
         name: projectName.trim(),
       });
-
-      // Create admin user
       const user = await db.User.create({
         name,
         email,
@@ -62,19 +50,13 @@ class AuthController {
     try {
       const { email, password } = req.body;
 
-      if (!email || !password) {
-        return res
-          .status(400)
-          .json({ message: "Email and password are required" });
-      }
-
       const user = await db.User.findOne({ 
         where: { email },
         include: [{ model: db.Project, as: "project" }],
       });
 
       if (!user || !comparePassword(password, user.password)) {
-        return res.status(401).json({ message: "Invalid email/password" });
+        return res.status(401).json({ message: "Email atau password salah" });
       }
 
       const access_token = generateToken({
@@ -105,28 +87,17 @@ class AuthController {
     try {
       const { name, email, password } = req.body;
 
-      if (!name || !email || !password) {
-        return res.status(400).json({ message: "All fields are required" });
-      }
-
-      // Ensure admin has ProjectId
-      if (!req.user || !req.user.ProjectId) {
-        return res.status(401).json({ message: "Unauthorized: Admin must have a project" });
-      }
-
-      // Check if email already exists
       const existingUser = await db.User.findOne({ where: { email } });
       if (existingUser) {
-        return res.status(400).json({ message: "Email already exists" });
+        return res.status(400).json({ message: "Email sudah terdaftar" });
       }
 
-      // Create staff user in same project as admin
       const staff = await db.User.create({
         name,
         email,
         password: hashPassword(password),
         role: USER_ROLE.STAFF,
-        ProjectId: req.user.ProjectId, // Use admin's ProjectId
+        ProjectId: req.user.ProjectId,
       });
 
       res.status(201).json({

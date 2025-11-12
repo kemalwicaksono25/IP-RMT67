@@ -1,24 +1,48 @@
 import axios from 'axios';
+import { getTokenFromStorage } from '../utils/authHelper';
+import { store } from '../store';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
 });
 
+// Helper untuk mendapatkan token dari Redux state atau localStorage
+const getToken = () => {
+  try {
+    // Coba ambil dari Redux state terlebih dahulu
+    const state = store.getState();
+    if (state?.auth?.token && typeof state.auth.token === 'string' && state.auth.token.trim() !== '') {
+      return state.auth.token.trim();
+    }
+    
+    // Fallback ke localStorage
+    return getTokenFromStorage();
+  } catch (error) {
+    // Jika error, coba dari localStorage
+    return getTokenFromStorage();
+  }
+};
+
 // Request interceptor untuk menambahkan token
 api.interceptors.request.use(
   (config) => {
-    const authStorage = localStorage.getItem('auth-storage');
-    if (authStorage) {
-      try {
-        const parsed = JSON.parse(authStorage);
-        const token = parsed?.state?.token;
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch (error) {
-        console.error('Error parsing auth storage:', error);
-      }
+    // Jangan tambahkan token untuk endpoint auth (login/register)
+    const isAuthEndpoint = config.url?.includes('/auth/login') || 
+                          config.url?.includes('/auth/register');
+    
+    if (isAuthEndpoint) {
+      return config;
     }
+
+    // Gunakan helper function untuk mendapatkan token
+    const token = getToken();
+    
+    if (token && typeof token === 'string' && token.trim() !== '') {
+      // Pastikan header Authorization belum ada atau overwrite dengan token terbaru
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token.trim()}`;
+    }
+    
     return config;
   },
   (error) => {
@@ -26,19 +50,27 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor untuk handle errors
+// Response interceptor untuk menangani error
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear auth and redirect to login
-      localStorage.removeItem('auth-storage');
-      window.location.href = '/login';
+      // Jangan redirect jika request ke endpoint auth (login/register)
+      // karena 401 di endpoint tersebut adalah error yang valid
+      const isAuthEndpoint = error.config?.url?.includes('/auth/login') || 
+                            error.config?.url?.includes('/auth/register');
+      
+      if (!isAuthEndpoint) {
+        // Unauthorized - hapus auth dan redirect ke login
+        localStorage.removeItem('persist:auth-storage');
+        localStorage.removeItem('auth-storage'); // Bersihkan storage lama jika ada
+        // Hanya redirect jika tidak sedang di halaman login
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
     }
-    // Log network errors
-    if (!error.response) {
-      console.error('Network error:', error.message);
-    }
+    // Network errors are handled by error handler
     return Promise.reject(error);
   }
 );

@@ -12,10 +12,6 @@ export const rejectBrief = (id, reason) => {
   return api.put(`/admin/approvals/${id}/reject`, { rejectionReason: reason });
 };
 
-export const scheduleBriefDetail = (id, scheduledAt) => {
-  return api.put(`/admin/calendar/${id}/schedule`, { scheduledAt });
-};
-
 export const updateProjectName = (projectName) => {
   return api.put('/admin/project/name', { projectName });
 };

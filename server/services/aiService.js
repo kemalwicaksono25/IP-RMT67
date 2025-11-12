@@ -259,67 +259,66 @@ PARAMETER KONTEN:
 - Gaya Bahasa/Tone of Voice: ${tone}
 - Judul Konten: "${title}"
 
-REQUIREMENT DETAIL VIDEO (HARUS SANGAT RINCI DAN PANJANG):
-1. Scene Breakdown (WAJIB 5-7 scene dengan deskripsi yang SANGAT DETAIL):
-   - Scene 1 (0-2s): Hook yang sangat kuat dan menarik perhatian. Deskripsikan dengan detail: apa yang terlihat di layar, gerakan kamera, ekspresi talent, teks overlay jika ada, dan emosi yang ingin ditimbulkan. Minimal 3-4 kalimat deskripsi.
-   - Scene 2 (3-5s): Transisi atau pengenalan masalah. Deskripsikan dengan detail: setting, props, lighting, angle kamera, dan bagaimana masalah ditampilkan secara visual. Minimal 3-4 kalimat deskripsi.
-   - Scene 3 (6-9s): Solusi atau demo produk. Deskripsikan dengan SANGAT DETAIL: bagaimana produk ditampilkan, fitur yang ditonjolkan, cara penggunaan, close-up shots, dan visual impact. Minimal 4-5 kalimat deskripsi.
-   - Scene 4 (10-12s): Benefit atau hasil yang didapat. Deskripsikan dengan detail: testimoni visual, before-after, atau demonstrasi manfaat. Minimal 3-4 kalimat deskripsi.
-   - Scene 5 (13-15s): CTA dan closing yang kuat. Deskripsikan dengan detail: teks CTA, visual yang mendukung, dan closing statement. Minimal 3-4 kalimat deskripsi.
+REQUIREMENT DETAIL VIDEO (HARUS RINCI):
+1. Scene Breakdown (WAJIB 5 scene dengan deskripsi yang DETAIL):
+   - Scene 1 (0-2s): Hook yang sangat kuat. Deskripsikan: apa yang terlihat, gerakan kamera, ekspresi talent, teks overlay, emosi. Minimal 2-3 kalimat.
+   - Scene 2 (3-5s): Pengenalan masalah. Deskripsikan: setting, props, lighting, angle kamera, visual masalah. Minimal 2-3 kalimat.
+   - Scene 3 (6-9s): Solusi atau demo produk. Deskripsikan: bagaimana produk ditampilkan, fitur yang ditonjolkan, cara penggunaan, close-up shots. Minimal 3-4 kalimat.
+   - Scene 4 (10-12s): Benefit atau hasil. Deskripsikan: testimoni visual, before-after, demonstrasi manfaat. Minimal 2-3 kalimat.
+   - Scene 5 (13-15s): CTA dan closing. Deskripsikan: teks CTA, visual pendukung, closing statement. Minimal 2-3 kalimat.
 
-2. Visual Description (HARUS SANGAT DETAIL, minimal 8-10 kalimat):
-   - Warna dominan dan palet warna yang digunakan (sebutkan kode warna jika perlu)
-   - Mood dan atmosphere yang ingin diciptakan
-   - Style visual (contoh: minimalist, vibrant, cozy, modern, dll)
-   - Setting dan lokasi shooting (detail ruangan, outdoor, atau studio)
-   - Props dan elemen visual yang digunakan
-   - Lighting setup (natural light, soft lighting, dramatic lighting, dll)
-   - Camera movement dan angle (close-up, wide shot, tracking shot, dll)
-   - Style editing dan transisi antar scene
+2. Visual Description (HARUS DETAIL, minimal 6-8 kalimat):
+   - Warna dominan dan palet warna (sebutkan kode warna jika perlu)
+   - Mood dan atmosphere
+   - Style visual (minimalist, vibrant, cozy, modern, dll)
+   - Setting dan lokasi shooting (ruangan, outdoor, atau studio)
+   - Props dan elemen visual
+   - Lighting setup (natural light, soft lighting, dramatic lighting)
+   - Camera movement dan angle (close-up, wide shot, tracking shot)
+   - Style editing dan transisi
 
-3. Music Suggestion (DETAIL, minimal 3-4 kalimat):
+3. Music Suggestion (DETAIL, minimal 2-3 kalimat):
    - Genre musik yang tepat
    - Tempo dan beat (slow, medium, fast)
-   - Mood musik (energetic, calm, dramatic, dll)
-   - Contoh artist atau track yang mirip (jika ada)
-   - Kapan musik mulai fade in/out
+   - Mood musik (energetic, calm, dramatic)
+   - Timing fade in/out
 
-4. Caption (HARUS PANJANG, minimal 8-12 kalimat, 150-250 kata):
-   - Hook yang sangat menarik di awal (2-3 kalimat)
-   - Penjelasan masalah atau pain point yang relevan (2-3 kalimat)
-   - Penjelasan solusi dan manfaat produk secara detail (3-4 kalimat)
-   - Social proof atau urgency jika relevan (1-2 kalimat)
+4. Caption (HARUS PANJANG, minimal 6-10 kalimat, 120-200 kata):
+   - Hook yang sangat menarik di awal (2 kalimat)
+   - Penjelasan masalah atau pain point yang relevan (2 kalimat)
+   - Penjelasan solusi dan manfaat produk secara detail (2-3 kalimat)
+   - Social proof atau urgency jika relevan (1 kalimat)
    - Call to action yang jelas dan compelling (1-2 kalimat)
-   - 8-12 hashtag yang relevan, trending, dan sesuai dengan produk dan platform di akhir caption
+   - 8-10 hashtag yang relevan, trending, dan sesuai dengan produk dan platform di akhir caption
    - Gunakan emoji yang relevan untuk meningkatkan engagement (3-5 emoji)
    
-   Format caption: [Teks caption panjang dengan hook, masalah, solusi, manfaat, dan CTA] [spasi] [8-12 hashtag dipisahkan spasi]
+   Format caption: [Teks caption panjang dengan hook, masalah, solusi, manfaat, dan CTA] [spasi] [8-10 hashtag dipisahkan spasi]
 
 PENTING:
-- Setiap scene breakdown HARUS sangat detail dan actionable, minimal 3-4 kalimat per scene
-- Visual description HARUS sangat lengkap untuk memudahkan production, minimal 8-10 kalimat
-- Caption HARUS panjang (8-12 kalimat, 150-250 kata) dan engaging
+- Setiap scene breakdown HARUS detail dan actionable, minimal 2-3 kalimat per scene
+- Visual description HARUS lengkap untuk memudahkan production, minimal 5-7 kalimat
+- Caption HARUS panjang (6-10 kalimat, 120-200 kata) dan engaging
 - Semua deskripsi harus spesifik, tidak generic
 - Output harus siap pakai untuk production team
 
-PENTING: Output HARUS dalam format JSON yang valid. Jangan tambahkan penjelasan atau teks lain di luar JSON.
+PENTING: Output HARUS dalam format JSON yang valid. Jangan tambahkan penjelasan, markdown code blocks, atau teks lain di luar JSON. Hanya return JSON object saja. Pastikan semua string ditutup dengan quote yang benar.
 
-Format output JSON:
+Format output JSON (HARUS EXACT FORMAT INI):
 {
   "detail": {
     "type": "video",
     "duration": "15 detik",
     "scenes": [
-      {"time": "0-2s", "description": "Deskripsi scene 1 yang SANGAT DETAIL dan PANJANG (minimal 3-4 kalimat)"},
-      {"time": "3-5s", "description": "Deskripsi scene 2 yang SANGAT DETAIL dan PANJANG (minimal 3-4 kalimat)"},
-      {"time": "6-9s", "description": "Deskripsi scene 3 yang SANGAT DETAIL dan PANJANG (minimal 4-5 kalimat)"},
-      {"time": "10-12s", "description": "Deskripsi scene 4 yang SANGAT DETAIL dan PANJANG (minimal 3-4 kalimat)"},
-      {"time": "13-15s", "description": "Deskripsi scene 5 yang SANGAT DETAIL dan PANJANG (minimal 3-4 kalimat)"}
+      {"time": "0-2s", "description": "Deskripsi scene 1 yang DETAIL (minimal 2-3 kalimat)"},
+      {"time": "3-5s", "description": "Deskripsi scene 2 yang DETAIL (minimal 2-3 kalimat)"},
+      {"time": "6-9s", "description": "Deskripsi scene 3 yang DETAIL (minimal 3-4 kalimat)"},
+      {"time": "10-12s", "description": "Deskripsi scene 4 yang DETAIL (minimal 2-3 kalimat)"},
+      {"time": "13-15s", "description": "Deskripsi scene 5 yang DETAIL (minimal 2-3 kalimat)"}
     ],
-    "visual": "Deskripsi visual yang SANGAT DETAIL dan PANJANG (minimal 8-10 kalimat, mencakup warna, mood, style, setting, props, lighting, camera movement)",
-    "music": "Rekomendasi musik yang DETAIL (minimal 3-4 kalimat, mencakup genre, tempo, mood, dan timing)"
+    "visual": "Deskripsi visual yang DETAIL (minimal 5-7 kalimat, mencakup warna, mood, style, setting, props, lighting, camera movement)",
+    "music": "Rekomendasi musik yang DETAIL (minimal 2-3 kalimat, mencakup genre, tempo, mood, dan timing)"
   },
-  "caption": "Caption yang SANGAT PANJANG (8-12 kalimat, 150-250 kata) dengan hook, masalah, solusi, manfaat, CTA, dan hashtag di akhir",
+  "caption": "Caption yang PANJANG (6-10 kalimat, 120-200 kata) dengan hook, masalah, solusi, manfaat, CTA, dan hashtag di akhir",
   "hashtags": []
 }`;
     } else if (tag === "carousel") {
@@ -424,59 +423,56 @@ REQUIREMENT DETAIL IMAGE (HARUS SANGAT RINCI DAN PANJANG):
    - Maksimal 2-3 kalimat yang powerful
    - Harus memberikan konteks dan alasan untuk action
 
-3. Visual Description (HARUS SANGAT DETAIL, minimal 10-12 kalimat):
-   - Warna dominan dan palet warna lengkap (sebutkan kode warna hex, RGB, atau nama warna spesifik)
-   - Mood dan atmosphere yang ingin diciptakan (energetic, calm, luxurious, dll)
-   - Style visual (minimalist, vibrant, elegant, modern, vintage, dll) dengan penjelasan detail
-   - Elemen visual yang digunakan (illustration, photography, icon, pattern, dll)
-   - Props dan elemen pendukung (jika menggunakan foto produk)
-   - Setting dan background (studio, lifestyle, abstract, dll)
-   - Composition style (rule of thirds, centered, asymmetric, dll)
-   - Lighting dan shadow effects
-   - Texture dan material feel (glossy, matte, paper texture, dll)
+3. Visual Description (HARUS DETAIL, minimal 6-8 kalimat):
+   - Warna dominan dan palet warna (sebutkan kode warna hex atau nama warna)
+   - Mood dan atmosphere (energetic, calm, luxurious, dll)
+   - Style visual (minimalist, vibrant, elegant, modern, dll)
+   - Elemen visual yang digunakan (illustration, photography, icon, pattern)
+   - Setting dan background (studio, lifestyle, abstract)
+   - Composition style (rule of thirds, centered, asymmetric)
+   - Lighting dan visual effects
    - Visual hierarchy dan focal point
 
-4. Layout Description (HARUS SANGAT DETAIL, minimal 8-10 kalimat):
-   - Posisi headline (top, center, bottom, dengan koordinat atau persentase jika perlu)
+4. Layout Description (HARUS DETAIL, minimal 6-8 kalimat):
+   - Posisi headline (top, center, bottom dengan persentase)
    - Posisi subheadline relatif terhadap headline
-   - Posisi gambar produk (center, left, right, dengan size dan proportion)
-   - Posisi CTA button (size, color, position, style)
-   - Spacing dan padding antara elemen (spesifik dalam pixel atau persentase)
-   - Typography hierarchy (font size untuk headline, subheadline, body text, CTA)
-   - Alignment dan justification (left, center, right, justified)
-   - Grid system atau layout structure yang digunakan
-   - White space dan breathing room
+   - Posisi gambar produk (center, left, right dengan size)
+   - Posisi CTA button (size, color, position)
+   - Spacing dan padding antara elemen (dalam pixel atau persentase)
+   - Typography hierarchy (font size untuk headline, subheadline, CTA)
+   - Alignment (left, center, right)
+   - Grid system atau layout structure
 
-5. Caption (HARUS PANJANG, minimal 8-12 kalimat, 150-250 kata):
-   - Hook yang sangat menarik di awal (2-3 kalimat)
-   - Penjelasan masalah atau pain point yang relevan (2-3 kalimat)
-   - Penjelasan solusi dan manfaat produk secara detail (3-4 kalimat)
-   - Social proof atau urgency jika relevan (1-2 kalimat)
+5. Caption (HARUS PANJANG, minimal 6-10 kalimat, 120-200 kata):
+   - Hook yang sangat menarik di awal (2 kalimat)
+   - Penjelasan masalah atau pain point yang relevan (2 kalimat)
+   - Penjelasan solusi dan manfaat produk secara detail (2-3 kalimat)
+   - Social proof atau urgency jika relevan (1 kalimat)
    - Call to action yang jelas dan compelling (1-2 kalimat)
-   - 8-12 hashtag yang relevan, trending, dan sesuai dengan produk dan platform di akhir caption
+   - 8-10 hashtag yang relevan, trending, dan sesuai dengan produk dan platform di akhir caption
    - Gunakan emoji yang relevan untuk meningkatkan engagement (3-5 emoji)
    
-   Format caption: [Teks caption panjang dengan hook, masalah, solusi, manfaat, dan CTA] [spasi] [8-12 hashtag dipisahkan spasi]
+   Format caption: [Teks caption panjang dengan hook, masalah, solusi, manfaat, dan CTA] [spasi] [8-10 hashtag dipisahkan spasi]
 
 PENTING:
-- Visual description HARUS sangat lengkap untuk memudahkan production, minimal 10-12 kalimat
-- Layout description HARUS sangat detail untuk memudahkan design, minimal 8-10 kalimat
-- Caption HARUS panjang (8-12 kalimat, 150-250 kata) dan engaging
+- Visual description HARUS lengkap untuk memudahkan production, minimal 5-7 kalimat yang detail
+- Layout description HARUS detail untuk memudahkan design, minimal 5-7 kalimat yang spesifik
+- Caption HARUS panjang (6-10 kalimat, 120-200 kata) dan engaging
 - Semua deskripsi harus spesifik, tidak generic
 - Output harus siap pakai untuk design team
 
-PENTING: Output HARUS dalam format JSON yang valid. Jangan tambahkan penjelasan atau teks lain di luar JSON.
+PENTING: Output HARUS dalam format JSON yang valid. Jangan tambahkan penjelasan, markdown code blocks, atau teks lain di luar JSON. Hanya return JSON object saja. Pastikan semua string ditutup dengan quote yang benar.
 
-Format output JSON:
+Format output JSON (HARUS EXACT FORMAT INI):
 {
   "detail": {
     "type": "image",
     "headline": "Headline yang sangat kuat dan impactful",
     "subheadline": "Subheadline yang sangat mendukung headline (2-3 kalimat)",
-    "visual": "Deskripsi visual yang SANGAT DETAIL dan PANJANG (minimal 10-12 kalimat, mencakup warna, mood, style, elemen visual, props, setting, composition, lighting, texture)",
-    "layout": "Deskripsi layout yang SANGAT DETAIL dan PANJANG (minimal 8-10 kalimat, mencakup posisi semua elemen, spacing, typography, alignment, grid system)"
+    "visual": "Deskripsi visual yang DETAIL (minimal 5-7 kalimat, mencakup warna, mood, style, elemen visual, setting, composition, lighting)",
+    "layout": "Deskripsi layout yang DETAIL (minimal 5-7 kalimat, mencakup posisi semua elemen, spacing, typography, alignment, grid system)"
   },
-  "caption": "Caption yang SANGAT PANJANG (8-12 kalimat, 150-250 kata) dengan hook, masalah, solusi, manfaat, CTA, dan hashtag di akhir",
+  "caption": "Caption yang PANJANG (6-10 kalimat, 120-200 kata) dengan hook, masalah, solusi, manfaat, CTA, dan hashtag di akhir",
   "hashtags": []
 }`;
     }
@@ -485,49 +481,352 @@ Format output JSON:
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are a helpful assistant that always responds with valid JSON format. Always provide detailed, comprehensive, and lengthy responses. Be specific and avoid generic descriptions." },
+          { role: "system", content: "You are a helpful assistant that always responds with valid JSON format only. Return ONLY the JSON object, no markdown, no code blocks, no explanations. The JSON must be complete and valid. Ensure all string values are properly closed with quotes." },
           { role: "user", content: prompt }
         ],
-        temperature: 0.8,
-        max_tokens: 2000,
+        temperature: 0.7,
+        max_tokens: 16000,
       });
 
       const content = completion.choices[0].message.content;
+      const contentLength = content.length;
+      const wasTruncated = completion.choices[0].finish_reason === 'length';
       
-      // Try to parse JSON directly
-      let parsed;
-      try {
-        parsed = JSON.parse(content);
-      } catch (parseError) {
-        // If direct parse fails, try to extract JSON from markdown code blocks or text
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            parsed = JSON.parse(jsonMatch[0]);
-          } catch (e) {
-            throw new Error(`Invalid JSON format: ${e.message}`);
+      // Clean content: remove markdown code blocks if present
+      let jsonString = content.trim();
+      jsonString = jsonString.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      
+      // If truncated, try to fix incomplete strings at the end
+      if (wasTruncated) {
+        // Find the last complete property by looking for pattern: "key": "value",
+        // or "key": "value"} at the end
+        let lastCompleteIndex = -1;
+        let inString = false;
+        let escapeNext = false;
+        
+        // Scan from end to find the last complete property
+        for (let i = jsonString.length - 1; i >= 0; i--) {
+          const char = jsonString[i];
+          
+          if (escapeNext) {
+            escapeNext = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escapeNext = true;
+            continue;
+          }
+          
+          if (char === '"' && !escapeNext) {
+            inString = !inString;
+            continue;
+          }
+          
+          // If we're not in a string, look for comma or closing brace
+          if (!inString) {
+            if (char === ',' || char === '}') {
+              // Check if this is followed by whitespace and then either comma, closing brace, or end
+              let isValidEnd = true;
+              for (let j = i + 1; j < jsonString.length; j++) {
+                const nextChar = jsonString[j];
+                if (nextChar === ' ' || nextChar === '\n' || nextChar === '\r' || nextChar === '\t') {
+                  continue;
+                }
+                // If we find a non-whitespace character that's not a closing brace or bracket, this isn't a valid end
+                if (nextChar !== '}' && nextChar !== ']' && nextChar !== ',') {
+                  isValidEnd = false;
+                }
+                break;
+              }
+              
+              if (isValidEnd) {
+                // Check backwards to see if this is a complete property (has a value with closing quote)
+                let hasCompleteValue = false;
+                let quoteCount = 0;
+                for (let j = i - 1; j >= 0 && j >= i - 200; j--) {
+                  if (jsonString[j] === '"' && (j === 0 || jsonString[j-1] !== '\\')) {
+                    quoteCount++;
+                    if (quoteCount === 2) {
+                      // Found a complete value, check if there's a colon before it
+                      for (let k = j - 1; k >= 0 && k >= j - 50; k--) {
+                        if (jsonString[k] === ':') {
+                          hasCompleteValue = true;
+                          break;
+                        }
+                        if (jsonString[k] !== ' ' && jsonString[k] !== '\n' && jsonString[k] !== '\r' && jsonString[k] !== '\t') {
+                          break;
+                        }
+                      }
+                      break;
+                    }
+                  }
+                }
+                
+                if (hasCompleteValue) {
+                  lastCompleteIndex = i;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        
+        // If we found a complete property, truncate there
+        if (lastCompleteIndex > 0) {
+          jsonString = jsonString.substring(0, lastCompleteIndex + 1);
+          // Close any open structures
+          let openBraces = (jsonString.match(/{/g) || []).length - (jsonString.match(/}/g) || []).length;
+          let openBrackets = (jsonString.match(/\[/g) || []).length - (jsonString.match(/\]/g) || []).length;
+          
+          for (let i = 0; i < openBrackets; i++) {
+            jsonString += ']';
+          }
+          for (let i = 0; i < openBraces; i++) {
+            jsonString += '}';
           }
         } else {
-          throw new Error("No valid JSON found in AI response");
+          // Fallback: find the last opening quote and close it
+          let lastOpenQuote = -1;
+          inString = false;
+          escapeNext = false;
+          
+          for (let i = jsonString.length - 1; i >= 0; i--) {
+            const char = jsonString[i];
+            
+            if (escapeNext) {
+              escapeNext = false;
+              continue;
+            }
+            
+            if (char === '\\') {
+              escapeNext = true;
+              continue;
+            }
+            
+            if (char === '"') {
+              if (!inString) {
+                lastOpenQuote = i;
+                break;
+              }
+              inString = !inString;
+            }
+          }
+          
+          // If we have an unclosed string, close it and the JSON structure
+          if (lastOpenQuote >= 0) {
+            jsonString = jsonString.substring(0, lastOpenQuote + 1) + '"';
+            // Close structures
+            let openBraces = (jsonString.match(/{/g) || []).length - (jsonString.match(/}/g) || []).length;
+            let openBrackets = (jsonString.match(/\[/g) || []).length - (jsonString.match(/\]/g) || []).length;
+            
+            for (let i = 0; i < openBrackets; i++) {
+              jsonString += ']';
+            }
+            for (let i = 0; i < openBraces; i++) {
+              jsonString += '}';
+            }
+          }
+        }
+      }
+      
+      // Try to parse JSON directly first
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonString);
+      } catch (parseError) {
+        // If direct parse fails, try to extract valid JSON object
+        // Find the first complete JSON object by tracking braces
+        let braceCount = 0;
+        let inString = false;
+        let escapeNext = false;
+        let jsonStart = -1;
+        let jsonEnd = -1;
+        
+        for (let i = 0; i < jsonString.length; i++) {
+          const char = jsonString[i];
+          
+          if (escapeNext) {
+            escapeNext = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escapeNext = true;
+            continue;
+          }
+          
+          if (char === '"' && !escapeNext) {
+            inString = !inString;
+            continue;
+          }
+          
+          if (!inString) {
+            if (char === '{') {
+              if (braceCount === 0) {
+                jsonStart = i;
+              }
+              braceCount++;
+            } else if (char === '}') {
+              braceCount--;
+              if (braceCount === 0 && jsonStart >= 0) {
+                jsonEnd = i;
+                // Try to parse this JSON object
+                try {
+                  const extractedJson = jsonString.substring(jsonStart, jsonEnd + 1);
+                  parsed = JSON.parse(extractedJson);
+                  break; // Successfully parsed, exit loop
+                } catch (e) {
+                  // This JSON object is invalid, continue searching
+                  jsonStart = -1;
+                  jsonEnd = -1;
+                }
+              }
+            }
+          }
+        }
+        
+        // If we found a valid JSON object, use it
+        if (parsed) {
+          // Successfully parsed
+        } else if (jsonStart >= 0 && jsonEnd >= 0) {
+          // Found JSON boundaries but parsing failed, try to fix it
+          let fixedJson = jsonString.substring(jsonStart, jsonEnd + 1);
+          
+          // Try to fix common issues: incomplete strings, unclosed structures
+          // Close any open structures
+          let openBraces = (fixedJson.match(/{/g) || []).length - (fixedJson.match(/}/g) || []).length;
+          let openBrackets = (fixedJson.match(/\[/g) || []).length - (fixedJson.match(/\]/g) || []).length;
+          
+          // Close arrays first
+          for (let i = 0; i < openBrackets; i++) {
+            fixedJson += ']';
+          }
+          
+          // Close objects
+          for (let i = 0; i < openBraces; i++) {
+            fixedJson += '}';
+          }
+          
+          // Try to fix incomplete strings at the end
+          if (inString) {
+            // Find the last complete property before the incomplete string
+            let lastCompleteComma = -1;
+            let inStringForComma = false;
+            let escapeNextForComma = false;
+            
+            for (let i = fixedJson.length - 1; i >= 0; i--) {
+              const char = fixedJson[i];
+              
+              if (escapeNextForComma) {
+                escapeNextForComma = false;
+                continue;
+              }
+              
+              if (char === '\\') {
+                escapeNextForComma = true;
+                continue;
+              }
+              
+              if (char === '"' && !escapeNextForComma) {
+                inStringForComma = !inStringForComma;
+                continue;
+              }
+              
+              if (!inStringForComma && char === ',') {
+                lastCompleteComma = i;
+                break;
+              }
+            }
+            
+            if (lastCompleteComma > 0) {
+              fixedJson = fixedJson.substring(0, lastCompleteComma + 1);
+              // Close structures again
+              openBraces = (fixedJson.match(/{/g) || []).length - (fixedJson.match(/}/g) || []).length;
+              openBrackets = (fixedJson.match(/\[/g) || []).length - (fixedJson.match(/\]/g) || []).length;
+              for (let i = 0; i < openBrackets; i++) {
+                fixedJson += ']';
+              }
+              for (let i = 0; i < openBraces; i++) {
+                fixedJson += '}';
+              }
+            }
+          }
+          
+          try {
+            parsed = JSON.parse(fixedJson);
+          } catch (e) {
+            throw new Error("Format respons AI tidak valid. Silakan coba lagi.");
+          }
+        } else {
+          // No JSON object found, try regex as fallback
+          const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              parsed = JSON.parse(jsonMatch[0]);
+            } catch (e) {
+              throw new Error("Format respons AI tidak valid. Silakan coba lagi.");
+            }
+          } else {
+            throw new Error("Respons AI tidak valid. Silakan coba lagi.");
+          }
         }
       }
 
       // Validate required fields
       if (!parsed.detail) {
-        throw new Error("Missing 'detail' field in AI response");
+        throw new Error("Detail konten tidak ditemukan. Silakan coba lagi.");
       }
-      if (!parsed.caption) {
-        throw new Error("Missing 'caption' field in AI response");
+      if (!parsed.detail.type) {
+        throw new Error("Tipe konten tidak ditemukan. Silakan coba lagi.");
       }
-      // hashtags is optional, can be empty array
+      
+      // Generate fallback caption if missing
+      if (!parsed.caption || parsed.caption.trim() === '') {
+        const { tag, title } = briefRow;
+        const productName = product.name || 'Produk';
+        const productDesc = product.description || '';
+        const firstGain = (product.gains && product.gains.length > 0) ? product.gains[0] : 'kualitas terbaik';
+        
+        let fallbackCaption = '';
+        
+        if (tag === 'video') {
+          fallbackCaption = `${title}\n\n${productDesc ? productDesc.substring(0, 100) + '... ' : ''}Dapatkan ${firstGain} dengan ${productName}. Jangan lewatkan kesempatan ini!\n\n#${productName.replace(/\s+/g, '')} #ProdukTerbaik #SolusiTerpercaya #Quality #BestChoice`;
+        } else if (tag === 'carousel') {
+          fallbackCaption = `${title}\n\n${productDesc ? productDesc.substring(0, 100) + '... ' : ''}Pelajari lebih lanjut tentang ${productName}. Swipe untuk melihat informasi lengkapnya!\n\n#${productName.replace(/\s+/g, '')} #ProdukTerbaik #SolusiTerpercaya #Quality #BestChoice`;
+        } else {
+          fallbackCaption = `${title}\n\n${productDesc ? productDesc.substring(0, 100) + '... ' : ''}Dapatkan ${firstGain} dengan ${productName}. Solusi tepat untuk kebutuhan Anda.\n\n#${productName.replace(/\s+/g, '')} #ProdukTerbaik #SolusiTerpercaya #Quality #BestChoice`;
+        }
+        
+        parsed.caption = fallbackCaption;
+      }
+      
+      // Validate type-specific fields
+      if (parsed.detail.type === 'video') {
+        if (!parsed.detail.scenes || !Array.isArray(parsed.detail.scenes)) {
+          throw new Error("Data scene video tidak lengkap. Silakan coba lagi.");
+        }
+      } else if (parsed.detail.type === 'image') {
+        if (!parsed.detail.headline) {
+          throw new Error("Headline tidak ditemukan. Silakan coba lagi.");
+        }
+        if (!parsed.detail.subheadline) {
+          throw new Error("Subheadline tidak ditemukan. Silakan coba lagi.");
+        }
+      } else if (parsed.detail.type === 'carousel') {
+        if (!parsed.detail.slides || !Array.isArray(parsed.detail.slides)) {
+          throw new Error("Data slide carousel tidak lengkap. Silakan coba lagi.");
+        }
+      }
 
       return parsed;
     } catch (error) {
       console.error("AI Service Error:", error.message);
-      console.error("Error details:", error);
-      console.error("Full error:", JSON.stringify(error, null, 2));
-      // Throw error with more details
-      throw new Error(`Gagal generate detail: ${error.message}`);
+      // Return user-friendly error message
+      if (error.message.includes("Gagal generate detail")) {
+        throw error;
+      }
+      throw new Error("Gagal generate detail. Silakan coba lagi.");
     }
   }
 }
