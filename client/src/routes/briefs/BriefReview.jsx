@@ -462,7 +462,7 @@ export default function BriefReview() {
                       {brief.product.imageUrl && (
                         <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 shadow-sm">
                           <img
-                            src={`http://localhost:3000${brief.product.imageUrl}`}
+                            src={brief.product.imageUrl?.startsWith('http') ? brief.product.imageUrl : `http://localhost:3000${brief.product.imageUrl}`}
                             alt={brief.product.name}
                             className="w-full h-full object-cover"
                           />

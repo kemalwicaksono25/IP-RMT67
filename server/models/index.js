@@ -1,8 +1,8 @@
 const { Sequelize } = require("sequelize");
 require("dotenv").config();
 
-// Use config.json for development, DATABASE_URL for production
-const config = require("../config/config.json");
+// Use config.js for development, DATABASE_URL for production
+const config = require("../config/config.js");
 const env = process.env.NODE_ENV || "development";
 const dbConfig = config[env];
 

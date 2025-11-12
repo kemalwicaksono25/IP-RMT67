@@ -803,7 +803,7 @@ export default function BriefDetail() {
                   <div className="flex-shrink-0 w-full sm:w-40 lg:w-48">
                     <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-primary-50 to-primary-100 border-2 border-primary-200 shadow-lg group">
                       <img
-                        src={`http://localhost:3000${(displayBrief?.product || brief?.product)?.imageUrl}`}
+                        src={(displayBrief?.product || brief?.product)?.imageUrl?.startsWith('http') ? (displayBrief?.product || brief?.product)?.imageUrl : `http://localhost:3000${(displayBrief?.product || brief?.product)?.imageUrl}`}
                         alt={(displayBrief?.product || brief?.product)?.name}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />

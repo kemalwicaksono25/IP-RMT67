@@ -41,7 +41,7 @@ class ProductController {
     try {
       const { name, description, link } = req.body;
       const imageUrl = req.file
-        ? `/uploads/products/${req.file.filename}`
+        ? req.file.path
         : null;
 
       const product = await db.Product.create({
@@ -117,7 +117,7 @@ class ProductController {
       }
 
       if (req.file) {
-        updateData.imageUrl = `/uploads/products/${req.file.filename}`;
+        updateData.imageUrl = req.file.path;
       }
 
       await product.update(updateData);

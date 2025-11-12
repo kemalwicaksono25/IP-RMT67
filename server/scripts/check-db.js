@@ -44,7 +44,7 @@ async function checkDatabase() {
       console.error('\n💡 Make sure:');
       console.error('  1. PostgreSQL is running');
       console.error('  2. Database "contentplanner" exists');
-      console.error('  3. Credentials in config/config.json are correct');
+      console.error('  3. Credentials in config/config.js and .env are correct');
     }
     process.exit(1);
   }

@@ -191,7 +191,7 @@ export default function ProductDetail() {
             {product.imageUrl && (
               <div className="w-full aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 flex-shrink-0">
                 <img
-                  src={`http://localhost:3000${product.imageUrl}`}
+                  src={product.imageUrl?.startsWith('http') ? product.imageUrl : `http://localhost:3000${product.imageUrl}`}
                   alt={product.name}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                 />
