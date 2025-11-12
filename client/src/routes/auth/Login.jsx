@@ -26,6 +26,17 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.email || formData.email.trim() === '') {
+      toast.error('Email wajib diisi');
+      return;
+    }
+    
+    if (!formData.password || formData.password.trim() === '') {
+      toast.error('Password wajib diisi');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -134,14 +145,13 @@ export default function Login() {
         <h1 className="text-2xl font-bold text-center text-gray-900 mb-6">
           Content Planner
         </h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
             <input
               type="email"
-              required
               autoComplete="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -155,7 +165,6 @@ export default function Login() {
             </label>
             <input
               type="password"
-              required
               autoComplete="current-password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}

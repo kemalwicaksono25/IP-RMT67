@@ -31,6 +31,22 @@ export default function Team() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.name || formData.name.trim() === '') {
+      toast.error('Nama wajib diisi');
+      return;
+    }
+    
+    if (!formData.email || formData.email.trim() === '') {
+      toast.error('Email wajib diisi');
+      return;
+    }
+    
+    if (!formData.password || formData.password.trim() === '') {
+      toast.error('Password wajib diisi');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -108,14 +124,13 @@ export default function Team() {
             </h2>
           </div>
           <div className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Nama *
                 </label>
                 <input
                   type="text"
-                  required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -127,7 +142,6 @@ export default function Team() {
                 </label>
                 <input
                   type="email"
-                  required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -139,7 +153,6 @@ export default function Team() {
                 </label>
                 <input
                   type="password"
-                  required
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"

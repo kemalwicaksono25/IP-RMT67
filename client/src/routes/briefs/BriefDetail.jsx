@@ -27,6 +27,8 @@ export default function BriefDetail() {
   const [showApprovalModal, setShowApprovalModal] = useState({});
   const [approvalData, setApprovalData] = useState({});
   const [submittingApproval, setSubmittingApproval] = useState({});
+  const [showDeleteModal, setShowDeleteModal] = useState({});
+  const [deletingDetailId, setDeletingDetailId] = useState(null);
   const user = useSelector((state) => state.auth.user);
 
   useEffect(() => {
@@ -363,9 +365,17 @@ export default function BriefDetail() {
     }
   };
 
-  const handleDeleteIdea = async (detailId) => {
-    if (!confirm('Yakin ingin menghapus brief ini?')) return;
+  const handleOpenDeleteModal = (detailId) => {
+    setDeletingDetailId(detailId);
+    setShowDeleteModal({ ...showDeleteModal, [detailId]: true });
+  };
 
+  const handleCloseDeleteModal = (detailId) => {
+    setShowDeleteModal({ ...showDeleteModal, [detailId]: false });
+    setDeletingDetailId(null);
+  };
+
+  const handleDeleteIdea = async (detailId) => {
     try {
       const response = await deleteBriefDetail(detailId);
       // Update Redux store dengan brief yang sudah di-update
@@ -377,6 +387,7 @@ export default function BriefDetail() {
       toast.success('Brief berhasil dihapus');
       // Trigger event untuk update komponen lain (seperti Dashboard)
       window.dispatchEvent(new Event('briefsUpdated'));
+      handleCloseDeleteModal(detailId);
     } catch (error) {
       toast.error('Gagal menghapus brief');
     }
@@ -1157,7 +1168,7 @@ export default function BriefDetail() {
                             )}
                             <div className="relative group">
                               <button
-                                onClick={() => handleDeleteIdea(detail.id)}
+                                onClick={() => handleOpenDeleteModal(detail.id)}
                                 className="p-1.5 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                                 title="Hapus Brief"
                               >
@@ -1707,7 +1718,6 @@ export default function BriefDetail() {
                     })}
                     min={new Date().toISOString().split('T')[0]}
                     className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                    required
                   />
                 </div>
               </div>
@@ -1728,7 +1738,6 @@ export default function BriefDetail() {
                       [detail.id]: { ...approvalData[detail.id], scheduledTime: e.target.value }
                     })}
                     className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                    required
                   />
                 </div>
               </div>
@@ -1757,6 +1766,38 @@ export default function BriefDetail() {
                     Submit
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      ))}
+
+      {/* Delete Confirmation Modal */}
+      {brief?.details?.map((detail) => (
+        <Modal
+          key={`delete-${detail.id}`}
+          isOpen={showDeleteModal[detail.id] || false}
+          onClose={() => handleCloseDeleteModal(detail.id)}
+          title="Konfirmasi Hapus"
+          size="sm"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-700">
+              Yakin ingin menghapus brief ini? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => handleCloseDeleteModal(detail.id)}
+                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => handleDeleteIdea(detail.id)}
+                className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Hapus
               </button>
             </div>
           </div>

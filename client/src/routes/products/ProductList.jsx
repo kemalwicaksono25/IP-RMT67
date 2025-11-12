@@ -7,6 +7,7 @@ import { getProducts, deleteProduct } from '../../services/product.api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
+import Modal from '../../components/Modal';
 
 export default function ProductList() {
   const products = useSelector((state) => state.product.products);
@@ -16,6 +17,8 @@ export default function ProductList() {
   const [sortBy, setSortBy] = useState('newest');
   const [filterBy, setFilterBy] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState(null);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -101,14 +104,25 @@ export default function ProductList() {
     setCurrentPage(1); // Reset ke halaman pertama ketika filter berubah
   }, [searchQuery, sortBy, filterBy]);
 
-  const handleDelete = async (id) => {
-    if (!confirm('Yakin ingin menghapus produk ini?')) return;
+  const handleOpenDeleteModal = (id) => {
+    setDeletingProductId(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeletingProductId(null);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingProductId) return;
 
     try {
-      await deleteProduct(id);
-      dispatch(deleteProductAction(id));
+      await deleteProduct(deletingProductId);
+      dispatch(deleteProductAction(deletingProductId));
       toast.success('Produk berhasil dihapus');
       fetchProducts();
+      handleCloseDeleteModal();
     } catch (error) {
       toast.error('Gagal menghapus produk');
     }
@@ -307,7 +321,7 @@ export default function ProductList() {
                     Detail
                   </Link>
                   <button
-                    onClick={() => handleDelete(product.id)}
+                    onClick={() => handleOpenDeleteModal(product.id)}
                     className="px-4 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all text-sm font-medium shadow-md hover:shadow-lg flex items-center gap-1.5"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -377,6 +391,35 @@ export default function ProductList() {
           )}
         </>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={handleCloseDeleteModal}
+        title="Konfirmasi Hapus"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={handleCloseDeleteModal}
+              className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleDelete}
+              className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Hapus
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

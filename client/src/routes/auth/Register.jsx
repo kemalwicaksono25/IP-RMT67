@@ -82,14 +82,13 @@ export default function Register() {
           <h1 className="text-2xl font-bold text-center text-gray-900 mb-6">
             Daftar Akun Baru
           </h1>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nama
               </label>
               <input
                 type="text"
-                required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -102,7 +101,6 @@ export default function Register() {
               </label>
               <input
                 type="email"
-                required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -115,7 +113,6 @@ export default function Register() {
               </label>
               <input
                 type="password"
-                required
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -158,7 +155,6 @@ export default function Register() {
             </label>
             <input
               type="text"
-              required
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"

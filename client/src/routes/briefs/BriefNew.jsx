@@ -113,6 +113,11 @@ export default function BriefNew() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (!formData.ProductId || formData.ProductId === '') {
+      toast.error('Pilih produk terlebih dahulu');
+      return;
+    }
+    
     if (formData.briefType.length === 0) {
       toast.error('Pilih minimal satu jenis brief');
       return;
@@ -228,7 +233,7 @@ export default function BriefNew() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+      <form onSubmit={handleSubmit} noValidate className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary-600" />
@@ -244,10 +249,11 @@ export default function BriefNew() {
                 Pilih Produk *
               </label>
               <select
-                required
                 value={formData.ProductId}
                 onChange={(e) => setFormData({ ...formData, ProductId: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white ${
+                  !formData.ProductId ? 'border-red-300' : 'border-gray-300'
+                }`}
                 disabled={fetchingProduct}
               >
                 <option value="">-- Pilih Produk --</option>
@@ -257,6 +263,9 @@ export default function BriefNew() {
                   </option>
                 ))}
               </select>
+              {!formData.ProductId && (
+                <p className="mt-2 text-xs text-red-600 font-medium">Pilih produk terlebih dahulu</p>
+              )}
             </div>
 
             <div>
@@ -282,9 +291,8 @@ export default function BriefNew() {
                 type="number"
                 min="1"
                 max="10"
-                required
                 value={formData.count}
-                onChange={(e) => setFormData({ ...formData, count: parseInt(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, count: parseInt(e.target.value) || 1 })}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
@@ -295,7 +303,6 @@ export default function BriefNew() {
                 Gaya Bahasa *
               </label>
               <select
-                required
                 value={formData.toneOfVoice}
                 onChange={(e) => setFormData({ ...formData, toneOfVoice: e.target.value })}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"

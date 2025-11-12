@@ -57,6 +57,17 @@ export default function ProductForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.name || formData.name.trim() === '') {
+      toast.error('Nama produk wajib diisi');
+      return;
+    }
+    
+    if (!formData.description || formData.description.trim() === '') {
+      toast.error('Deskripsi produk wajib diisi');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -108,7 +119,7 @@ export default function ProductForm() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+      <form onSubmit={handleSubmit} noValidate className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Package className="w-5 h-5 text-primary-600" />
@@ -124,7 +135,6 @@ export default function ProductForm() {
             </label>
             <input
               type="text"
-              required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-900 placeholder-gray-400"
@@ -139,7 +149,6 @@ export default function ProductForm() {
               Deskripsi <span className="text-red-500">*</span>
             </label>
             <textarea
-              required
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={6}
