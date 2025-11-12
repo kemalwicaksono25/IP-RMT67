@@ -77,9 +77,9 @@ export default function Register() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-pink-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 sm:p-8">
-          <h1 className="text-xl sm:text-2xl font-bold text-center text-gray-900 mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-4 sm:mb-6">
             Daftar Akun Baru
           </h1>
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -122,7 +122,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white py-2 px-4 rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
             >
               {loading ? <Loader size="sm" /> : 'Lanjutkan'}
             </button>
@@ -178,7 +178,7 @@ export default function Register() {
                 setShowProjectModal(false);
                 setProjectName('');
               }}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-primary-50 transition-colors"
             >
               Batal
             </button>
@@ -186,7 +186,7 @@ export default function Register() {
               type="button"
               onClick={handleProjectSubmit}
               disabled={loading || !projectName.trim()}
-              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
             >
               {loading ? <Loader size="sm" /> : 'Buat Project'}
             </button>

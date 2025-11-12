@@ -97,15 +97,15 @@ function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed bottom-0 left-0 z-[50] w-72 sm:w-64 lg:w-64 bg-gradient-to-br from-white via-primary-50/20 to-pink-50/10 border-r border-primary-200/50 transform transition-transform duration-300 ease-in-out overflow-hidden shadow-xl ${
+        className={`fixed bottom-0 left-0 z-[50] w-72 sm:w-64 lg:w-64 bg-gradient-to-br from-white via-primary-50/20 to-primary-50/10 border-r border-primary-200/50 transform transition-transform duration-300 ease-in-out overflow-hidden shadow-xl ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
         style={{ top: `${navbarHeight}px` }}
       >
         <div className="flex flex-col h-full relative z-10 bg-white/95">
-          <div className="flex items-center justify-between p-4 sm:p-5 lg:pt-6 border-b border-primary-200/50 flex-shrink-0 bg-gradient-to-r from-primary-600/10 via-primary-500/5 to-pink-500/5">
+          <div className="flex items-center justify-between p-4 sm:p-5 lg:pt-6 border-b border-primary-200/50 flex-shrink-0 bg-gradient-to-r from-primary-600/10 via-primary-600/5 to-primary-600/5">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-2 sm:p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
+              <div className="p-2 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg">
                 <LayoutDashboard className="w-5 h-5 sm:w-5 sm:h-5 text-white" />
               </div>
               <h2 className="text-base sm:text-lg font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
@@ -114,7 +114,7 @@ function Sidebar() {
             </div>
             <button
               onClick={() => dispatch(toggleSidebar())}
-              className="lg:hidden text-gray-600 hover:text-primary-600 hover:bg-primary-50 p-2 rounded-lg transition-all active:scale-95"
+              className="lg:hidden text-gray-700 hover:text-primary-700 hover:bg-primary-50 p-2 rounded-lg transition-all active:scale-95"
             >
               <X className="w-5 h-5" />
             </button>
@@ -139,19 +139,19 @@ function Sidebar() {
                     className={`group relative flex items-center gap-3.5 lg:gap-3 px-4 sm:px-5 lg:px-4 py-3.5 sm:py-4 lg:py-3.5 rounded-xl transition-all duration-300 active:scale-95 ${
                       active
                         ? 'bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/40 transform scale-[1.02]'
-                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50/80 hover:to-pink-50/80 hover:shadow-lg hover:scale-[1.01]'
+                        : 'text-gray-800 hover:bg-gradient-to-r hover:from-primary-50/80 hover:to-primary-50/80 hover:shadow-lg hover:scale-[1.01]'
                     }`}
                   >
                   {active && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 sm:h-10 lg:h-8 bg-white rounded-r-full shadow-lg"></div>
                   )}
                   <div className={`relative ${active ? 'bg-white/20' : 'bg-gradient-to-br from-primary-100 to-primary-200'} p-2.5 sm:p-3 lg:p-2.5 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-md`}>
-                    <Icon className={`w-6 h-6 lg:w-5 lg:h-5 ${active ? 'text-white' : 'text-primary-600'} transition-colors`} />
+                    <Icon className={`w-6 h-6 lg:w-5 lg:h-5 ${active ? 'text-white' : 'text-primary-700'} transition-colors`} />
                     {active && (
                       <div className="absolute inset-0 bg-white/20 rounded-xl animate-pulse"></div>
                     )}
                   </div>
-                  <span className={`text-base sm:text-lg lg:text-base font-semibold ${active ? 'text-white' : 'text-gray-700'} transition-colors`}>
+                  <span className={`text-base sm:text-lg lg:text-base font-semibold ${active ? 'text-white' : 'text-gray-800'} transition-colors`}>
                     {item.label}
                   </span>
                     {active && (
@@ -169,7 +169,7 @@ function Sidebar() {
                 <div className="mt-10 sm:mt-16 lg:mt-10 border-t-2 border-primary-200/50 relative">
                   <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary-300 to-transparent"></div>
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <div className="bg-gradient-to-r from-primary-500 to-pink-500 text-white px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shadow-md">
+                    <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shadow-md">
                       Admin Panel
                     </div>
                   </div>
@@ -191,19 +191,19 @@ function Sidebar() {
                       className={`group relative flex items-center gap-3.5 lg:gap-3 px-4 sm:px-5 lg:px-4 py-3.5 sm:py-4 lg:py-3.5 rounded-xl transition-all duration-300 active:scale-95 ${
                         active
                           ? 'bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/40 transform scale-[1.02]'
-                          : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50/80 hover:to-pink-50/80 hover:shadow-lg hover:scale-[1.01]'
+                          : 'text-gray-800 hover:bg-gradient-to-r hover:from-primary-50/80 hover:to-primary-50/80 hover:shadow-lg hover:scale-[1.01]'
                       }`}
                     >
                       {active && (
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 lg:h-8 bg-white rounded-r-full shadow-lg"></div>
                       )}
                       <div className={`relative ${active ? 'bg-white/20' : 'bg-gradient-to-br from-primary-100 to-primary-200'} p-2.5 sm:p-3 lg:p-2.5 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-md`}>
-                        <Icon className={`w-6 h-6 lg:w-5 lg:h-5 ${active ? 'text-white' : 'text-primary-600'} transition-colors`} />
+                        <Icon className={`w-6 h-6 lg:w-5 lg:h-5 ${active ? 'text-white' : 'text-primary-700'} transition-colors`} />
                         {active && (
                           <div className="absolute inset-0 bg-white/20 rounded-xl animate-pulse"></div>
                         )}
                       </div>
-                      <span className={`text-base sm:text-lg lg:text-base font-semibold ${active ? 'text-white' : 'text-gray-700'} transition-colors`}>
+                      <span className={`text-base sm:text-lg lg:text-base font-semibold ${active ? 'text-white' : 'text-gray-800'} transition-colors`}>
                         {item.label}
                       </span>
                       {active && (
@@ -220,10 +220,10 @@ function Sidebar() {
 
           {/* Detail Akun di Bawah Sidebar */}
           {user && (
-            <div className="border-t-2 border-primary-200/50 p-3 sm:p-4 lg:p-2 bg-gradient-to-br from-white via-primary-50/20 to-pink-50/10 flex-shrink-0 shadow-inner relative">
+            <div className="border-t-2 border-primary-200/50 p-3 sm:p-4 lg:p-2 bg-gradient-to-br from-white via-primary-50/20 to-primary-50/10 flex-shrink-0 shadow-inner relative">
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary-300 to-transparent"></div>
               <div className="flex items-center gap-2 lg:gap-1.5 mb-2 sm:mb-3 lg:mb-1.5">
-                <div className="p-1.5 lg:p-1 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-md">
+                <div className="p-1.5 lg:p-1 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
                   <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-3 lg:h-3 text-white" />
                 </div>
                 <h3 className="text-[10px] sm:text-xs lg:text-[10px] font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent uppercase tracking-wider">
@@ -234,12 +234,12 @@ function Sidebar() {
                 {/* Project Name */}
                 <div className="group relative bg-white rounded-lg sm:rounded-xl lg:rounded-lg p-2 sm:p-3 lg:p-1.5 border-2 border-primary-200/50 hover:border-primary-400/70 hover:shadow-lg transition-all duration-300 active:scale-95">
                   <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-1.5">
-                    <div className="p-1.5 sm:p-2 lg:p-1 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg sm:rounded-xl lg:rounded-lg shadow-md group-hover:scale-110 transition-transform">
+                    <div className="p-1.5 sm:p-2 lg:p-1 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg sm:rounded-xl lg:rounded-lg shadow-md group-hover:scale-110 transition-transform">
                       <Folder className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-3 lg:h-3 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0.5 sm:mb-1 lg:mb-0.5 font-medium">Project</p>
-                      <p className="text-[11px] sm:text-xs lg:text-[10px] font-bold text-gray-900 truncate" title={user?.projectName || 'Belum ada project'}>
+                      <p className="text-[11px] sm:text-xs lg:text-[10px] font-bold text-gray-800 truncate" title={user?.projectName || 'Belum ada project'}>
                         {user?.projectName || 'Belum ada project'}
                       </p>
                     </div>
@@ -249,7 +249,7 @@ function Sidebar() {
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 sm:p-1.5 lg:p-0.5 hover:bg-primary-100 rounded-lg hover:scale-110 active:scale-95"
                         title="Edit nama project"
                       >
-                        <Edit2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-2.5 lg:h-2.5 text-primary-600" />
+                        <Edit2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-2.5 lg:h-2.5 text-primary-700" />
                       </button>
                     )}
                   </div>
@@ -258,16 +258,16 @@ function Sidebar() {
                 {/* User Name & Role */}
                 <div className="bg-white rounded-lg sm:rounded-xl lg:rounded-lg p-2 sm:p-3 lg:p-1.5 border-2 border-primary-200/50 hover:border-primary-400/70 hover:shadow-lg transition-all duration-300 active:scale-95">
                   <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-1.5">
-                    <div className="p-1.5 sm:p-2 lg:p-1 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg sm:rounded-xl lg:rounded-lg shadow-md">
+                    <div className="p-1.5 sm:p-2 lg:p-1 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg sm:rounded-xl lg:rounded-lg shadow-md">
                       <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-3 lg:h-3 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0.5 sm:mb-1 lg:mb-0.5 font-medium">Nama</p>
                       <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-1 flex-wrap">
-                        <p className="text-[11px] sm:text-xs lg:text-[10px] font-bold text-gray-900 truncate">{user?.name || '-'}</p>
+                        <p className="text-[11px] sm:text-xs lg:text-[10px] font-bold text-gray-800 truncate">{user?.name || '-'}</p>
                         <div className={`inline-flex items-center gap-0.5 sm:gap-1 lg:gap-0.5 px-1.5 sm:px-2 lg:px-1 py-0.5 sm:py-1 lg:py-0.5 rounded-full text-[9px] sm:text-[10px] lg:text-[8px] font-bold flex-shrink-0 shadow-md ${
                           user?.role === 'admin'
-                            ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
+                            ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white'
                             : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
                         }`}>
                           <Shield className="w-2 h-2 sm:w-2.5 sm:h-2.5 lg:w-2 lg:h-2" />
@@ -281,12 +281,12 @@ function Sidebar() {
                 {/* Email */}
                 <div className="bg-white rounded-lg sm:rounded-xl lg:rounded-lg p-2 sm:p-3 lg:p-1.5 border-2 border-primary-200/50 hover:border-primary-400/70 hover:shadow-lg transition-all duration-300 active:scale-95">
                   <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-1.5">
-                    <div className="p-1.5 sm:p-2 lg:p-1 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg sm:rounded-xl lg:rounded-lg shadow-md">
+                    <div className="p-1.5 sm:p-2 lg:p-1 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg sm:rounded-xl lg:rounded-lg shadow-md">
                       <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-3 lg:h-3 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0.5 sm:mb-1 lg:mb-0.5 font-medium">Email</p>
-                      <p className="text-[11px] sm:text-xs lg:text-[10px] font-bold text-gray-900 truncate">{user?.email || '-'}</p>
+                      <p className="text-[11px] sm:text-xs lg:text-[10px] font-bold text-gray-800 truncate">{user?.email || '-'}</p>
                     </div>
                   </div>
                 </div>
@@ -305,18 +305,18 @@ function Sidebar() {
         size="md"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-700">
             Ubah nama project Anda. Perubahan ini akan terlihat oleh semua anggota tim.
           </p>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-800 mb-2">
               Nama Project <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={projectNameInput}
               onChange={(e) => setProjectNameInput(e.target.value)}
-              className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-2.5 text-sm border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="Contoh: Project Marketing 2025"
               autoFocus
               onKeyDown={(e) => {
@@ -334,7 +334,7 @@ function Sidebar() {
                 setShowEditModal(false);
                 setProjectNameInput('');
               }}
-              className="flex-1 px-4 py-2.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="flex-1 px-4 py-2.5 text-sm border border-primary-200 text-gray-800 rounded-lg hover:bg-primary-50 transition-colors font-medium"
               disabled={loading}
             >
               Batal

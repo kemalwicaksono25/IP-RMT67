@@ -38,7 +38,7 @@ export default function RootLayout() {
           <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 pt-12">
             <button
               onClick={() => dispatch(toggleSidebar())}
-              className="lg:hidden mb-3 sm:mb-4 p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="lg:hidden mb-3 sm:mb-4 p-2 text-gray-600 hover:bg-primary-50 rounded-lg"
             >
               <Menu className="w-5 h-5" />
             </button>

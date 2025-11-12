@@ -31,11 +31,11 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
       <div
         className={`relative bg-white rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[85vh] overflow-y-auto overflow-x-hidden`}
       >
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        <div className="sticky top-0 bg-white border-b border-primary-200/50 px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-500 hover:text-primary-700 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

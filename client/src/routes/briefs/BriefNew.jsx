@@ -156,11 +156,11 @@ export default function BriefNew() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
-              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Buat Ide Brief Baru</h1>
@@ -224,7 +224,7 @@ export default function BriefNew() {
               </div>
             )}
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">{selectedProduct.name}</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">{selectedProduct.name}</h3>
               {selectedProduct.description && (
                 <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed">{selectedProduct.description}</p>
               )}
@@ -235,7 +235,7 @@ export default function BriefNew() {
 
       <form onSubmit={handleSubmit} noValidate className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
             Formulir Brief
           </h2>
@@ -428,7 +428,7 @@ export default function BriefNew() {
             <button
               type="submit"
               disabled={loading || formData.briefType.length === 0 || formData.funnelStage.length === 0}
-              className="w-full bg-primary-600 text-white py-3.5 px-6 rounded-xl hover:bg-primary-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 font-semibold text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3.5 px-6 rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 font-semibold text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               {loading ? (
                 <>

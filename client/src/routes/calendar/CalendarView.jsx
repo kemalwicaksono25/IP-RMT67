@@ -111,7 +111,7 @@ export default function CalendarView() {
       case 'image':
         return 'bg-blue-100 text-blue-700 border-blue-300';
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300';
+        return 'bg-primary-50 text-primary-700 border-primary-200';
     }
   };
 
@@ -123,7 +123,7 @@ export default function CalendarView() {
   const renderProductionDetail = (detail) => {
     if (!detail || typeof detail !== 'object') {
       return (
-        <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+        <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
           {JSON.stringify(detail, null, 2)}
         </pre>
       );
@@ -134,39 +134,39 @@ export default function CalendarView() {
       return (
         <div className="space-y-4">
           <div>
-            <span className="text-xs font-semibold text-gray-600 block mb-1">Tipe Konten</span>
-            <span className="text-sm font-bold text-gray-900 capitalize">{detail.type}</span>
+            <span className="text-xs font-semibold text-gray-700 block mb-1">Tipe Konten</span>
+            <span className="text-sm font-bold text-gray-800 capitalize">{detail.type}</span>
           </div>
           {detail.duration && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-1">Durasi</span>
-              <span className="text-sm text-gray-900">{detail.duration}</span>
+              <span className="text-xs font-semibold text-gray-700 block mb-1">Durasi</span>
+              <span className="text-sm text-gray-800">{detail.duration}</span>
             </div>
           )}
           {detail.music && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-1">Musik</span>
-              <p className="text-sm text-gray-900 leading-relaxed">{detail.music}</p>
+              <span className="text-xs font-semibold text-gray-700 block mb-1">Musik</span>
+              <p className="text-sm text-gray-800 leading-relaxed">{detail.music}</p>
             </div>
           )}
           {detail.visual && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-1">Visual Identity</span>
-              <p className="text-sm text-gray-900 leading-relaxed">{detail.visual}</p>
+              <span className="text-xs font-semibold text-gray-700 block mb-1">Visual Identity</span>
+              <p className="text-sm text-gray-800 leading-relaxed">{detail.visual}</p>
             </div>
           )}
           {detail.scenes && detail.scenes.length > 0 && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-2">Skenario</span>
+              <span className="text-xs font-semibold text-gray-700 block mb-2">Skenario</span>
               <div className="space-y-3">
                 {detail.scenes.map((scene, index) => (
-                  <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
+                  <div key={index} className="bg-white p-3 rounded-lg border border-primary-200/50">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-bold">
                         {scene.time || `Scene ${index + 1}`}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-700 leading-relaxed">{scene.description}</p>
+                    <p className="text-xs text-gray-800 leading-relaxed">{scene.description}</p>
                   </div>
                 ))}
               </div>
@@ -181,33 +181,33 @@ export default function CalendarView() {
       return (
         <div className="space-y-4">
           <div>
-            <span className="text-xs font-semibold text-gray-600 block mb-1">Tipe Konten</span>
-            <span className="text-sm font-bold text-gray-900 capitalize">{detail.type}</span>
+            <span className="text-xs font-semibold text-gray-700 block mb-1">Tipe Konten</span>
+            <span className="text-sm font-bold text-gray-800 capitalize">{detail.type}</span>
           </div>
           {detail.slideCount && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-1">Jumlah Slide</span>
-              <span className="text-sm text-gray-900">{detail.slideCount}</span>
+              <span className="text-xs font-semibold text-gray-700 block mb-1">Jumlah Slide</span>
+              <span className="text-sm text-gray-800">{detail.slideCount}</span>
             </div>
           )}
           {detail.visualTone && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-1">Visual Tone</span>
-              <p className="text-sm text-gray-900 leading-relaxed">{detail.visualTone}</p>
+              <span className="text-xs font-semibold text-gray-700 block mb-1">Visual Tone</span>
+              <p className="text-sm text-gray-800 leading-relaxed">{detail.visualTone}</p>
             </div>
           )}
           {detail.slides && detail.slides.length > 0 && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-2">Konten Slide</span>
+              <span className="text-xs font-semibold text-gray-700 block mb-2">Konten Slide</span>
               <div className="space-y-3">
                 {detail.slides.map((slide, index) => (
-                  <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
+                  <div key={index} className="bg-white p-3 rounded-lg border border-primary-200/50">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold">
                         Slide {index + 1}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-700 leading-relaxed">{slide.text}</p>
+                    <p className="text-xs text-gray-800 leading-relaxed">{slide.text}</p>
                   </div>
                 ))}
               </div>
@@ -222,31 +222,31 @@ export default function CalendarView() {
       return (
         <div className="space-y-4">
           <div>
-            <span className="text-xs font-semibold text-gray-600 block mb-1">Tipe Konten</span>
-            <span className="text-sm font-bold text-gray-900 capitalize">{detail.type}</span>
+            <span className="text-xs font-semibold text-gray-700 block mb-1">Tipe Konten</span>
+            <span className="text-sm font-bold text-gray-800 capitalize">{detail.type}</span>
           </div>
           {detail.headline && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-1">Headline</span>
-              <p className="text-sm font-bold text-gray-900">{detail.headline}</p>
+              <span className="text-xs font-semibold text-gray-700 block mb-1">Headline</span>
+              <p className="text-sm font-bold text-gray-800">{detail.headline}</p>
             </div>
           )}
           {detail.subheadline && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-1">Subheadline</span>
-              <p className="text-sm text-gray-900">{detail.subheadline}</p>
+              <span className="text-xs font-semibold text-gray-700 block mb-1">Subheadline</span>
+              <p className="text-sm text-gray-800">{detail.subheadline}</p>
             </div>
           )}
           {detail.visual && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-1">Visual Identity</span>
-              <p className="text-sm text-gray-900 leading-relaxed">{detail.visual}</p>
+              <span className="text-xs font-semibold text-gray-700 block mb-1">Visual Identity</span>
+              <p className="text-sm text-gray-800 leading-relaxed">{detail.visual}</p>
             </div>
           )}
           {detail.layout && (
             <div>
-              <span className="text-xs font-semibold text-gray-600 block mb-1">Layout</span>
-              <p className="text-sm text-gray-900">{detail.layout}</p>
+              <span className="text-xs font-semibold text-gray-700 block mb-1">Layout</span>
+              <p className="text-sm text-gray-800">{detail.layout}</p>
             </div>
           )}
         </div>
@@ -255,7 +255,7 @@ export default function CalendarView() {
 
     // Fallback: display as JSON
     return (
-      <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+      <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
         {JSON.stringify(detail, null, 2)}
       </pre>
     );
@@ -329,11 +329,11 @@ export default function CalendarView() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
-                <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
+              <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Kalender Konten</h1>
@@ -398,24 +398,24 @@ export default function CalendarView() {
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-3 sm:p-4 lg:p-5 flex items-center justify-between">
         <button
           onClick={prevMonth}
-          className="p-2 sm:p-3 text-gray-600 hover:bg-primary-50 hover:text-primary-600 rounded-xl transition-all hover:scale-110"
+          className="p-2 sm:p-3 text-gray-700 hover:bg-primary-50 hover:text-primary-700 rounded-xl transition-all hover:scale-110"
         >
           <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
         <div className="text-center flex-1 px-2">
-          <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900">
+          <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-800">
             {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
           </h2>
         </div>
         <button
           onClick={nextMonth}
-          className="p-2 sm:p-3 text-gray-600 hover:bg-primary-50 hover:text-primary-600 rounded-xl transition-all hover:scale-110"
+          className="p-2 sm:p-3 text-gray-700 hover:bg-primary-50 hover:text-primary-700 rounded-xl transition-all hover:scale-110"
         >
           <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-primary-200/50">
         {/* Desktop: Calendar Grid View */}
         <div className="hidden sm:block">
           {/* Day Headers */}
@@ -426,7 +426,7 @@ export default function CalendarView() {
                 className={`p-2 lg:p-3 xl:p-5 text-center text-xs lg:text-sm font-bold ${
                   idx === 0 || idx === 6
                     ? 'text-primary-700 bg-primary-100/50'
-                    : 'text-gray-700'
+                    : 'text-gray-800'
                 }`}
               >
                 <span className="hidden lg:inline">{day}</span>
@@ -445,12 +445,12 @@ export default function CalendarView() {
               return (
                 <div
                   key={index}
-                  className={`min-h-28 md:min-h-32 lg:min-h-40 border-r border-b border-gray-200 p-1.5 md:p-2 lg:p-3 transition-all ${
+                  className={`min-h-28 md:min-h-32 lg:min-h-40 border-r border-b border-primary-200/50 p-1.5 md:p-2 lg:p-3 transition-all ${
                     !isCurrentMonth
-                      ? 'bg-gray-50 opacity-50'
+                      ? 'bg-primary-50/30 opacity-50'
                       : isCurrentDay
-                      ? 'bg-gradient-to-br from-primary-50 via-pink-50 to-purple-50 border-primary-400 border-2'
-                      : 'bg-white hover:bg-gray-50'
+                      ? 'bg-gradient-to-br from-primary-50 via-primary-100 to-primary-50 border-primary-400 border-2'
+                      : 'bg-white hover:bg-primary-50/30'
                   }`}
                 >
                   {date && (
@@ -461,7 +461,7 @@ export default function CalendarView() {
                             isCurrentDay
                               ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-full w-7 h-7 lg:w-8 lg:h-8 flex items-center justify-center shadow-lg text-sm lg:text-base'
                               : isCurrentMonth
-                              ? 'text-gray-900'
+                              ? 'text-gray-800'
                               : 'text-gray-400'
                           }`}
                         >
@@ -478,7 +478,7 @@ export default function CalendarView() {
                           <button
                             key={event.id}
                             onClick={() => setSelectedEvent(event)}
-                            className="w-full text-left p-1.5 sm:p-2 rounded-lg shadow-sm hover:shadow-md transition-all transform hover:scale-[1.02] border border-gray-200 bg-white group"
+                            className="w-full text-left p-1.5 sm:p-2 rounded-lg shadow-sm hover:shadow-md transition-all transform hover:scale-[1.02] border border-primary-200/50 bg-white group"
                             title={event.title}
                           >
                             <div className="space-y-1.5">
@@ -495,14 +495,14 @@ export default function CalendarView() {
                                   </div>
                                 )}
                               </div>
-                              <p className="text-[10px] sm:text-xs font-semibold text-gray-900 line-clamp-1 lg:line-clamp-2 group-hover:line-clamp-none">
+                              <p className="text-[10px] sm:text-xs font-semibold text-gray-800 line-clamp-1 lg:line-clamp-2 group-hover:line-clamp-none">
                                 {event.title}
                               </p>
                             </div>
                           </button>
                         ))}
                         {dayEvents.length > 2 && (
-                          <div className="text-[10px] sm:text-xs text-gray-600 font-semibold text-center py-1.5 lg:py-2 bg-gray-100 rounded-lg border border-gray-200">
+                          <div className="text-[10px] sm:text-xs text-gray-700 font-semibold text-center py-1.5 lg:py-2 bg-primary-50 rounded-lg border border-primary-200/50">
                             +{dayEvents.length - 2} lagi
                           </div>
                         )}
@@ -530,9 +530,9 @@ export default function CalendarView() {
             return (
               <div
                 key={index}
-                className={`border-b border-gray-200 p-4 transition-all ${
+                className={`border-b border-primary-200/50 p-4 transition-all ${
                   isCurrentDay
-                    ? 'bg-gradient-to-r from-primary-50 via-pink-50 to-purple-50 border-l-4 border-primary-600'
+                    ? 'bg-gradient-to-r from-primary-50 via-primary-100 to-primary-50 border-l-4 border-primary-600'
                     : 'bg-white'
                 }`}
               >
@@ -545,7 +545,7 @@ export default function CalendarView() {
                       className={`text-2xl font-bold mt-1 ${
                         isCurrentDay
                           ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg'
-                          : 'text-gray-900'
+                          : 'text-gray-800'
                       }`}
                     >
                       {date.getDate()}
@@ -559,7 +559,7 @@ export default function CalendarView() {
                           <button
                             key={event.id}
                             onClick={() => setSelectedEvent(event)}
-                            className="w-full text-left p-3 rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-200 bg-white active:bg-gray-50"
+                            className="w-full text-left p-3 rounded-lg shadow-sm hover:shadow-md transition-all border border-primary-200/50 bg-white active:bg-primary-50/30"
                             title={event.title}
                           >
                             <div className="space-y-2">
@@ -586,7 +586,7 @@ export default function CalendarView() {
                                   {event.brief.product.name}
                                 </p>
                               )}
-                              <p className="text-sm font-semibold text-gray-900 leading-tight">
+                              <p className="text-sm font-semibold text-gray-800 leading-tight">
                                 {event.title}
                               </p>
                             </div>
@@ -616,7 +616,7 @@ export default function CalendarView() {
           <div className="space-y-4">
             {/* Product Card */}
             {selectedEvent.brief?.product && (
-              <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border-2 border-gray-200 overflow-hidden shadow-lg">
+              <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border-2 border-primary-400/50 overflow-hidden shadow-lg">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 p-3 sm:p-4">
                   {selectedEvent.brief.product.imageUrl && (
                     <div className="md:col-span-1">
@@ -632,10 +632,10 @@ export default function CalendarView() {
                   <div className={`${selectedEvent.brief.product.imageUrl ? 'md:col-span-2' : 'md:col-span-3'} flex flex-col justify-center`}>
                     <div className="flex items-center gap-2 mb-2">
                       <Package className="w-5 h-5 text-primary-600" />
-                      <h3 className="text-lg font-bold text-gray-900">{selectedEvent.brief.product.name}</h3>
+                      <h3 className="text-lg font-bold text-gray-800">{selectedEvent.brief.product.name}</h3>
                     </div>
                     {selectedEvent.brief.product.description && (
-                      <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+                      <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed">
                         {selectedEvent.brief.product.description}
                       </p>
                     )}
@@ -644,7 +644,7 @@ export default function CalendarView() {
                         href={selectedEvent.brief.product.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium w-fit"
+                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all text-sm font-medium w-fit shadow-md hover:shadow-lg"
                       >
                         <ExternalLink className="w-4 h-4" />
                         Buka Link Produk
@@ -656,7 +656,7 @@ export default function CalendarView() {
             )}
 
             {/* Header Info */}
-            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary-50 via-pink-50 to-purple-50 rounded-xl border-2 border-primary-200 flex-wrap">
+            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary-50 via-primary-100 to-primary-50 rounded-xl border-2 border-primary-400 flex-wrap">
               <div className={`px-3 py-1.5 rounded-lg font-bold text-xs shadow-md ${
                 PLATFORM_COLORS[selectedEvent.platform] || 'bg-gray-200 text-gray-800'
               }`}>
@@ -672,13 +672,13 @@ export default function CalendarView() {
 
             {/* Scheduled Time */}
             {selectedEvent.scheduledAt && (
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl border border-primary-200/50">
                 <div className="p-2 bg-primary-100 rounded-lg">
                   <Clock className="w-4 h-4 text-primary-600" />
                 </div>
                 <div>
-                  <span className="text-xs text-gray-600 block mb-1">Tanggal & Waktu Posting</span>
-                  <span className="text-sm font-bold text-gray-900">{formatDateTime(selectedEvent.scheduledAt)}</span>
+                  <span className="text-xs text-gray-700 block mb-1">Tanggal & Waktu Posting</span>
+                  <span className="text-sm font-bold text-gray-800">{formatDateTime(selectedEvent.scheduledAt)}</span>
                 </div>
               </div>
             )}
@@ -688,10 +688,10 @@ export default function CalendarView() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="w-4 h-4 text-primary-600" />
-                  <span className="text-sm font-bold text-gray-900">Audience Funnel</span>
+                  <span className="text-sm font-bold text-gray-800">Audience Funnel</span>
                 </div>
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl border border-gray-200">
-                  <p className="text-xs font-semibold text-gray-900">{getFunnelLabel(selectedEvent.funnel)}</p>
+                <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-3 rounded-xl border border-primary-200/50">
+                  <p className="text-xs font-semibold text-gray-800">{getFunnelLabel(selectedEvent.funnel)}</p>
                 </div>
               </div>
             )}
@@ -701,10 +701,10 @@ export default function CalendarView() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Target className="w-4 h-4 text-primary-600" />
-                  <span className="text-sm font-bold text-gray-900">Call to Action (CTA)</span>
+                  <span className="text-sm font-bold text-gray-800">Call to Action (CTA)</span>
                 </div>
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl border border-gray-200">
-                  <p className="text-xs font-semibold text-gray-900">{selectedEvent.cta}</p>
+                <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-3 rounded-xl border border-primary-200/50">
+                  <p className="text-xs font-semibold text-gray-800">{selectedEvent.cta}</p>
                 </div>
               </div>
             )}
@@ -714,9 +714,9 @@ export default function CalendarView() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="w-4 h-4 text-primary-600" />
-                  <span className="text-sm font-bold text-gray-900">Detail Produksi</span>
+                  <span className="text-sm font-bold text-gray-800">Detail Produksi</span>
                 </div>
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 max-h-96 overflow-y-auto">
+                <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-4 rounded-xl border border-primary-200/50 max-h-96 overflow-y-auto">
                   {renderProductionDetail(selectedEvent.detail)}
                 </div>
               </div>
@@ -727,10 +727,10 @@ export default function CalendarView() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="w-4 h-4 text-primary-600" />
-                  <span className="text-sm font-bold text-gray-900">Caption</span>
+                  <span className="text-sm font-bold text-gray-800">Caption</span>
                 </div>
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl border border-gray-200">
-                  <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedEvent.caption}</p>
+                <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-3 rounded-xl border border-primary-200/50">
+                  <p className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">{selectedEvent.caption}</p>
                 </div>
               </div>
             )}
@@ -740,13 +740,13 @@ export default function CalendarView() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="w-4 h-4 text-primary-600" />
-                  <span className="text-sm font-bold text-gray-900">Hashtags</span>
+                  <span className="text-sm font-bold text-gray-800">Hashtags</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {[...new Set(selectedEvent.hashtags)].map((tag, i) => (
                     <span
                       key={i}
-                      className="px-3 py-1.5 bg-gradient-to-r from-primary-100 to-pink-100 text-primary-700 rounded-lg text-xs font-semibold border-2 border-primary-200 shadow-sm hover:shadow-md transition-shadow"
+                      className="px-3 py-1.5 bg-gradient-to-r from-primary-100 to-primary-200 text-primary-700 rounded-lg text-xs font-semibold border-2 border-primary-400 shadow-sm hover:shadow-md transition-shadow"
                     >
                       #{tag.replace(/^#+/, '')}
                     </span>

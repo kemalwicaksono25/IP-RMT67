@@ -137,11 +137,11 @@ export default function ProductList() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
-              <Package className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Daftar Produk</h1>
@@ -302,7 +302,7 @@ export default function ProductList() {
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <Link
                     to={`/products/${product.id}`}
-                    className="text-base font-bold text-gray-900 line-clamp-2 flex-1 hover:text-primary-600 transition-colors cursor-pointer group-hover:text-primary-600"
+                    className="text-base font-bold text-gray-800 line-clamp-2 flex-1 hover:text-primary-700 transition-colors cursor-pointer group-hover:text-primary-700"
                   >
                     {product.name}
                   </Link>
@@ -313,14 +313,14 @@ export default function ProductList() {
                 <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
                   <Link
                     to={`/products/${product.id}`}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all text-sm font-medium shadow-md hover:shadow-lg"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all text-sm font-medium shadow-md hover:shadow-lg"
                   >
                     <Eye className="w-4 h-4" />
                     Detail
                   </Link>
                   <button
                     onClick={() => handleOpenDeleteModal(product.id)}
-                    className="px-4 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all text-sm font-medium shadow-md hover:shadow-lg flex items-center gap-1.5"
+                    className="px-4 py-2.5 bg-gradient-to-r from-gray-800 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all text-sm font-medium shadow-md hover:shadow-lg flex items-center gap-1.5"
                   >
                     <Trash2 className="w-4 h-4" />
                     Hapus
@@ -336,15 +336,15 @@ export default function ProductList() {
             <div className="flex items-center justify-between bg-white rounded-xl shadow-lg border border-gray-200 p-4">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>Halaman</span>
-                <span className="font-semibold text-gray-900">{currentPage}</span>
+                <span className="font-semibold text-gray-800">{currentPage}</span>
                 <span>dari</span>
-                <span className="font-semibold text-gray-900">{totalPages}</span>
+                <span className="font-semibold text-gray-800">{totalPages}</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-medium"
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-medium"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Sebelumnya
@@ -368,7 +368,7 @@ export default function ProductList() {
                         className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
                           currentPage === pageNum
                             ? 'bg-primary-600 text-white'
-                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-primary-50'
                         }`}
                       >
                         {pageNum}
@@ -379,7 +379,7 @@ export default function ProductList() {
                 <button
                   onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-medium"
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-medium"
                 >
                   Selanjutnya
                   <ChevronRight className="w-4 h-4" />
@@ -404,13 +404,13 @@ export default function ProductList() {
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={handleCloseDeleteModal}
-              className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-primary-100 transition-colors"
             >
               Batal
             </button>
             <button
               onClick={handleDelete}
-              className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+              className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-gray-800 to-primary-700 rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
               Hapus

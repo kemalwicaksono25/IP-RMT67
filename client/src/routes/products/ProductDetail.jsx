@@ -191,11 +191,11 @@ export default function ProductDetail() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
-              <Package className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold break-words">{product.name}</h1>
@@ -250,7 +250,7 @@ export default function ProductDetail() {
                 <button
                   onClick={handleAnalyzeProduct}
                   disabled={analyzing}
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                   {analyzing ? (
                     <>
@@ -277,7 +277,7 @@ export default function ProductDetail() {
               <div className="p-2 bg-primary-100 rounded-lg">
                 <FileText className="w-5 h-5 text-primary-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Deskripsi Produk</h2>
+              <h2 className="text-xl font-bold text-gray-800">Deskripsi Produk</h2>
             </div>
             <div className="p-6 pt-4 overflow-y-auto" style={{ maxHeight: 'calc((100vw - 6rem - 3rem) / 3)' }}>
               <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{product.description || '-'}</p>
@@ -297,7 +297,7 @@ export default function ProductDetail() {
                     <div className="p-1.5 bg-red-100 rounded-lg">
                       <Heart className="w-4 h-4 text-red-600" />
                     </div>
-                    <h3 className="text-base font-bold text-gray-900">Pain Points</h3>
+                    <h3 className="text-base font-bold text-gray-800">Pain Points</h3>
                     {(!pggData.pains || pggData.pains.length === 0 || isPlaceholderPGG(pggData.pains)) && (
                       <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" />
@@ -352,7 +352,7 @@ export default function ProductDetail() {
                     <button
                       onClick={() => handleSavePGG('pains')}
                       disabled={saving}
-                      className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium shadow-md"
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all disabled:opacity-50 font-medium shadow-md hover:shadow-lg"
                     >
                       {saving ? <Loader size="sm" /> : <Save className="w-4 h-4" />}
                       Simpan
@@ -360,7 +360,7 @@ export default function ProductDetail() {
                     <button
                       onClick={() => handleCancelEdit('pains')}
                       disabled={saving}
-                      className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                      className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-xl hover:bg-primary-50 transition-colors font-medium"
                     >
                       Batal
                     </button>
@@ -423,7 +423,7 @@ export default function ProductDetail() {
                     <div className="p-1.5 bg-green-100 rounded-lg">
                       <TrendingUp className="w-4 h-4 text-green-600" />
                     </div>
-                    <h3 className="text-base font-bold text-gray-900">Gains</h3>
+                    <h3 className="text-base font-bold text-gray-800">Gains</h3>
                     {(!pggData.gains || pggData.gains.length === 0 || isPlaceholderPGG(pggData.gains)) && (
                       <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" />
@@ -478,7 +478,7 @@ export default function ProductDetail() {
                     <button
                       onClick={() => handleSavePGG('gains')}
                       disabled={saving}
-                      className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium shadow-md"
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all disabled:opacity-50 font-medium shadow-md hover:shadow-lg"
                     >
                       {saving ? <Loader size="sm" /> : <Save className="w-4 h-4" />}
                       Simpan
@@ -486,7 +486,7 @@ export default function ProductDetail() {
                     <button
                       onClick={() => handleCancelEdit('gains')}
                       disabled={saving}
-                      className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                      className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-xl hover:bg-primary-50 transition-colors font-medium"
                     >
                       Batal
                     </button>
@@ -549,7 +549,7 @@ export default function ProductDetail() {
                     <div className="p-1.5 bg-blue-100 rounded-lg">
                       <Target className="w-4 h-4 text-blue-600" />
                     </div>
-                    <h3 className="text-base font-bold text-gray-900">Goals</h3>
+                    <h3 className="text-base font-bold text-gray-800">Goals</h3>
                     {(!pggData.goals || pggData.goals.length === 0 || isPlaceholderPGG(pggData.goals)) && (
                       <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" />
@@ -604,7 +604,7 @@ export default function ProductDetail() {
                     <button
                       onClick={() => handleSavePGG('goals')}
                       disabled={saving}
-                      className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium shadow-md"
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all disabled:opacity-50 font-medium shadow-md hover:shadow-lg"
                     >
                       {saving ? <Loader size="sm" /> : <Save className="w-4 h-4" />}
                       Simpan
@@ -612,7 +612,7 @@ export default function ProductDetail() {
                     <button
                       onClick={() => handleCancelEdit('goals')}
                       disabled={saving}
-                      className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                      className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-xl hover:bg-primary-50 transition-colors font-medium"
                     >
                       Batal
                     </button>

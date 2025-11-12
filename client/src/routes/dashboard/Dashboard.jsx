@@ -310,11 +310,11 @@ export default function Dashboard() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
-              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Dashboard</h1>
@@ -383,15 +383,15 @@ export default function Dashboard() {
       {/* Aksi Cepat */}
       <div className="relative">
         {/* Background dengan gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-pink-50/50 to-purple-50/30 rounded-3xl -z-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-primary-100/50 to-primary-50/30 rounded-3xl -z-10"></div>
         
         <div className="mb-6 sm:mb-8 p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
+            <div className="p-2.5 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg">
               <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Aksi Cepat</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Aksi Cepat</h2>
               <p className="text-sm sm:text-base text-gray-600 mt-1">Mulai dengan membuat produk baru atau langsung buat ide brief untuk menghasilkan brief</p>
             </div>
           </div>
@@ -403,20 +403,20 @@ export default function Dashboard() {
               className="group relative bg-gradient-to-br from-white via-white to-primary-50/30 border-2 border-primary-200/50 rounded-2xl shadow-lg hover:shadow-2xl p-6 sm:p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:scale-[1.02]"
             >
               {/* Decorative elements */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary-200/40 to-pink-200/30 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary-200/40 to-primary-300/30 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-primary-100/30 to-transparent rounded-full -ml-16 -mb-16 blur-2xl"></div>
               
               <div className="relative z-10">
                 <div className="mb-5">
-                  <div className="w-20 h-20 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-xl group-hover:shadow-2xl">
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-xl group-hover:shadow-2xl">
                     <FileText className="w-10 h-10 text-white" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-gray-900 group-hover:text-primary-700 transition-colors">Buat Ide Brief Baru</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-gray-800 group-hover:text-primary-700 transition-colors">Buat Ide Brief Baru</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">Generate brief dengan AI untuk produk Anda</p>
                 </div>
-                <div className="flex items-center gap-2 text-sm font-bold text-primary-600 group-hover:text-primary-700 bg-primary-50 rounded-xl px-4 py-3 group-hover:bg-primary-100 transition-all group-hover:translate-x-2">
+                <div className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 rounded-xl px-4 py-3 shadow-md group-hover:shadow-lg transition-all group-hover:translate-x-2">
                   <span>Mulai Sekarang</span>
-                  <Sparkles className="w-4 h-4 group-hover:animate-pulse" />
+                  <Sparkles className="w-4 h-4" />
                 </div>
               </div>
             </Link>
@@ -424,21 +424,21 @@ export default function Dashboard() {
             {/* Tambah Produk */}
             <Link
               to="/products/new"
-              className="group relative bg-gradient-to-br from-white via-white to-gray-50/50 border-2 border-gray-200/50 rounded-2xl shadow-lg hover:shadow-2xl p-6 sm:p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:scale-[1.02]"
+              className="group relative bg-gradient-to-br from-white via-white to-primary-50/30 border-2 border-primary-200/50 rounded-2xl shadow-lg hover:shadow-2xl p-6 sm:p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:scale-[1.02]"
             >
               {/* Decorative elements */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-gray-200/40 to-gray-300/30 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-gray-100/30 to-transparent rounded-full -ml-16 -mb-16 blur-2xl"></div>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary-200/40 to-primary-300/30 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-primary-100/30 to-transparent rounded-full -ml-16 -mb-16 blur-2xl"></div>
               
               <div className="relative z-10">
                 <div className="mb-5">
-                  <div className="w-20 h-20 bg-gradient-to-br from-gray-600 via-gray-700 to-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-xl group-hover:shadow-2xl">
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-xl group-hover:shadow-2xl">
                     <Plus className="w-10 h-10 text-white" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-gray-900 group-hover:text-gray-800 transition-colors">Tambah Produk</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-gray-800 group-hover:text-primary-700 transition-colors">Tambah Produk</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">Tambahkan produk baru ke dalam sistem</p>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 rounded-xl px-4 py-3 shadow-md group-hover:shadow-lg transition-all group-hover:translate-x-2">
+                <div className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 rounded-xl px-4 py-3 shadow-md group-hover:shadow-lg transition-all group-hover:translate-x-2">
                   <span>Tambah Sekarang</span>
                   <Package className="w-4 h-4" />
                 </div>
@@ -448,21 +448,21 @@ export default function Dashboard() {
             {/* Lihat Kalender */}
             <Link
               to="/calendar"
-              className="group relative bg-gradient-to-br from-white via-white to-gray-50/50 border-2 border-gray-200/50 rounded-2xl shadow-lg hover:shadow-2xl p-6 sm:p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:scale-[1.02]"
+              className="group relative bg-gradient-to-br from-white via-white to-primary-50/30 border-2 border-primary-200/50 rounded-2xl shadow-lg hover:shadow-2xl p-6 sm:p-8 overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:scale-[1.02]"
             >
               {/* Decorative elements */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-gray-200/40 to-gray-300/30 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-gray-100/30 to-transparent rounded-full -ml-16 -mb-16 blur-2xl"></div>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary-200/40 to-primary-300/30 rounded-full -mr-20 -mt-20 blur-3xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-primary-100/30 to-transparent rounded-full -ml-16 -mb-16 blur-2xl"></div>
               
               <div className="relative z-10">
                 <div className="mb-5">
-                  <div className="w-20 h-20 bg-gradient-to-br from-gray-600 via-gray-700 to-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-xl group-hover:shadow-2xl">
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-xl group-hover:shadow-2xl">
                     <Calendar className="w-10 h-10 text-white" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-gray-900 group-hover:text-gray-800 transition-colors">Lihat Kalender</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-gray-800 group-hover:text-primary-700 transition-colors">Lihat Kalender</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">Kelola jadwal posting konten Anda</p>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 rounded-xl px-4 py-3 shadow-md group-hover:shadow-lg transition-all group-hover:translate-x-2">
+                <div className="flex items-center justify-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 rounded-xl px-4 py-3 shadow-md group-hover:shadow-lg transition-all group-hover:translate-x-2">
                   <span>Buka Kalender</span>
                   <Calendar className="w-4 h-4" />
                 </div>
@@ -481,12 +481,12 @@ export default function Dashboard() {
           
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3 sm:gap-6">
-              <div className="p-2 sm:p-4 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl sm:rounded-2xl shadow-md">
+              <div className="p-2 sm:p-4 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-xl sm:rounded-2xl shadow-md">
                 <Package className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-white" />
               </div>
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Produk Terbaru</h2>
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800">Produk Terbaru</h2>
                   <span className="px-3 sm:px-4 py-1 sm:py-1.5 bg-primary-100 text-primary-700 rounded-full text-xs sm:text-sm font-semibold border border-primary-200 w-fit">
                     {products?.length || 0} Produk
                   </span>
@@ -496,7 +496,7 @@ export default function Dashboard() {
             </div>
             <Link
               to="/products"
-              className="px-4 sm:px-6 py-2.5 sm:py-3.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all font-bold flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-1 text-sm sm:text-base w-full sm:w-auto justify-center"
+              className="px-4 sm:px-6 py-2.5 sm:py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-bold flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-1 text-sm sm:text-base w-full sm:w-auto justify-center"
             >
               <Package className="w-4 h-4 sm:w-5 sm:h-5" />
               Lihat Semua
@@ -567,7 +567,7 @@ export default function Dashboard() {
                   {paginatedProducts.length}
                 </span>
                 <span className="font-semibold text-gray-700">dari</span>
-                <span className="px-3 py-1 bg-pink-600 text-white rounded-full font-bold">
+                <span className="px-3 py-1 bg-primary-600 text-white rounded-full font-bold">
                   {filteredAndSortedProducts.length}
                 </span>
                 <span className="font-semibold text-gray-700">produk</span>
@@ -619,7 +619,7 @@ export default function Dashboard() {
                 <div className="p-4 flex flex-col flex-1">
                   <Link
                     to={`/products/${product.id}`}
-                    className="text-base font-bold text-gray-900 mb-2 line-clamp-2 min-h-[2.5rem] hover:text-primary-600 transition-colors cursor-pointer group-hover:text-primary-600"
+                    className="text-base font-bold text-gray-800 mb-2 line-clamp-2 min-h-[2.5rem] hover:text-primary-700 transition-colors cursor-pointer group-hover:text-primary-700"
                   >
                     {product.name}
                   </Link>
@@ -629,14 +629,14 @@ export default function Dashboard() {
                   <div className="flex gap-2 mt-auto pt-3 border-t border-gray-100">
                     <Link
                       to={`/products/${product.id}`}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-primary-50 to-pink-50 text-primary-700 rounded-lg hover:from-primary-100 hover:to-pink-100 transition-all text-sm font-medium border border-primary-200 hover:border-primary-300 hover:shadow-sm"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-primary-50 to-primary-100 text-primary-700 rounded-lg hover:from-primary-100 hover:to-primary-200 transition-all text-sm font-medium border border-primary-200 hover:border-primary-300 hover:shadow-sm"
                     >
                       <Eye className="w-4 h-4" />
                       Detail
                     </Link>
                     <Link
                       to={`/briefs/new?productId=${product.id}`}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all text-sm font-medium shadow-md hover:shadow-lg"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all text-sm font-medium shadow-md hover:shadow-lg"
                     >
                       <Plus className="w-4 h-4" />
                       Brief
@@ -657,7 +657,7 @@ export default function Dashboard() {
                   <button
                     onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Sebelumnya
@@ -677,7 +677,7 @@ export default function Dashboard() {
                             className={`px-3 py-2 rounded-lg transition-colors ${
                               currentPage === page
                                 ? 'bg-primary-600 text-white font-semibold'
-                                : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                                : 'border border-gray-300 hover:bg-primary-50 text-gray-700'
                             }`}
                           >
                             {page}
@@ -693,7 +693,7 @@ export default function Dashboard() {
                   <button
                     onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     Selanjutnya
                     <ChevronRight className="w-4 h-4" />

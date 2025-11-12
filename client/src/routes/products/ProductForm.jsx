@@ -99,13 +99,13 @@ export default function ProductForm() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
+          <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
             {isEdit ? (
-              <Edit className="w-5 h-5 sm:w-6 sm:h-6" />
+              <Edit className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             ) : (
-              <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
+              <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             )}
           </div>
           <div>
@@ -121,7 +121,7 @@ export default function ProductForm() {
 
       <form onSubmit={handleSubmit} noValidate className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
             <Package className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
             Informasi Produk
           </h2>
@@ -137,7 +137,7 @@ export default function ProductForm() {
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-800 placeholder-gray-400"
               placeholder="Masukkan nama produk"
             />
           </div>
@@ -152,7 +152,7 @@ export default function ProductForm() {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-900 placeholder-gray-400 resize-y"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-800 placeholder-gray-400 resize-y"
               placeholder="Masukkan deskripsi produk yang detail dan menarik"
             />
           </div>
@@ -167,7 +167,7 @@ export default function ProductForm() {
               type="url"
               value={formData.link}
               onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-800 placeholder-gray-400"
               placeholder="https://shopee.co.id/..."
             />
           </div>
@@ -220,7 +220,7 @@ export default function ProductForm() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-md hover:shadow-lg"
+              className="flex-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-6 rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-md hover:shadow-lg"
             >
               {loading ? (
                 <>
@@ -237,7 +237,7 @@ export default function ProductForm() {
             <button
               type="button"
               onClick={() => navigate('/products')}
-              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold flex items-center gap-2"
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-primary-100 transition-colors font-semibold flex items-center gap-2"
             >
               <X className="w-5 h-5" />
               Batal

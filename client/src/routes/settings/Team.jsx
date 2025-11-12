@@ -72,11 +72,11 @@ export default function Team() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
-              <Users className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
+              <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Kelola Tim</h1>
@@ -116,9 +116,9 @@ export default function Team() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Form Tambah Staff */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+        <div className="bg-white rounded-xl shadow-lg border border-primary-200/50 overflow-hidden">
+          <div className="bg-primary-50/30 border-b border-primary-200/50 px-4 sm:px-6 py-3 sm:py-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
               Tambah Staff
             </h2>
@@ -126,42 +126,42 @@ export default function Team() {
           <div className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-800 mb-1">
                   Nama <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-800 placeholder-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-800 mb-1">
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-800 placeholder-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-800 mb-1">
                   Password <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-gray-800 placeholder-gray-400"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl"
+                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-4 rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl"
               >
                 {loading ? <Loader size="sm" /> : 'Tambah Staff'}
               </button>
@@ -170,9 +170,9 @@ export default function Team() {
         </div>
 
         {/* Daftar Anggota Tim */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+        <div className="bg-white rounded-xl shadow-lg border border-primary-200/50 overflow-hidden">
+          <div className="bg-primary-50/30 border-b border-primary-200/50 px-6 py-4">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
               <Users className="w-5 h-5 text-primary-600" />
               Daftar Anggota Tim
             </h2>
@@ -188,7 +188,7 @@ export default function Team() {
                 {teamMembers.map((member) => (
                   <div
                     key={member.id}
-                    className="bg-gradient-to-br from-gray-50 to-white rounded-lg border-2 border-gray-200 hover:border-primary-300 p-5 transition-all hover:shadow-md"
+                    className="bg-gradient-to-br from-primary-50 to-white rounded-lg border-2 border-primary-200/50 hover:border-primary-300 p-5 transition-all hover:shadow-md"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -204,7 +204,7 @@ export default function Team() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-bold text-gray-900 text-lg">{member.name}</h3>
+                          <h3 className="font-bold text-gray-800 text-lg">{member.name}</h3>
                           <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold mt-1 ${
                             member.role === 'admin'
                               ? 'bg-primary-100 text-primary-700'
@@ -227,12 +227,12 @@ export default function Team() {
                     </div>
                     
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
                         <Mail className="w-4 h-4 text-gray-400" />
                         <span className="truncate">{member.email}</span>
                       </div>
                       {member.createdAt && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2 text-sm text-gray-700">
                           <Calendar className="w-4 h-4 text-gray-400" />
                           <span>Bergabung: {formatDate(member.createdAt)}</span>
                         </div>

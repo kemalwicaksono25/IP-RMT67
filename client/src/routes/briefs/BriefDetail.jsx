@@ -459,6 +459,17 @@ export default function BriefDetail() {
   };
 
   const handleOpenApprovalModal = (detailId) => {
+    // Cek apakah detail dengan ID ini ada dan statusnya belum final
+    const detail = brief?.details?.find(d => d && d.id === detailId);
+    if (detail) {
+      const status = detail.status || 'draft';
+      const isFinalStatus = status === 'scheduled' || status === 'pending_approval' || status === 'approved' || status === 'rejected';
+      if (isFinalStatus) {
+        toast.error('Brief ini sudah di-submit dan tidak dapat diubah');
+        return;
+      }
+    }
+    
     setShowApprovalModal({ ...showApprovalModal, [detailId]: true });
     setApprovalData({
       ...approvalData,
@@ -505,11 +516,14 @@ export default function BriefDetail() {
         scheduledTime: data.scheduledTime,
       });
       
-      // Update Redux store dengan brief yang sudah di-update
+      // Update Redux store dan local state dengan brief yang sudah di-update
       if (response && response.data && response.data.brief) {
-        dispatch(updateBrief({ id: parseInt(id), updatedBrief: response.data.brief }));
+        const updatedBrief = response.data.brief;
+        setLocalBrief(updatedBrief);
+        dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
       } else {
-        fetchBrief();
+        // Jika response tidak memiliki brief, fetch ulang untuk mendapatkan data terbaru
+        await fetchBrief();
       }
       
       // Cek apakah user adalah admin (status akan menjadi SCHEDULED untuk admin)
@@ -636,16 +650,16 @@ export default function BriefDetail() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
-              <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Membuat Detail Brief</h1>
               <p className="text-primary-100 text-xs sm:text-sm mt-1 break-words">
-                Produk: {brief.product?.name} | Funnel: {brief.funnelStage}
+                Produk: {brief.product?.name}
               </p>
             </div>
           </div>
@@ -713,38 +727,39 @@ export default function BriefDetail() {
             <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
-                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Produk</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-800">Produk</h2>
               </div>
             </div>
             <div className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
                 {/* Product Image */}
                 {brief.product.imageUrl && (
-                  <div className="flex-shrink-0 w-full sm:w-auto">
-                    <div className="w-full sm:w-32 lg:w-40 h-32 sm:h-32 lg:h-40 rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200">
+                  <div className="flex-shrink-0 w-full sm:w-40 lg:w-48">
+                    <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-primary-50 to-primary-100 border-2 border-primary-200 shadow-lg group">
                       <img
                         src={`http://localhost:3000${brief.product.imageUrl}`}
                         alt={brief.product.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none"></div>
                     </div>
                   </div>
                 )}
                 
                 {/* Product Info */}
                 <div className="flex-1 min-w-0 w-full">
-                  <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2">{brief.product.name}</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 break-words leading-tight">{brief.product.name}</h3>
                   {brief.product.description && (
-                    <p className="text-xs sm:text-sm text-gray-600 line-clamp-3 mb-3">{brief.product.description}</p>
+                    <p className="text-sm text-gray-600 mb-4 leading-relaxed line-clamp-4">{brief.product.description}</p>
                   )}
                   {brief.product.link && (
                     <a
                       href={brief.product.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs sm:text-sm font-medium"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-100"
                     >
-                      <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <ExternalLink className="w-4 h-4" />
                       Link Produk
                     </a>
                   )}
@@ -759,22 +774,33 @@ export default function BriefDetail() {
           <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Informasi Brief</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-800">Informasi Brief</h2>
             </div>
           </div>
           <div className="p-4 sm:p-6">
             <div className="space-y-3 sm:space-y-4">
               <div>
                 <span className="text-xs sm:text-sm text-gray-600">Target Market:</span>
-                <p className="text-sm sm:text-base font-medium text-gray-900 mt-1 break-words">{brief.targetMarket || '-'}</p>
+                <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">{brief.targetMarket || '-'}</p>
               </div>
               <div>
                 <span className="text-xs sm:text-sm text-gray-600">Gaya Bahasa:</span>
-                <p className="text-sm sm:text-base font-medium text-gray-900 mt-1 break-words">{getToneOfVoiceLabel(brief.toneOfVoice) || '-'}</p>
+                <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">{getToneOfVoiceLabel(brief.toneOfVoice) || '-'}</p>
               </div>
               <div>
                 <span className="text-xs sm:text-sm text-gray-600">Jenis Brief:</span>
-                <p className="text-sm sm:text-base font-medium text-gray-900 mt-1 break-words">{getBriefTypeLabel(brief.briefType) || '-'}</p>
+                <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">{getBriefTypeLabel(brief.briefType) || '-'}</p>
+              </div>
+              <div>
+                <span className="text-xs sm:text-sm text-gray-600">Funnel:</span>
+                <p className="text-sm sm:text-base font-medium text-gray-800 mt-1 break-words">
+                  {brief.funnelStage ? brief.funnelStage.split(',').map((f, idx) => (
+                    <span key={idx}>
+                      {idx > 0 && ', '}
+                      {getFunnelLabel(f.trim())}
+                    </span>
+                  )) : '-'}
+                </p>
               </div>
             </div>
           </div>
@@ -787,19 +813,19 @@ export default function BriefDetail() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Brief</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-800">Brief</h2>
             </div>
           </div>
         </div>
         
         {/* Info Section */}
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-blue-200/50 px-4 sm:px-6 py-4 sm:py-5">
+        <div className="bg-gradient-to-r from-primary-50 via-primary-100 to-primary-50 border-b border-primary-200/50 px-4 sm:px-6 py-4 sm:py-5">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg flex-shrink-0">
+            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg flex-shrink-0">
               <Info className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div className="flex-1 min-w-0 w-full">
-              <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-1.5">
+              <h3 className="text-sm sm:text-base font-bold text-gray-800 mb-1.5">
                 Generate Detail Produksi
               </h3>
               <p className="text-xs sm:text-sm text-gray-700 leading-relaxed mb-3 sm:mb-4">
@@ -814,7 +840,7 @@ export default function BriefDetail() {
                   brief.details.every(d => d.detail && d.detail.type) ||
                   Object.values(generatingDetail).some(v => v)
                 }
-                className="inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white rounded-xl hover:from-pink-600 hover:via-rose-600 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-semibold text-xs sm:text-sm transform hover:scale-105 active:scale-100 w-full sm:w-auto justify-center"
+                className="inline-flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-semibold text-xs sm:text-sm transform hover:scale-105 active:scale-100 w-full sm:w-auto justify-center"
               >
                 {Object.values(generatingDetail).some(v => v) ? (
                   <>
@@ -834,9 +860,9 @@ export default function BriefDetail() {
 
         <div className="shadow-inner overflow-x-auto">
           <table className="w-full border-collapse table-fixed min-w-[1200px]">
-            <thead className="bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700">
+            <thead className="bg-gradient-to-r from-primary-600 to-primary-700">
               <tr>
-                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase sticky left-0 bg-gradient-to-r from-primary-500 to-primary-600 z-20 w-8 shadow-lg border-r border-primary-400/30">
+                <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase sticky left-0 bg-gradient-to-r from-primary-600 to-primary-700 z-20 w-8 shadow-lg border-r border-primary-500/30">
                   No
                 </th>
                 <th className="px-1.5 py-2 text-center text-xs font-bold text-white uppercase w-20">
@@ -888,8 +914,8 @@ export default function BriefDetail() {
                 <>
                   <tr key={detail.id} className={`transition-colors duration-150 ${
                       editingIdea[detail.id] 
-                        ? 'bg-blue-50/50 hover:bg-blue-50' 
-                        : 'hover:bg-gray-50/80'
+                        ? 'bg-primary-50/50 hover:bg-primary-50' 
+                        : 'hover:bg-primary-50/80'
                     } ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
                     <td className="px-1.5 py-2 text-xs font-semibold text-gray-700 sticky left-0 bg-inherit z-10 w-8 border-r border-gray-200/50">
                       <div className="flex items-center justify-center w-5 h-5 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 text-primary-700 text-xs">
@@ -929,7 +955,7 @@ export default function BriefDetail() {
                       ) : (
                         <>
                           <div className="text-center mb-1">
-                            <span className="font-semibold text-gray-900 text-xs whitespace-nowrap">{detail.platform}</span>
+                            <span className="font-semibold text-gray-800 text-xs whitespace-nowrap">{detail.platform}</span>
                           </div>
                           <div className="text-center">
                             <span className={`px-2 py-1 rounded-lg text-xs font-semibold capitalize shadow-sm whitespace-nowrap inline-block ${
@@ -958,7 +984,7 @@ export default function BriefDetail() {
                           placeholder="Judul..."
                         />
                       ) : (
-                        <span className="font-semibold text-gray-900 whitespace-normal break-words text-xs leading-tight">{detail.title}</span>
+                        <span className="font-semibold text-gray-800 whitespace-normal break-words text-xs leading-tight">{detail.title}</span>
                       )}
                     </td>
                     <td className="px-1.5 py-2 text-xs text-gray-700 w-20 border-r border-gray-200/50">
@@ -1179,14 +1205,15 @@ export default function BriefDetail() {
                         {(() => {
                           const status = detail.status || 'draft';
                           const isComplete = isDetailComplete(detail);
-                          // Tampilkan button submit hanya jika detail sudah lengkap
-                          // Baik status "ready" maupun "draft", yang penting detail sudah lengkap
-                          if (isComplete) {
+                          // Tampilkan button submit hanya jika detail sudah lengkap DAN status belum final
+                          // Status final: scheduled, pending_approval, approved, rejected
+                          const isFinalStatus = status === 'scheduled' || status === 'pending_approval' || status === 'approved' || status === 'rejected';
+                          if (isComplete && !isFinalStatus) {
                             return (
                               <button
                                 type="button"
                                 onClick={() => handleOpenApprovalModal(detail.id)}
-                                className="px-2 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-1 w-full shadow-sm hover:shadow-md"
+                                className="px-2 py-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-medium rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all flex items-center justify-center gap-1 w-full shadow-sm hover:shadow-md"
                                 title="Submit for Approval"
                               >
                                 <Send className="w-3 h-3" />
@@ -1214,14 +1241,14 @@ export default function BriefDetail() {
                               <button
                                 type="button"
                                 onClick={() => handleEditIdea(detail)}
-                                className="p-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                className="p-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-primary-50 transition-colors"
                                 title="Edit Brief"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
-                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-primary-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                 Edit Brief
-                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-primary-800"></div>
                               </div>
                             </div>
                             <div className="relative group">
@@ -1242,9 +1269,9 @@ export default function BriefDetail() {
                                   <Sparkles className="w-3.5 h-3.5" />
                                 )}
                               </button>
-                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-primary-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                 {generatingDetail[detail.id] ? "Generating..." : "Generate Detail Produksi"}
-                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-primary-800"></div>
                               </div>
                             </div>
                             {detail.detail && detail.detail.type && (
@@ -1252,7 +1279,7 @@ export default function BriefDetail() {
                                 <button
                                   type="button"
                                   onClick={() => toggleDetail(detail.id)}
-                                  className="p-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                  className="p-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-primary-50 transition-colors"
                                   title={expandedDetails[detail.id] ? "Sembunyikan Detail Produksi" : "Lihat Detail Produksi"}
                                 >
                                   {expandedDetails[detail.id] ? (
@@ -1261,9 +1288,9 @@ export default function BriefDetail() {
                                     <Eye className="w-3.5 h-3.5" />
                                   )}
                                 </button>
-                                <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-primary-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                   {expandedDetails[detail.id] ? "Sembunyikan Detail Produksi" : "Lihat Detail Produksi"}
-                                  <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                                  <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-primary-800"></div>
                                 </div>
                               </div>
                             )}
@@ -1280,9 +1307,9 @@ export default function BriefDetail() {
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
-                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-primary-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                 Hapus Brief
-                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-primary-800"></div>
                               </div>
                             </div>
                           </>
@@ -1303,23 +1330,23 @@ export default function BriefDetail() {
                                   <Save className="w-3.5 h-3.5" />
                                 )}
                               </button>
-                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-primary-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                 {savingIdea[detail.id] ? "Menyimpan..." : "Simpan Perubahan"}
-                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-primary-800"></div>
                               </div>
                             </div>
                             <div className="relative group">
                               <button
                                 type="button"
                                 onClick={() => handleCancelEditIdea(detail.id)}
-                                className="p-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                                className="p-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-primary-400 transition-colors"
                                 title="Batal Edit"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
-                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-primary-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                 Batal Edit
-                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-primary-800"></div>
                               </div>
                             </div>
                           </>
@@ -1329,13 +1356,13 @@ export default function BriefDetail() {
                   </tr>
                   {/* Detail Section - Production Detail (not idea content) */}
                   {detail.detail && expandedDetails[detail.id] && detail.detail.type && (
-                    <tr key={`detail-${detail.id}`} className="bg-gradient-to-r from-gray-50 to-blue-50/30">
+                    <tr key={`detail-${detail.id}`} className="bg-gradient-to-r from-gray-50 to-primary-50/30">
                       <td colSpan={15} className="px-6 py-6 border-t-2 border-gray-200">
                       <div className="space-y-4">
                         {editingDetail[detail.id] ? (
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <h4 className="font-semibold text-gray-900">Edit Detail Konten</h4>
+                              <h4 className="font-semibold text-gray-800">Edit Detail Konten</h4>
                               <div className="flex gap-2">
                                 <div className="relative group">
                                   <button
@@ -1351,7 +1378,7 @@ export default function BriefDetail() {
                                       <Save className="w-4 h-4" />
                                     )}
                                   </button>
-                                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-primary-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                     {saving[detail.id] ? "Menyimpan..." : "Simpan Detail Produksi"}
                                     <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
                                   </div>
@@ -1360,12 +1387,12 @@ export default function BriefDetail() {
                                   <button
                                     type="button"
                                     onClick={() => handleCancelEdit(detail.id)}
-                                    className="p-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                                    className="p-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-primary-400 transition-colors"
                                     title="Batal Edit"
                                   >
                                     <X className="w-4 h-4" />
                                   </button>
-                                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-primary-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                     Batal Edit
                                     <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
                                   </div>
@@ -1636,17 +1663,17 @@ export default function BriefDetail() {
                         ) : (
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <h4 className="font-semibold text-gray-900">Detail Konten</h4>
+                              <h4 className="font-semibold text-gray-800">Detail Konten</h4>
                               <div className="relative group">
                                 <button
                                   type="button"
                                   onClick={() => handleEditDetail(detail)}
-                                  className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                  className="p-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-primary-50 transition-colors"
                                   title="Edit Detail Produksi"
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </button>
-                                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-primary-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                   Edit Detail Produksi
                                   <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
                                 </div>
@@ -1660,7 +1687,7 @@ export default function BriefDetail() {
                                   {detail.detail.duration && (
                                     <div>
                                       <span className="text-sm font-medium text-gray-600">Durasi:</span>
-                                      <p className="text-gray-900 mt-1">{detail.detail.duration}</p>
+                                      <p className="text-gray-800 mt-1">{detail.detail.duration}</p>
                                     </div>
                                   )}
                                   {detail.detail.scenes && (
@@ -1690,13 +1717,13 @@ export default function BriefDetail() {
                                   {detail.detail.visual && (
                                     <div>
                                       <span className="text-sm font-medium text-gray-600">Visual Description:</span>
-                                      <p className="text-gray-900 mt-1">{detail.detail.visual}</p>
+                                      <p className="text-gray-800 mt-1">{detail.detail.visual}</p>
                                     </div>
                                   )}
                                   {detail.detail.music && (
                                     <div>
                                       <span className="text-sm font-medium text-gray-600">Music Suggestion:</span>
-                                      <p className="text-gray-900 mt-1">{detail.detail.music}</p>
+                                      <p className="text-gray-800 mt-1">{detail.detail.music}</p>
                                     </div>
                                   )}
                                 </>
@@ -1706,7 +1733,7 @@ export default function BriefDetail() {
                                   {detail.detail.slideCount && (
                                     <div>
                                       <span className="text-sm font-medium text-gray-600">Jumlah Slide:</span>
-                                      <p className="text-gray-900 mt-1">{detail.detail.slideCount}</p>
+                                      <p className="text-gray-800 mt-1">{detail.detail.slideCount}</p>
                                     </div>
                                   )}
                                   {detail.detail.slides && Array.isArray(detail.detail.slides) && (
@@ -1725,7 +1752,7 @@ export default function BriefDetail() {
                                   {detail.detail.visualTone && (
                                     <div>
                                       <span className="text-sm font-medium text-gray-600">Visual Tone:</span>
-                                      <p className="text-gray-900 mt-1">{detail.detail.visualTone}</p>
+                                      <p className="text-gray-800 mt-1">{detail.detail.visualTone}</p>
                                     </div>
                                   )}
                                 </>
@@ -1735,25 +1762,25 @@ export default function BriefDetail() {
                                   {detail.detail.headline && (
                                     <div>
                                       <span className="text-sm font-medium text-gray-600">Headline:</span>
-                                      <p className="text-gray-900 mt-1 font-semibold">{detail.detail.headline}</p>
+                                      <p className="text-gray-800 mt-1 font-semibold">{detail.detail.headline}</p>
                                     </div>
                                   )}
                                   {detail.detail.subheadline && (
                                     <div>
                                       <span className="text-sm font-medium text-gray-600">Subheadline:</span>
-                                      <p className="text-gray-900 mt-1">{detail.detail.subheadline}</p>
+                                      <p className="text-gray-800 mt-1">{detail.detail.subheadline}</p>
                                     </div>
                                   )}
                                   {detail.detail.visual && (
                                     <div>
                                       <span className="text-sm font-medium text-gray-600">Visual Description:</span>
-                                      <p className="text-gray-900 mt-1">{detail.detail.visual}</p>
+                                      <p className="text-gray-800 mt-1">{detail.detail.visual}</p>
                                     </div>
                                   )}
                                   {detail.detail.layout && (
                                     <div>
                                       <span className="text-sm font-medium text-gray-600">Layout Description:</span>
-                                      <p className="text-gray-900 mt-1">{detail.detail.layout}</p>
+                                      <p className="text-gray-800 mt-1">{detail.detail.layout}</p>
                                     </div>
                                   )}
                                 </>
@@ -1764,8 +1791,8 @@ export default function BriefDetail() {
                             {detail.caption && (
                               <div>
                                 <span className="text-sm font-medium text-gray-600">Caption & Hashtags:</span>
-                                <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mt-1">
-                                  <p className="text-gray-900 text-sm leading-relaxed whitespace-pre-wrap">
+                                <div className="bg-primary-50 border border-primary-400 rounded-lg p-4 mt-1">
+                                  <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
                                     {detail.caption}
                                     {/* Show additional hashtags if they exist separately and not already in caption */}
                                     {detail.hashtags && detail.hashtags.length > 0 && 
@@ -1803,9 +1830,9 @@ export default function BriefDetail() {
           size="md"
         >
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-400 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <div className="p-1.5 bg-primary-500 rounded-lg">
+                <div className="p-1.5 bg-primary-600 rounded-lg">
                   <Info className="h-4 w-4 text-white" />
                 </div>
                 <p className="text-sm text-primary-800 flex-1">
@@ -1834,7 +1861,7 @@ export default function BriefDetail() {
                       [detail.id]: { ...approvalData[detail.id], scheduledAt: e.target.value }
                     })}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white text-gray-900 font-medium"
+                    className="w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white text-gray-800 font-medium"
                   />
                 </div>
               </div>
@@ -1857,7 +1884,7 @@ export default function BriefDetail() {
                       ...approvalData,
                       [detail.id]: { ...approvalData[detail.id], scheduledTime: e.target.value }
                     })}
-                    className="w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white text-gray-900 font-medium [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                    className="w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white text-gray-800 font-medium [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                     style={{ 
                       fontVariantNumeric: 'tabular-nums',
                       colorScheme: 'light'
@@ -1872,7 +1899,7 @@ export default function BriefDetail() {
               <button
                 type="button"
                 onClick={() => handleCloseApprovalModal(detail.id)}
-                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-primary-100 transition-colors"
               >
                 Batal
               </button>
@@ -1880,7 +1907,7 @@ export default function BriefDetail() {
                 type="button"
                 onClick={() => handleSubmitApproval(detail.id)}
                 disabled={submittingApproval[detail.id] || !approvalData[detail.id]?.scheduledAt || !approvalData[detail.id]?.scheduledTime}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-sm hover:shadow-md"
+                className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
               >
                 {submittingApproval[detail.id] ? (
                   <>
@@ -1916,7 +1943,7 @@ export default function BriefDetail() {
               <button
                 type="button"
                 onClick={() => handleCloseDeleteModal(detail.id)}
-                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-primary-100 transition-colors"
               >
                 Batal
               </button>
@@ -1927,7 +1954,7 @@ export default function BriefDetail() {
                   e.stopPropagation();
                   handleDeleteIdea(detail.id);
                 }}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-gray-800 to-primary-700 rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
                 Hapus

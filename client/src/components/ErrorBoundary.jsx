@@ -24,7 +24,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       // You can render any custom fallback UI
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="min-h-screen flex items-center justify-center bg-primary-50/30 p-6">
           <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
             <div className="mb-4">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
@@ -43,18 +43,18 @@ class ErrorBoundary extends React.Component {
                 </svg>
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
               Terjadi Kesalahan
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-700 mb-6">
               Maaf, terjadi kesalahan saat memuat halaman. Silakan refresh halaman atau hubungi administrator.
             </p>
             {this.state.error && (
               <details className="text-left mb-6">
-                <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700 mb-2">
+                <summary className="cursor-pointer text-sm text-gray-600 hover:text-primary-700 mb-2">
                   Detail Error (untuk debugging)
                 </summary>
-                <pre className="text-xs bg-gray-100 p-4 rounded overflow-auto max-h-40">
+                <pre className="text-xs bg-primary-50 p-4 rounded overflow-auto max-h-40 border border-primary-200">
                   {this.state.error.toString()}
                   {this.state.errorInfo?.componentStack}
                 </pre>
@@ -75,7 +75,7 @@ class ErrorBoundary extends React.Component {
                   this.setState({ hasError: false, error: null, errorInfo: null });
                   window.location.href = '/dashboard';
                 }}
-                className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                className="px-6 py-2.5 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
               >
                 Kembali ke Dashboard
               </button>

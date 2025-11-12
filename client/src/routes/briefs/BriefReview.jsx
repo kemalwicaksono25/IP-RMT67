@@ -187,7 +187,7 @@ export default function BriefReview() {
           {detail.duration && (
             <div>
               <span className="text-xs font-semibold text-gray-600 block mb-1">Durasi</span>
-              <span className="text-sm text-gray-900">{detail.duration}</span>
+              <span className="text-sm text-gray-800">{detail.duration}</span>
             </div>
           )}
           {scenes.length > 0 && (
@@ -206,13 +206,13 @@ export default function BriefReview() {
           {detail.visual && (
             <div>
               <span className="text-xs font-semibold text-gray-600 block mb-1">Visual Description</span>
-              <p className="text-sm text-gray-900 leading-relaxed">{detail.visual}</p>
+              <p className="text-sm text-gray-800 leading-relaxed">{detail.visual}</p>
             </div>
           )}
           {detail.music && (
             <div>
               <span className="text-xs font-semibold text-gray-600 block mb-1">Music Suggestion</span>
-              <p className="text-sm text-gray-900 leading-relaxed">{detail.music}</p>
+              <p className="text-sm text-gray-800 leading-relaxed">{detail.music}</p>
             </div>
           )}
         </div>
@@ -226,7 +226,7 @@ export default function BriefReview() {
           {detail.slideCount && (
             <div>
               <span className="text-xs font-semibold text-gray-600 block mb-1">Jumlah Slide</span>
-              <span className="text-sm text-gray-900">{detail.slideCount}</span>
+              <span className="text-sm text-gray-800">{detail.slideCount}</span>
             </div>
           )}
           {detail.slides && Array.isArray(detail.slides) && detail.slides.length > 0 && (
@@ -245,7 +245,7 @@ export default function BriefReview() {
           {detail.visualTone && (
             <div>
               <span className="text-xs font-semibold text-gray-600 block mb-1">Visual Tone</span>
-              <p className="text-sm text-gray-900 leading-relaxed">{detail.visualTone}</p>
+              <p className="text-sm text-gray-800 leading-relaxed">{detail.visualTone}</p>
             </div>
           )}
         </div>
@@ -259,25 +259,25 @@ export default function BriefReview() {
           {detail.headline && (
             <div>
               <span className="text-xs font-semibold text-gray-600 block mb-1">Headline</span>
-              <p className="text-sm font-bold text-gray-900">{detail.headline}</p>
+              <p className="text-sm font-bold text-gray-800">{detail.headline}</p>
             </div>
           )}
           {detail.subheadline && (
             <div>
               <span className="text-xs font-semibold text-gray-600 block mb-1">Subheadline</span>
-              <p className="text-sm text-gray-900">{detail.subheadline}</p>
+              <p className="text-sm text-gray-800">{detail.subheadline}</p>
             </div>
           )}
           {detail.visual && (
             <div>
               <span className="text-xs font-semibold text-gray-600 block mb-1">Visual Description</span>
-              <p className="text-sm text-gray-900 leading-relaxed">{detail.visual}</p>
+              <p className="text-sm text-gray-800 leading-relaxed">{detail.visual}</p>
             </div>
           )}
           {detail.layout && (
             <div>
               <span className="text-xs font-semibold text-gray-600 block mb-1">Layout Description</span>
-              <p className="text-sm text-gray-900 leading-relaxed">{detail.layout}</p>
+              <p className="text-sm text-gray-800 leading-relaxed">{detail.layout}</p>
             </div>
           )}
         </div>
@@ -333,11 +333,11 @@ export default function BriefReview() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
-              <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Review Approval</h1>
@@ -397,7 +397,7 @@ export default function BriefReview() {
               {/* Brief Info Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-gray-800">
                     Brief #{brief.id}
                   </h2>
                   <p className="text-sm text-gray-600">
@@ -416,7 +416,7 @@ export default function BriefReview() {
               <div className="mb-4 space-y-4">
                 {/* Product Card - Compact */}
                 {brief.product && (
-                  <div className="bg-gradient-to-br from-primary-50 to-pink-50 rounded-lg border border-primary-200 p-3 mb-4">
+                  <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg border border-primary-400 p-3 mb-4">
                     <div className="flex items-center gap-3">
                       {brief.product.imageUrl && (
                         <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 shadow-sm">
@@ -430,7 +430,7 @@ export default function BriefReview() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <Package className="w-4 h-4 text-primary-600 flex-shrink-0" />
-                          <h3 className="text-sm font-bold text-gray-900 truncate">{brief.product.name}</h3>
+                          <h3 className="text-sm font-bold text-gray-800 truncate">{brief.product.name}</h3>
                         </div>
                         {brief.product.description && (
                           <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed mb-2">
@@ -443,7 +443,7 @@ export default function BriefReview() {
                               href={brief.product.link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2 py-1 bg-primary-600 text-white rounded text-xs font-medium hover:bg-primary-700 transition-colors"
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded text-xs font-medium hover:from-primary-700 hover:to-primary-800 transition-all shadow-sm hover:shadow-md"
                             >
                               <ExternalLink className="w-3 h-3" />
                               Link Produk
@@ -451,7 +451,7 @@ export default function BriefReview() {
                           )}
                           <Link
                             to={`/products/${brief.product.id}`}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-white text-gray-700 rounded text-xs font-medium hover:bg-gray-100 transition-colors border border-gray-300"
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-white text-gray-700 rounded text-xs font-medium hover:bg-primary-50 transition-colors border border-gray-300"
                           >
                             <Eye className="w-3 h-3" />
                             Detail
@@ -462,22 +462,22 @@ export default function BriefReview() {
                   </div>
                 )}
 
-                <h3 className="font-semibold text-lg text-gray-900 mb-4">Detail Brief:</h3>
+                <h3 className="font-semibold text-lg text-gray-800 mb-4">Detail Brief:</h3>
                 {brief.details?.filter(detail => detail.status !== 'draft').map((detail, index) => (
                   <div key={detail.id} className="border border-gray-200 rounded-xl overflow-hidden">
                     {/* Header */}
                     <div 
-                      className="bg-gradient-to-r from-primary-50 to-pink-50 p-4 cursor-pointer hover:from-primary-100 hover:to-pink-100 transition-colors"
+                      className="bg-gradient-to-r from-primary-50 to-primary-100 p-4 cursor-pointer hover:from-primary-100 hover:to-primary-200 transition-colors"
                       onClick={() => toggleDetail(detail.id)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
-                          <div className="flex items-center justify-center w-8 h-8 bg-primary-600 text-white rounded-lg font-bold text-sm">
+                          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white rounded-lg font-bold text-sm shadow-md">
                             {index + 1}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <h4 className="font-semibold text-gray-900 truncate">{detail.title}</h4>
+                              <h4 className="font-semibold text-gray-800 truncate">{detail.title}</h4>
                               {isUrgent(detail.scheduledAt) && (
                                 <span className="px-2 py-0.5 bg-red-500 text-white rounded text-xs font-bold whitespace-nowrap flex items-center gap-1 animate-pulse">
                                   <AlertTriangle className="w-3 h-3" />
@@ -572,7 +572,7 @@ export default function BriefReview() {
                         </div>
 
                         {detail.detail?.hookOpening && (
-                          <div className="bg-gradient-to-r from-primary-50 to-pink-50 rounded-lg p-4 border border-primary-200">
+                          <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg p-4 border border-primary-400">
                             <div className="flex items-center gap-2 mb-2">
                               <Eye className="w-4 h-4 text-primary-600" />
                               <span className="text-sm font-semibold text-primary-900">Hook/Opening</span>
@@ -585,7 +585,7 @@ export default function BriefReview() {
                           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                             <div className="flex items-center gap-2 mb-3">
                               <FileText className="w-4 h-4 text-gray-600" />
-                              <span className="text-sm font-semibold text-gray-900">Main Content Points</span>
+                              <span className="text-sm font-semibold text-gray-800">Main Content Points</span>
                             </div>
                             <ul className="space-y-2">
                               {detail.detail.mainContentPoints.map((point, i) => (
@@ -604,7 +604,7 @@ export default function BriefReview() {
                               <Target className="w-4 h-4 text-green-600" />
                               <span className="text-sm font-semibold text-green-900">Call to Action (CTA)</span>
                             </div>
-                            <p className="text-sm font-medium text-gray-900">{detail.cta}</p>
+                            <p className="text-sm font-medium text-gray-800">{detail.cta}</p>
                           </div>
                         )}
 
@@ -638,12 +638,12 @@ export default function BriefReview() {
 
                         {/* Detail Produksi */}
                         {detail.detail && (
-                          <div className="bg-white rounded-lg p-4 border-2 border-primary-200">
+                          <div className="bg-white rounded-lg p-4 border-2 border-primary-400">
                             <div className="flex items-center gap-2 mb-4">
                               {detail.detail.type === 'video' && <Video className="w-5 h-5 text-primary-600" />}
                               {detail.detail.type === 'carousel' && <Layers className="w-5 h-5 text-primary-600" />}
                               {detail.detail.type === 'image' && <Image className="w-5 h-5 text-primary-600" />}
-                              <span className="text-base font-bold text-gray-900">Detail Produksi</span>
+                              <span className="text-base font-bold text-gray-800">Detail Produksi</span>
                             </div>
                             {renderProductionDetail(detail.detail)}
                           </div>
@@ -651,7 +651,7 @@ export default function BriefReview() {
 
                         {/* Caption & Hashtags */}
                         {detail.caption && (
-                          <div className="bg-primary-50 rounded-lg p-4 border border-primary-200">
+                          <div className="bg-primary-50 rounded-lg p-4 border border-primary-400">
                             <div className="flex items-center gap-2 mb-2">
                               <FileText className="w-4 h-4 text-primary-600" />
                               <span className="text-sm font-semibold text-primary-900">Caption</span>
@@ -661,14 +661,14 @@ export default function BriefReview() {
                         )}
 
                         {detail.hashtags && detail.hashtags.length > 0 && (
-                          <div className="bg-pink-50 rounded-lg p-4 border border-pink-200">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Sparkles className="w-4 h-4 text-pink-600" />
-                              <span className="text-sm font-semibold text-pink-900">Hashtags</span>
+                          <div className="bg-primary-50 rounded-lg p-4 border border-primary-400">
+                              <div className="flex items-center gap-2 mb-2">
+                              <Sparkles className="w-4 h-4 text-primary-600" />
+                              <span className="text-sm font-semibold text-primary-800">Hashtags</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {[...new Set(detail.hashtags)].map((tag, i) => (
-                                <span key={i} className="px-3 py-1.5 bg-white text-pink-700 rounded-lg text-sm font-medium border border-pink-200">
+                                <span key={i} className="px-3 py-1.5 bg-white text-primary-700 rounded-lg text-sm font-medium border border-primary-400">
                                   #{tag.replace(/^#+/, '')}
                                 </span>
                               ))}
@@ -705,7 +705,7 @@ export default function BriefReview() {
                 </button>
                 <button
                   onClick={() => setSelectedBrief(brief)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  className="px-4 py-2 bg-gradient-to-r from-gray-800 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all shadow-md hover:shadow-lg"
                 >
                   ❌ Reject
                 </button>
@@ -742,7 +742,7 @@ export default function BriefReview() {
                 setSelectedBrief(null);
                 setRejectReason('');
               }}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-200 transition-colors"
             >
               Batal
             </button>
