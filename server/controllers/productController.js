@@ -40,15 +40,25 @@ class ProductController {
   static async create(req, res, next) {
     try {
       const { name, description, link } = req.body;
-      const imageUrl = req.file
-        ? req.file.path
-        : null;
+      
+      // Handle multiple images
+      let imageUrls = [];
+      if (req.files && req.files.length > 0) {
+        imageUrls = req.files.map(file => file.path);
+      } else if (req.file) {
+        // Backward compatibility: single file
+        imageUrls = [req.file.path];
+      }
+      
+      // Set imageUrl for backward compatibility (first image)
+      const imageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
 
       const product = await db.Product.create({
         name,
         description: description || "",
         link: link || "",
         imageUrl,
+        imageUrls: imageUrls.length > 0 ? imageUrls : [],
         ProjectId: req.user.ProjectId,
       });
 
@@ -116,9 +126,35 @@ class ProductController {
         }
       }
 
-      if (req.file) {
+      // Handle multiple images
+      if (req.files && req.files.length > 0) {
+        // New images uploaded: replace all with new images
+        const newImageUrls = req.files.map(file => file.path);
+        updateData.imageUrls = newImageUrls;
+        updateData.imageUrl = newImageUrls[0]; // First image for backward compatibility
+      } else if (req.file) {
+        // Backward compatibility: single file
         updateData.imageUrl = req.file.path;
+        updateData.imageUrls = [req.file.path];
+      } else if (req.body.existingImageUrls) {
+        // User removed some existing images, update with remaining ones
+        try {
+          const remainingUrls = typeof req.body.existingImageUrls === 'string' 
+            ? JSON.parse(req.body.existingImageUrls) 
+            : req.body.existingImageUrls;
+          if (Array.isArray(remainingUrls) && remainingUrls.length > 0) {
+            updateData.imageUrls = remainingUrls;
+            updateData.imageUrl = remainingUrls[0];
+          } else {
+            // All existing images removed
+            updateData.imageUrls = [];
+            updateData.imageUrl = null;
+          }
+        } catch (e) {
+          // Invalid JSON, ignore
+        }
       }
+      // If no files uploaded and no existingImageUrls in body, keep existing images (don't update imageUrls)
 
       await product.update(updateData);
 

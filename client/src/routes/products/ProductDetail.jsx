@@ -2,6 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Edit, ExternalLink, Plus, X, Save, Info, AlertCircle, FileText, Package, Target, TrendingUp, Heart } from 'lucide-react';
+import ImageCarousel from '../../components/ImageCarousel';
+import { getProductImages } from '../../utils/imageHelper';
 import { getProductById, updateProduct } from '../../services/product.api';
 import { updateProduct as updateProductAction } from '../../store/productSlice';
 import toast from 'react-hot-toast';
@@ -154,30 +156,31 @@ export default function ProductDetail() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
-              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md flex-shrink-0">
+              <Package className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold break-words">{product.name}</h1>
-              <p className="text-primary-100 text-xs sm:text-sm mt-1">Detail produk dan analisis untuk strategi konten</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold break-words">{product.name}</h1>
+              <p className="text-primary-100 text-[10px] sm:text-xs lg:text-sm mt-0.5 sm:mt-1">Detail produk dan analisis untuk strategi konten</p>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
             <Link
               to={`/briefs/new?productId=${id}`}
-              className="px-4 sm:px-5 py-2 sm:py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium text-sm sm:text-base justify-center"
+              className="px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2 font-medium text-xs sm:text-sm lg:text-base justify-center"
             >
-              <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-              Buat Brief Baru
+              <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+              <span className="hidden sm:inline">Buat Brief Baru</span>
+              <span className="sm:hidden">Brief</span>
             </Link>
             <Link
               to={`/products/${id}/edit`}
-              className="px-4 sm:px-5 py-2 sm:py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 font-medium text-sm sm:text-base justify-center"
+              className="px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2 font-medium text-xs sm:text-sm lg:text-base justify-center"
             >
-              <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
               Edit
             </Link>
           </div>
@@ -188,15 +191,21 @@ export default function ProductDetail() {
         {/* Image Section - Left Side */}
         <div className="lg:col-span-1 flex">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col w-full h-full">
-            {product.imageUrl && (
-              <div className="w-full aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 flex-shrink-0">
-                <img
-                  src={product.imageUrl?.startsWith('http') ? product.imageUrl : `http://54.206.113.88${product.imageUrl}`}
-                  alt={product.name}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-            )}
+            {(() => {
+              const images = getProductImages(product);
+              if (images.length > 0) {
+                return (
+                  <div className="w-full aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 flex-shrink-0 rounded-xl">
+                    <ImageCarousel 
+                      images={images} 
+                      showIndicators={true}
+                      showArrows={true}
+                    />
+                  </div>
+                );
+              }
+              return null;
+            })()}
             <div className="p-6 space-y-3 flex-shrink-0">
               {product.link && (
                 <a

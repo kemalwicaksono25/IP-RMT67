@@ -10,8 +10,8 @@ router.use(projectScope);
 
 router.get("/", ProductController.getAll);
 router.get("/:id", productValidator.validateProductId, ProductController.getById);
-router.post("/", upload.single("image"), productValidator.validateProductCreate, ProductController.create);
-router.put("/:id", upload.single("image"), productValidator.validateProductId, productValidator.validateProductUpdate, ProductController.update);
+router.post("/", upload.array("images", 10), productValidator.validateProductCreate, ProductController.create);
+router.put("/:id", upload.array("images", 10), productValidator.validateProductId, productValidator.validateProductUpdate, ProductController.update);
 router.delete("/:id", productValidator.validateProductId, ProductController.delete);
 
 module.exports = router;

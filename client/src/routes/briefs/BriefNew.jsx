@@ -156,15 +156,15 @@ export default function BriefNew() {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header dengan Gradient */}
-      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-xl shadow-lg p-4 sm:p-6 text-white">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-3 sm:mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md">
-              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <div className="p-1.5 sm:p-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-lg shadow-md flex-shrink-0">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Buat Ide Brief Baru</h1>
-              <p className="text-primary-100 text-xs sm:text-sm mt-1">Isi form di bawah untuk generate brief dengan AI</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold">Buat Ide Brief Baru</h1>
+              <p className="text-primary-100 text-[10px] sm:text-xs lg:text-sm mt-0.5 sm:mt-1">Isi form di bawah untuk generate brief dengan AI</p>
             </div>
           </div>
         </div>

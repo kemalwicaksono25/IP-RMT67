@@ -21,6 +21,11 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      imageUrls: {
+        type: DataTypes.ARRAY(DataTypes.TEXT),
+        defaultValue: [],
+        allowNull: true,
+      },
       link: {
         type: DataTypes.TEXT,
         allowNull: true,

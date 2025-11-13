@@ -67,11 +67,9 @@ client/
 - **Tailwind CSS** - Styling
 - **Redux Toolkit** - State management
 - **React Router** - Routing
-- **React Hook Form** - Form handling
-- **Zod** - Schema validation
 - **Axios** - HTTP client
 - **Lucide React** - Icons
-- **FullCalendar** - Calendar component
+- **date-fns** - Date formatting
 
 ## 🔐 Features
 

@@ -14,3 +14,23 @@ export const getImageUrl = (imageUrl) => {
   return `http://54.206.113.88${imageUrl}`;
 };
 
+/**
+ * Get product images array
+ * Handles both imageUrls array and imageUrl (backward compatibility)
+ */
+export const getProductImages = (product) => {
+  if (!product) return [];
+  
+  // Prefer imageUrls array if available
+  if (product.imageUrls && Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
+    return product.imageUrls;
+  }
+  
+  // Fallback to imageUrl for backward compatibility
+  if (product.imageUrl) {
+    return [product.imageUrl];
+  }
+  
+  return [];
+};
+
