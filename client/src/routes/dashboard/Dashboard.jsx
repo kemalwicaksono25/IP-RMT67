@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Package, FileText, CheckCircle, Eye, Plus, Calendar, Sparkles, TrendingUp, Clock, Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight, XCircle, Send, Hourglass } from 'lucide-react';
-import ImageCarousel from '../../components/ImageCarousel';
 import { getProductImages } from '../../utils/imageHelper';
 import { setProducts } from '../../store/productSlice';
 import { setBriefs } from '../../store/briefSlice';
@@ -610,18 +609,20 @@ export default function Dashboard() {
                 {(() => {
                   const images = getProductImages(product);
                   if (images.length > 0) {
+                    // Show only first image in card (no carousel)
+                    const firstImage = images[0];
+                    const imageUrl = firstImage.startsWith('http') ? firstImage : `http://54.206.113.88${firstImage}`;
                     return (
                       <Link
                         to={`/products/${product.id}`}
-                        className="w-full aspect-square overflow-hidden flex-shrink-0 block cursor-pointer relative group"
+                        className="w-full aspect-square overflow-hidden flex-shrink-0 block cursor-pointer relative"
                       >
-                        <ImageCarousel 
-                          images={images} 
-                          showIndicators={images.length > 1}
-                          showArrows={images.length > 1}
-                          className="group-hover:scale-105 transition-transform duration-300"
+                        <img
+                          src={imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </Link>
                     );
                   }

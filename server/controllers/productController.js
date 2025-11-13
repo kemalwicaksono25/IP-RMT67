@@ -155,27 +155,37 @@ class ProductController {
         newImageUrls = [req.file.path];
       }
       
-      if (newImageUrls.length > 0) {
-        // New images uploaded: replace all with new images
-        updateData.imageUrls = newImageUrls;
-        updateData.imageUrl = newImageUrls[0]; // First image for backward compatibility
-      } else if (req.body.existingImageUrls) {
-        // User removed some existing images, update with remaining ones
+      // Get remaining existing images from request body
+      let remainingExistingUrls = [];
+      if (req.body.existingImageUrls) {
         try {
-          const remainingUrls = typeof req.body.existingImageUrls === 'string' 
+          remainingExistingUrls = typeof req.body.existingImageUrls === 'string' 
             ? JSON.parse(req.body.existingImageUrls) 
             : req.body.existingImageUrls;
-          if (Array.isArray(remainingUrls) && remainingUrls.length > 0) {
-            updateData.imageUrls = remainingUrls;
-            updateData.imageUrl = remainingUrls[0];
-          } else {
-            // All existing images removed
-            updateData.imageUrls = [];
-            updateData.imageUrl = null;
+          if (!Array.isArray(remainingExistingUrls)) {
+            remainingExistingUrls = [];
           }
         } catch (e) {
           // Invalid JSON, ignore
+          remainingExistingUrls = [];
         }
+      }
+      
+      // Merge remaining existing images with new images
+      if (newImageUrls.length > 0 || remainingExistingUrls.length > 0) {
+        // Merge: remaining existing + new images
+        const mergedImageUrls = [...remainingExistingUrls, ...newImageUrls];
+        
+        // Check total doesn't exceed 10
+        if (mergedImageUrls.length > 10) {
+          // Keep only first 10
+          updateData.imageUrls = mergedImageUrls.slice(0, 10);
+        } else {
+          updateData.imageUrls = mergedImageUrls;
+        }
+        
+        // Set first image for backward compatibility
+        updateData.imageUrl = updateData.imageUrls.length > 0 ? updateData.imageUrls[0] : null;
       }
       // If no files uploaded and no existingImageUrls in body, keep existing images (don't update imageUrls)
 

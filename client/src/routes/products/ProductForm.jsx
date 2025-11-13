@@ -120,20 +120,37 @@ export default function ProductForm() {
       });
       
       // For edit mode: handle existing images
-      // If user removed some existing images, we need to send remaining existing image URLs
+      // Always send remaining existing images (those not removed) so backend can merge with new images
       if (isEdit && existingImageUrls.length > 0) {
-        // Count how many existing images are still in preview (not removed)
-        // Existing images are at the beginning of imagePreviews array
-        const remainingCount = Math.min(existingImageUrls.length, imagePreviews.length);
-        const remainingExisting = existingImageUrls.slice(0, remainingCount);
+        // Find which existing images are still in preview (not removed)
+        // Convert existing URLs to full URLs for comparison
+        const existingFullUrls = existingImageUrls.map(url => 
+          url.startsWith('http') ? url : `http://54.206.113.88${url}`
+        );
         
-        // If no new images uploaded but existing images were removed, send remaining existing URLs
-        if (formData.images.length === 0 && remainingExisting.length < existingImageUrls.length) {
-          // User removed some existing images, send remaining ones (as relative paths)
-          formDataToSend.append('existingImageUrls', JSON.stringify(remainingExisting));
-        }
-        // If new images uploaded, they will replace all (handled by backend)
-        // If no new images and no removals, backend will preserve existing (no update to imageUrls)
+        // Find existing images that are still in previews (by URL matching)
+        const remainingExisting = existingImageUrls.filter((existingUrl, index) => {
+          const fullUrl = existingFullUrls[index];
+          // Check if this URL exists in imagePreviews (not removed)
+          return imagePreviews.some(preview => {
+            // Match by URL (handle both full URL and relative path)
+            if (preview === fullUrl || preview === existingUrl) {
+              return true;
+            }
+            // Also check if preview is the same URL (for blob URLs, we can't match, so skip)
+            if (preview.startsWith('http') && !preview.startsWith('blob:')) {
+              // Compare normalized URLs
+              const normalizedPreview = preview.replace('http://54.206.113.88', '');
+              const normalizedExisting = existingUrl.replace('http://54.206.113.88', '');
+              return normalizedPreview === normalizedExisting || preview === fullUrl;
+            }
+            return false;
+          });
+        });
+        
+        // Always send remaining existing images (even if no new images uploaded)
+        // Backend will merge with new images or use only remaining if no new images
+        formDataToSend.append('existingImageUrls', JSON.stringify(remainingExisting));
       }
 
       if (isEdit) {

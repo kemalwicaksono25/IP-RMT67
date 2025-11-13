@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 import EmptyState from '../../components/EmptyState';
 import Modal from '../../components/Modal';
+import { getProductImages } from '../../utils/imageHelper';
 
 export default function ProductList() {
   const products = useSelector((state) => state.product.products);
@@ -285,18 +286,20 @@ export default function ProductList() {
               {(() => {
                 const images = getProductImages(product);
                 if (images.length > 0) {
+                  // Show only first image in card (no carousel)
+                  const firstImage = images[0];
+                  const imageUrl = firstImage.startsWith('http') ? firstImage : `http://54.206.113.88${firstImage}`;
                   return (
                     <Link
                       to={`/products/${product.id}`}
-                      className="w-full aspect-square overflow-hidden flex-shrink-0 block cursor-pointer relative group"
+                      className="w-full aspect-square overflow-hidden flex-shrink-0 block cursor-pointer relative"
                     >
-                      <ImageCarousel 
-                        images={images} 
-                        showIndicators={images.length > 1}
-                        showArrows={images.length > 1}
-                        className="group-hover:scale-105 transition-transform duration-300"
+                      <img
+                        src={imageUrl}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </Link>
                   );
                 }
