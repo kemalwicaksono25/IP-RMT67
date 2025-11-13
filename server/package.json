@@ -4,8 +4,8 @@
   "description": "Content Planner & Writer Pro - Server Side",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
+    "start": "node bin/www",
+    "dev": "nodemon bin/www",
     "migrate": "sequelize-cli db:migrate",
     "migrate:undo": "sequelize-cli db:migrate:undo",
     "seed": "sequelize-cli db:seed:all",

@@ -2,7 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
-require("dotenv").config();
+
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
 
 const app = express();
 
@@ -34,22 +37,11 @@ app.get("/", (req, res) => {
 });
 
 app.use(errorHandler);
+
 const fs = require("fs");
 const uploadsDir = path.join(__dirname, "uploads", "products");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const PORT = process.env.PORT || 3000;
-
-// Only start server if not in test mode
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📁 Environment: ${process.env.NODE_ENV || "development"}`);
-    }
-  });
 }
 
 module.exports = { app };
