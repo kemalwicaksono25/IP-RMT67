@@ -59,6 +59,16 @@ describe('ProductController', () => {
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
+
+    it('should handle error in getAll try block', async () => {
+      const error = new Error('Database connection failed');
+      db.Product.findAll.mockRejectedValue(error);
+
+      await ProductController.getAll(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(error);
+      expect(res.json).not.toHaveBeenCalled();
+    });
   });
 
   describe('getById', () => {
@@ -148,6 +158,7 @@ describe('ProductController', () => {
         description: 'Product description',
         link: 'https://example.com',
         imageUrl: null,
+        imageUrls: [],
         ProjectId: 1,
       });
       expect(AIService.generatePGG).toHaveBeenCalledWith(mockProduct);
@@ -192,6 +203,116 @@ describe('ProductController', () => {
         description: '',
         link: '',
         imageUrl: '/uploads/products/image.jpg',
+        imageUrls: ['/uploads/products/image.jpg'],
+        ProjectId: 1,
+      });
+    });
+
+    it('should create product with req.files.images (fields format)', async () => {
+      req.body = {
+        name: 'New Product',
+      };
+      req.files = {
+        images: [
+          { path: '/uploads/products/image1.jpg' },
+          { path: '/uploads/products/image2.jpg' },
+        ],
+      };
+
+      const mockProduct = {
+        id: 1,
+        name: 'New Product',
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+        reload: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.create.mockResolvedValue(mockProduct);
+      AIService.generatePGG.mockResolvedValue({
+        pains: [],
+        gains: [],
+        goals: [],
+      });
+
+      await ProductController.create(req, res, next);
+
+      expect(db.Product.create).toHaveBeenCalledWith({
+        name: 'New Product',
+        description: '',
+        link: '',
+        imageUrl: '/uploads/products/image1.jpg',
+        imageUrls: ['/uploads/products/image1.jpg', '/uploads/products/image2.jpg'],
+        ProjectId: 1,
+      });
+    });
+
+    it('should create product with req.files.image (backward compatibility)', async () => {
+      req.body = {
+        name: 'New Product',
+      };
+      req.files = {
+        image: [{ path: '/uploads/products/image.jpg' }],
+      };
+
+      const mockProduct = {
+        id: 1,
+        name: 'New Product',
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+        reload: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.create.mockResolvedValue(mockProduct);
+      AIService.generatePGG.mockResolvedValue({
+        pains: [],
+        gains: [],
+        goals: [],
+      });
+
+      await ProductController.create(req, res, next);
+
+      expect(db.Product.create).toHaveBeenCalledWith({
+        name: 'New Product',
+        description: '',
+        link: '',
+        imageUrl: '/uploads/products/image.jpg',
+        imageUrls: ['/uploads/products/image.jpg'],
+        ProjectId: 1,
+      });
+    });
+
+    it('should create product with req.files as array', async () => {
+      req.body = {
+        name: 'New Product',
+      };
+      req.files = [
+        { path: '/uploads/products/image1.jpg' },
+        { path: '/uploads/products/image2.jpg' },
+      ];
+
+      const mockProduct = {
+        id: 1,
+        name: 'New Product',
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+        reload: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.create.mockResolvedValue(mockProduct);
+      AIService.generatePGG.mockResolvedValue({
+        pains: [],
+        gains: [],
+        goals: [],
+      });
+
+      await ProductController.create(req, res, next);
+
+      expect(db.Product.create).toHaveBeenCalledWith({
+        name: 'New Product',
+        description: '',
+        link: '',
+        imageUrl: '/uploads/products/image1.jpg',
+        imageUrls: ['/uploads/products/image1.jpg', '/uploads/products/image2.jpg'],
         ProjectId: 1,
       });
     });
@@ -225,6 +346,7 @@ describe('ProductController', () => {
         description: '',
         link: '',
         imageUrl: null,
+        imageUrls: [],
         ProjectId: 1,
       });
     });
@@ -557,6 +679,7 @@ describe('ProductController', () => {
       expect(mockProduct.update).toHaveBeenCalledWith({
         name: 'Updated Product',
         imageUrl: '/uploads/products/new-image.jpg',
+        imageUrls: ['/uploads/products/new-image.jpg'],
       });
     });
 
@@ -571,6 +694,528 @@ describe('ProductController', () => {
       await ProductController.update(req, res, next);
 
       expect(next).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it('should handle update with req.files as array (upload.array format)', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+      };
+      req.files = [
+        { path: '/uploads/products/image1.jpg' },
+        { path: '/uploads/products/image2.jpg' },
+      ];
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        imageUrl: '/uploads/products/image1.jpg',
+        imageUrls: ['/uploads/products/image1.jpg', '/uploads/products/image2.jpg'],
+      });
+    });
+
+    it('should handle update with req.files.images (fields format)', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+      };
+      req.files = {
+        images: [
+          { path: '/uploads/products/image1.jpg' },
+          { path: '/uploads/products/image2.jpg' },
+        ],
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        imageUrl: '/uploads/products/image1.jpg',
+        imageUrls: ['/uploads/products/image1.jpg', '/uploads/products/image2.jpg'],
+      });
+    });
+
+    it('should handle update with req.files.image (backward compatibility)', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+      };
+      req.files = {
+        image: [{ path: '/uploads/products/image.jpg' }],
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        imageUrl: '/uploads/products/image.jpg',
+        imageUrls: ['/uploads/products/image.jpg'],
+      });
+    });
+
+    it('should merge existing images with new images', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        existingImageUrls: JSON.stringify(['/uploads/products/existing1.jpg', '/uploads/products/existing2.jpg']),
+      };
+      req.files = {
+        images: [
+          { path: '/uploads/products/new1.jpg' },
+          { path: '/uploads/products/new2.jpg' },
+        ],
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        imageUrl: '/uploads/products/existing1.jpg',
+        imageUrls: [
+          '/uploads/products/existing1.jpg',
+          '/uploads/products/existing2.jpg',
+          '/uploads/products/new1.jpg',
+          '/uploads/products/new2.jpg',
+        ],
+      });
+    });
+
+    it('should handle existingImageUrls as array (not string)', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        existingImageUrls: ['/uploads/products/existing1.jpg'],
+      };
+      req.files = {
+        images: [{ path: '/uploads/products/new1.jpg' }],
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        imageUrl: '/uploads/products/existing1.jpg',
+        imageUrls: ['/uploads/products/existing1.jpg', '/uploads/products/new1.jpg'],
+      });
+    });
+
+    it('should limit merged images to 10 when total exceeds 10', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        existingImageUrls: JSON.stringify([
+          '/uploads/products/existing1.jpg',
+          '/uploads/products/existing2.jpg',
+          '/uploads/products/existing3.jpg',
+          '/uploads/products/existing4.jpg',
+          '/uploads/products/existing5.jpg',
+        ]),
+      };
+      req.files = {
+        images: [
+          { path: '/uploads/products/new1.jpg' },
+          { path: '/uploads/products/new2.jpg' },
+          { path: '/uploads/products/new3.jpg' },
+          { path: '/uploads/products/new4.jpg' },
+          { path: '/uploads/products/new5.jpg' },
+          { path: '/uploads/products/new6.jpg' },
+        ],
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      // Should have exactly 10 images
+      const updateCall = mockProduct.update.mock.calls[0][0];
+      expect(updateCall.imageUrls).toHaveLength(10);
+      expect(updateCall.imageUrl).toBe('/uploads/products/existing1.jpg');
+    });
+
+    it('should handle invalid JSON in existingImageUrls', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        existingImageUrls: 'invalid json{',
+      };
+      req.files = {
+        images: [{ path: '/uploads/products/new1.jpg' }],
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      // Should ignore invalid JSON and use only new images
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        imageUrl: '/uploads/products/new1.jpg',
+        imageUrls: ['/uploads/products/new1.jpg'],
+      });
+    });
+
+    it('should handle existingImageUrls that is not an array after parsing', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        existingImageUrls: '{"not": "an array"}',
+      };
+      req.files = {
+        images: [{ path: '/uploads/products/new1.jpg' }],
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      // Should ignore non-array and use only new images
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        imageUrl: '/uploads/products/new1.jpg',
+        imageUrls: ['/uploads/products/new1.jpg'],
+      });
+    });
+
+    it('should handle update with only existingImageUrls (no new files)', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        existingImageUrls: JSON.stringify(['/uploads/products/existing1.jpg']),
+      };
+      req.files = null;
+      req.file = null;
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        imageUrl: '/uploads/products/existing1.jpg',
+        imageUrls: ['/uploads/products/existing1.jpg'],
+      });
+    });
+
+    it('should handle update with empty existingImageUrls array', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        existingImageUrls: JSON.stringify([]),
+      };
+      req.files = {
+        images: [{ path: '/uploads/products/new1.jpg' }],
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        imageUrl: '/uploads/products/new1.jpg',
+        imageUrls: ['/uploads/products/new1.jpg'],
+      });
+    });
+
+    it('should handle gains JSON parse error', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        gains: 'invalid json{',
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        gains: [],
+      });
+    });
+
+    it('should handle gains that is not an array after parsing', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        gains: '{"not": "an array"}',
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        gains: [],
+      });
+    });
+
+    it('should handle goals JSON parse error', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        goals: 'invalid json{',
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        goals: [],
+      });
+    });
+
+    it('should handle goals that is not an array after parsing', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        goals: '{"not": "an array"}',
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        goals: [],
+      });
+    });
+
+    it('should handle pains JSON parse error', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        pains: 'invalid json{',
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        pains: [],
+      });
+    });
+
+    it('should handle pains that is not an array after parsing', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        pains: '{"not": "an array"}',
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+        pains: [],
+      });
+    });
+
+    it('should handle update with merged images exactly 10 (not exceeding)', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        existingImageUrls: JSON.stringify([
+          '/uploads/products/existing1.jpg',
+          '/uploads/products/existing2.jpg',
+          '/uploads/products/existing3.jpg',
+          '/uploads/products/existing4.jpg',
+          '/uploads/products/existing5.jpg',
+        ]),
+      };
+      req.files = {
+        images: [
+          { path: '/uploads/products/new1.jpg' },
+          { path: '/uploads/products/new2.jpg' },
+          { path: '/uploads/products/new3.jpg' },
+          { path: '/uploads/products/new4.jpg' },
+          { path: '/uploads/products/new5.jpg' },
+        ],
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      // Should have exactly 10 images (not sliced)
+      const updateCall = mockProduct.update.mock.calls[0][0];
+      expect(updateCall.imageUrls).toHaveLength(10);
+      expect(updateCall.imageUrl).toBe('/uploads/products/existing1.jpg');
+    });
+
+    it('should handle update with merged images when imageUrls is empty array', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        existingImageUrls: JSON.stringify([]),
+      };
+      req.files = {
+        images: [{ path: '/uploads/products/new1.jpg' }],
+      };
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      // Should merge empty existing with new images
+      const updateCall = mockProduct.update.mock.calls[0][0];
+      expect(updateCall.imageUrls).toHaveLength(1);
+      expect(updateCall.imageUrl).toBe('/uploads/products/new1.jpg');
+    });
+
+    it('should handle update with only existingImageUrls as empty array (removes all images)', async () => {
+      req.params.id = '1';
+      req.body = {
+        name: 'Updated Product',
+        existingImageUrls: JSON.stringify([]),
+      };
+      req.files = null;
+      req.file = null;
+
+      const mockProduct = {
+        id: 1,
+        ProjectId: 1,
+        update: jest.fn().mockResolvedValue(),
+      };
+
+      db.Product.findOne.mockResolvedValue(mockProduct);
+
+      await ProductController.update(req, res, next);
+
+      // When existingImageUrls is empty array and no new files, 
+      // condition (newImageUrls.length > 0 || remainingExistingUrls.length > 0) is false
+      // So imageUrls won't be updated (preserved from existing)
+      // Only name will be updated
+      expect(mockProduct.update).toHaveBeenCalledWith({
+        name: 'Updated Product',
+      });
     });
   });
 

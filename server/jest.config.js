@@ -9,6 +9,7 @@ module.exports = {
     '!**/scripts/**',
     '!app.js', // Will test via integration tests
     '!jest.config.js', // Config file, not application code
+    '!ecosystem.config.js', // PM2 config file, not application code
     '!**/__tests__/**',
     '!**/*.test.js',
     '!**/*.spec.js',
