@@ -42,11 +42,21 @@ class ProductController {
       const { name, description, link } = req.body;
       
       // Handle multiple images
+      // Support both req.files (array) and req.files.images/req.files.image (fields)
       let imageUrls = [];
-      if (req.files && req.files.length > 0) {
-        imageUrls = req.files.map(file => file.path);
+      if (req.files) {
+        if (Array.isArray(req.files)) {
+          // upload.array() - files is array
+          imageUrls = req.files.map(file => file.path);
+        } else if (req.files.images) {
+          // upload.fields() - files is object with 'images' field
+          imageUrls = req.files.images.map(file => file.path);
+        } else if (req.files.image) {
+          // upload.fields() - files is object with 'image' field (backward compatibility)
+          imageUrls = [req.files.image[0].path];
+        }
       } else if (req.file) {
-        // Backward compatibility: single file
+        // Backward compatibility: single file (upload.single())
         imageUrls = [req.file.path];
       }
       
@@ -127,15 +137,28 @@ class ProductController {
       }
 
       // Handle multiple images
-      if (req.files && req.files.length > 0) {
+      // Support both req.files (array) and req.files.images/req.files.image (fields)
+      let newImageUrls = [];
+      if (req.files) {
+        if (Array.isArray(req.files)) {
+          // upload.array() - files is array
+          newImageUrls = req.files.map(file => file.path);
+        } else if (req.files.images) {
+          // upload.fields() - files is object with 'images' field
+          newImageUrls = req.files.images.map(file => file.path);
+        } else if (req.files.image) {
+          // upload.fields() - files is object with 'image' field (backward compatibility)
+          newImageUrls = [req.files.image[0].path];
+        }
+      } else if (req.file) {
+        // Backward compatibility: single file (upload.single())
+        newImageUrls = [req.file.path];
+      }
+      
+      if (newImageUrls.length > 0) {
         // New images uploaded: replace all with new images
-        const newImageUrls = req.files.map(file => file.path);
         updateData.imageUrls = newImageUrls;
         updateData.imageUrl = newImageUrls[0]; // First image for backward compatibility
-      } else if (req.file) {
-        // Backward compatibility: single file
-        updateData.imageUrl = req.file.path;
-        updateData.imageUrls = [req.file.path];
       } else if (req.body.existingImageUrls) {
         // User removed some existing images, update with remaining ones
         try {

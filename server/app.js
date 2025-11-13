@@ -32,6 +32,13 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      // Log for debugging
+      console.log('CORS blocked origin:', origin);
+      console.log('Allowed origins:', allowedOrigins);
+      // In production, be more permissive if CORS_ORIGIN is not set
+      if (process.env.NODE_ENV === "production" && !process.env.CORS_ORIGIN) {
+        return callback(null, true);
+      }
       callback(new Error("Not allowed by CORS"));
     }
   },
