@@ -1,16 +1,128 @@
-# React + Vite
+# Content Planner & Writer Pro - Client Side
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend application untuk Content Planner & Writer Pro menggunakan React, Vite, dan Tailwind CSS.
 
-Currently, two official plugins are available:
+## 🚀 Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 1. Install Dependencies
 
-## React Compiler
+```bash
+npm install
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. Setup Environment
 
-## Expanding the ESLint configuration
+Pastikan backend server sudah running di `http://localhost:3000` (atau sesuaikan dengan konfigurasi backend).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 3. Start Development Server
+
+```bash
+npm run dev
+```
+
+Aplikasi akan berjalan di `http://localhost:5173`
+
+## 📁 Struktur Folder
+
+```
+client/
+├── src/
+│   ├── components/      # Reusable components
+│   │   ├── Navbar.jsx
+│   │   ├── Sidebar.jsx
+│   │   ├── Footer.jsx
+│   │   ├── Modal.jsx
+│   │   └── ...
+│   ├── routes/          # Page components
+│   │   ├── auth/        # Login, Register
+│   │   ├── dashboard/    # Dashboard
+│   │   ├── products/     # Product management
+│   │   ├── briefs/       # Brief management
+│   │   ├── calendar/     # Calendar view
+│   │   └── settings/    # Settings
+│   ├── services/        # API services
+│   │   ├── api.js        # Base API config
+│   │   ├── auth.api.js
+│   │   ├── product.api.js
+│   │   ├── brief.api.js
+│   │   └── ...
+│   ├── store/           # Redux store
+│   │   ├── authSlice.js
+│   │   ├── productSlice.js
+│   │   ├── briefSlice.js
+│   │   └── ...
+│   ├── utils/           # Utilities
+│   │   ├── constants.js
+│   │   ├── format.js
+│   │   └── ...
+│   └── main.jsx         # Entry point
+├── public/              # Static files
+└── package.json
+```
+
+## 🎨 Tech Stack
+
+- **React 19** - UI Library
+- **Vite** - Build tool & dev server
+- **Tailwind CSS** - Styling
+- **Redux Toolkit** - State management
+- **React Router** - Routing
+- **React Hook Form** - Form handling
+- **Zod** - Schema validation
+- **Axios** - HTTP client
+- **Lucide React** - Icons
+- **FullCalendar** - Calendar component
+
+## 🔐 Features
+
+### Authentication
+- Login dengan email/password
+- Register admin baru
+- JWT token management
+- Protected routes
+
+### Product Management
+- List produk
+- Tambah/edit/hapus produk
+- Upload foto produk
+- Auto-generate PGG (Pain Points, Gains, Goals) dengan AI
+
+### Brief Management
+- Generate ide konten dengan AI
+- Generate detail konten dengan AI
+- Edit detail konten
+- Submit untuk approval
+- Filter dan search
+
+### Admin Features
+- Approval workflow
+- Reject dengan alasan
+- Calendar view untuk scheduled content
+- Schedule content
+
+### Calendar View
+- View approved content dalam kalender
+- Filter berdasarkan tanggal
+
+## 📝 Scripts
+
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run lint     # Run ESLint
+```
+
+## 🔗 API Integration
+
+Client terhubung ke backend API di `http://localhost:3000` (default). Pastikan:
+- Backend server sudah running
+- CORS sudah dikonfigurasi dengan benar
+- Environment variables sudah diset (jika diperlukan)
+
+## 📝 Notes
+
+- Semua API calls menggunakan Axios dengan base URL dari `src/services/api.js`
+- Authentication token disimpan di Redux store dan localStorage (dengan redux-persist)
+- Protected routes menggunakan component `Protected.jsx`
+- Error handling menggunakan toast notifications (react-hot-toast)
