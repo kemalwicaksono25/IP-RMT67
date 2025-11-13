@@ -11,6 +11,7 @@ router.use(authorization(USER_ROLE.ADMIN));
 router.use(projectScope);
 
 router.get("/approvals", AdminController.getPendingApprovals);
+router.get("/approvals/count", AdminController.getPendingApprovalsCount);
 router.put("/approvals/:id/approve", adminValidator.validateApprovalId, adminValidator.validateApproveBrief, AdminController.approveBrief);
 router.put("/approvals/:id/reject", adminValidator.validateApprovalId, adminValidator.validateRejectBrief, AdminController.rejectBrief);
 router.put("/approvals/detail/:detailId/approve", AdminController.approveDetail);

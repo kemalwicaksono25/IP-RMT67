@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { LayoutDashboard, Package, FileText, Calendar, Users, X, User, Mail, Shield, Folder, Edit2 } from 'lucide-react';
@@ -25,6 +25,7 @@ function Sidebar() {
   const location = useLocation();
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen);
   const user = useSelector((state) => state.auth.user);
+  const briefs = useSelector((state) => state.brief.briefs);
   const dispatch = useDispatch();
   const [showEditModal, setShowEditModal] = useState(false);
   const [projectNameInput, setProjectNameInput] = useState('');
@@ -50,6 +51,17 @@ function Sidebar() {
       window.removeEventListener('resize', updateNavbarHeight);
     };
   }, []);
+
+  // Hitung pending approvals count dari Redux store (realtime seperti notifikasi)
+  const pendingCount = useMemo(() => {
+    if (!user || user.role !== 'admin' || !briefs || !Array.isArray(briefs)) return 0;
+    
+    return briefs.reduce((total, brief) => {
+      if (!brief || !brief.details || !Array.isArray(brief.details)) return total;
+      const pendingDetails = brief.details.filter(d => d && d.status === 'pending_approval');
+      return total + pendingDetails.length;
+    }, 0);
+  }, [briefs, user]);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -178,6 +190,7 @@ function Sidebar() {
                 {adminMenuItems.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.path);
+                  const showCount = item.path === '/admin/approvals' && pendingCount > 0;
                   return (
                     <Link
                       key={item.path}
@@ -203,10 +216,19 @@ function Sidebar() {
                           <div className="absolute inset-0 bg-white/20 rounded-xl animate-pulse"></div>
                         )}
                       </div>
-                      <span className={`text-base sm:text-lg lg:text-base font-semibold ${active ? 'text-white' : 'text-gray-800'} transition-colors`}>
+                      <span className={`text-base sm:text-lg lg:text-base font-semibold ${active ? 'text-white' : 'text-gray-800'} transition-colors flex-1`}>
                         {item.label}
                       </span>
-                      {active && (
+                      {showCount && (
+                        <div className={`ml-auto flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-xs font-bold ${
+                          active 
+                            ? 'bg-white/30 text-white' 
+                            : 'bg-gradient-to-r from-primary-600 to-primary-700 text-white'
+                        } shadow-md shadow-primary-500/40`}>
+                          {pendingCount > 99 ? '99+' : pendingCount}
+                        </div>
+                      )}
+                      {active && !showCount && (
                         <div className="ml-auto">
                           <div className="w-2 h-2 bg-white rounded-full shadow-lg"></div>
                         </div>

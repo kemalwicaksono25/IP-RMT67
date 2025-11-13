@@ -191,48 +191,110 @@ export default function BriefDetail() {
 
     const promises = detailsToGenerate.map(async (detail) => {
       try {
-        return await generateDetail(detail.id);
+        const response = await generateDetail(detail.id);
+        // Pastikan response memiliki struktur yang benar
+        if (response && response.data && response.data.brief) {
+          return { success: true, data: response.data, detailId: detail.id };
+        } else {
+          // Response tidak valid meskipun tidak throw error
+          return { 
+            error: true, 
+            detailId: detail.id, 
+            message: 'Response tidak memiliki data brief yang valid',
+            response: response 
+          };
+        }
       } catch (error) {
         const errorMessage = error.response?.data?.message || error.message || 'Gagal generate detail';
-        return { error: true, detailId: detail.id, message: errorMessage };
+        return { 
+          error: true, 
+          detailId: detail.id, 
+          message: errorMessage,
+          originalError: error 
+        };
       }
     });
 
     try {
       const responses = await Promise.all(promises);
-      const successfulResponses = responses.filter(r => r && !r.error && r.data && r.data.brief);
-      const failedResponses = responses.filter(r => r && r.error);
       
+      // Kategorikan semua response dengan benar
+      // Pastikan semua response masuk ke kategori yang tepat
+      const successfulResponses = [];
+      const failedResponses = [];
+      
+      responses.forEach((r, index) => {
+        if (!r) {
+          // Response null/undefined dianggap gagal
+          failedResponses.push({ 
+            error: true, 
+            detailId: detailsToGenerate[index]?.id, 
+            message: 'Response tidak valid' 
+          });
+        } else if (r.error) {
+          // Response dengan error flag
+          failedResponses.push(r);
+        } else if (r.success && r.data && r.data.brief) {
+          // Response sukses dengan flag success dan data.brief yang valid
+          successfulResponses.push(r);
+        } else {
+          // Response tidak memiliki struktur yang benar (dianggap gagal)
+          failedResponses.push({ 
+            error: true, 
+            detailId: r.detailId || detailsToGenerate[index]?.id, 
+            message: r.message || 'Response tidak memiliki data brief yang valid' 
+          });
+        }
+      });
+      
+      // Debug logging (akan dihapus setelah fix)
+      console.log('Generate Detail Results:', {
+        totalRequested: detailsToGenerate.length,
+        successful: successfulResponses.length,
+        failed: failedResponses.length,
+        responses: responses.map(r => ({
+          hasError: !!r.error,
+          hasSuccess: !!r.success,
+          hasData: !!(r.data && r.data.brief),
+          detailId: r.detailId
+        }))
+      });
+      
+      // Update brief dengan response terakhir yang sukses (jika ada)
       if (successfulResponses.length > 0) {
         const lastValidResponse = successfulResponses[successfulResponses.length - 1];
-        const updatedBrief = lastValidResponse.data.brief;
-        setLocalBrief(updatedBrief);
-        dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
-      } else {
-        if (brief && brief.details && successfulResponses.length > 0) {
-          const updatedDetails = brief.details.map(d => {
-            const lastBrief = successfulResponses[successfulResponses.length - 1].data.brief;
-            const updatedDetail = lastBrief.details?.find(bd => bd.id === d.id);
-            return updatedDetail || d;
-          });
-          const updatedBrief = { ...brief, details: updatedDetails };
+        if (lastValidResponse.data && lastValidResponse.data.brief) {
+          const updatedBrief = lastValidResponse.data.brief;
           setLocalBrief(updatedBrief);
           dispatch(updateBrief({ id: parseInt(id), updatedBrief }));
         }
       }
-      if (successfulResponses.length === detailsToGenerate.length) {
-        toast.success(`${successfulResponses.length} detail berhasil di-generate`);
-      } else if (successfulResponses.length > 0) {
-        toast.success(`${successfulResponses.length} detail berhasil di-generate`);
-        toast.error(`${failedResponses.length} detail gagal di-generate`);
-      } else {
-        toast.error('Semua detail gagal di-generate');
-        if (failedResponses.length > 0) {
+      
+      // Tampilkan alert yang akurat
+      const totalRequested = detailsToGenerate.length;
+      const totalSuccess = successfulResponses.length;
+      const totalFailed = failedResponses.length;
+      
+      if (totalSuccess === totalRequested) {
+        // Semua berhasil
+        toast.success(`${totalSuccess} detail berhasil di-generate`);
+      } else if (totalSuccess > 0 && totalFailed > 0) {
+        // Sebagian berhasil, sebagian gagal
+        toast.success(`${totalSuccess} detail berhasil di-generate`);
+        toast.error(`${totalFailed} detail gagal di-generate`);
+      } else if (totalSuccess === 0) {
+        // Semua gagal
+        toast.error(`Semua ${totalRequested} detail gagal di-generate`);
+        if (failedResponses.length > 0 && failedResponses[0].message) {
           toast.error(failedResponses[0].message);
         }
+      } else {
+        // Fallback untuk kasus edge case
+        toast.warning(`Generate detail selesai: ${totalSuccess} berhasil, ${totalFailed} gagal dari ${totalRequested} total`);
       }
     } catch (error) {
       toast.error('Terjadi kesalahan saat generate detail');
+      console.error('Error in handleGenerateAllDetails:', error);
     } finally {
       setGeneratingDetail((prev) => {
         const newState = { ...prev };

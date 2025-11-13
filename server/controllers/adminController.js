@@ -69,6 +69,21 @@ class AdminController {
     }
   }
 
+  static async getPendingApprovalsCount(req, res, next) {
+    try {
+      const count = await db.BriefDetail.count({
+        where: {
+          ProjectId: req.user.ProjectId,
+          status: BRIEF_DETAIL_STATUS.PENDING_APPROVAL,
+        },
+      });
+
+      res.json({ count });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async approveBrief(req, res, next) {
     try {
       const { id } = req.params;
