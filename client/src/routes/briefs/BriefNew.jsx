@@ -217,7 +217,7 @@ export default function BriefNew() {
             {selectedProduct.imageUrl && (
               <div className="w-28 h-28 flex-shrink-0 rounded-xl overflow-hidden border-2 border-primary-200 shadow-md">
                 <img
-                  src={selectedProduct.imageUrl?.startsWith('http') ? selectedProduct.imageUrl : `http://localhost:3000${selectedProduct.imageUrl}`}
+                  src={selectedProduct.imageUrl?.startsWith('http') ? selectedProduct.imageUrl : `http://54.206.113.88${selectedProduct.imageUrl}`}
                   alt={selectedProduct.name}
                   className="w-full h-full object-cover"
                 />

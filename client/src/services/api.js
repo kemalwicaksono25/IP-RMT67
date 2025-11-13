@@ -3,7 +3,7 @@ import { getTokenFromStorage } from '../utils/authHelper';
 import { store } from '../store';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  baseURL: 'http://54.206.113.88',
 });
 
 // Helper untuk mendapatkan token dari Redux state atau localStorage

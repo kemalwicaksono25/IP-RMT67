@@ -611,7 +611,7 @@ export default function Dashboard() {
                     className="w-full aspect-square overflow-hidden flex-shrink-0 block cursor-pointer relative"
                   >
                     <img
-                      src={product.imageUrl?.startsWith('http') ? product.imageUrl : `http://localhost:3000${product.imageUrl}`}
+                      src={product.imageUrl?.startsWith('http') ? product.imageUrl : `http://54.206.113.88${product.imageUrl}`}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />

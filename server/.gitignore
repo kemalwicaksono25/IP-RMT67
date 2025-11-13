@@ -5,4 +5,5 @@ uploads/
 *.log
 dist/
 coverage/
-
+ibuhappyku.pem
+ecosystem.config.js

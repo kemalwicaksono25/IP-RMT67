@@ -39,7 +39,7 @@ export default function ProductForm() {
         image: null,
       });
       if (product.imageUrl) {
-        setImagePreview(product.imageUrl.startsWith('http') ? product.imageUrl : `http://localhost:3000${product.imageUrl}`);
+        setImagePreview(product.imageUrl.startsWith('http') ? product.imageUrl : `http://54.206.113.88${product.imageUrl}`);
       }
     } catch (error) {
       toast.error('Gagal memuat produk');

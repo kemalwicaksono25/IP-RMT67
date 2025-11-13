@@ -653,7 +653,7 @@ export default function CalendarView() {
                     <div className="md:col-span-1">
                       <div className="w-full aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-gray-100 to-gray-200">
                         <img
-                          src={selectedEvent.brief.product.imageUrl?.startsWith('http') ? selectedEvent.brief.product.imageUrl : `http://localhost:3000${selectedEvent.brief.product.imageUrl}`}
+                          src={selectedEvent.brief.product.imageUrl?.startsWith('http') ? selectedEvent.brief.product.imageUrl : `http://54.206.113.88${selectedEvent.brief.product.imageUrl}`}
                           alt={selectedEvent.brief.product.name}
                           className="w-full h-full object-cover"
                         />
