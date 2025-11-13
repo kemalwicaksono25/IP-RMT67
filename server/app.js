@@ -35,8 +35,15 @@ app.use(cors({
       // Log for debugging
       console.log('CORS blocked origin:', origin);
       console.log('Allowed origins:', allowedOrigins);
-      // In production, be more permissive if CORS_ORIGIN is not set
-      if (process.env.NODE_ENV === "production" && !process.env.CORS_ORIGIN) {
+      // In production, be more permissive
+      if (process.env.NODE_ENV === "production") {
+        // If CORS_ORIGIN is not set or is "*", allow all
+        if (!process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === "*") {
+          console.log('Allowing origin in production (CORS_ORIGIN not set or is *)');
+          return callback(null, true);
+        }
+        // If CORS_ORIGIN is set but origin not in list, still allow for now (can be restricted later)
+        console.log('Warning: Origin not in CORS_ORIGIN list, but allowing in production');
         return callback(null, true);
       }
       callback(new Error("Not allowed by CORS"));
