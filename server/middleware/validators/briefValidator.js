@@ -53,7 +53,7 @@ const validateGenerateBrief = (req, res, next) => {
   if (briefType !== undefined && briefType !== null) {
     const briefTypeArray = Array.isArray(briefType)
       ? briefType
-      : (typeof briefType === 'string' ? briefType.split(',').map(t => t.trim()) : [briefType]);
+      : (typeof briefType === 'string' ? briefType.split(',').map(t => t.trim()).filter(t => t.length > 0) : [briefType]);
     
     if (briefTypeArray.length === 0) {
       errors.push('BriefType cannot be empty if provided');
