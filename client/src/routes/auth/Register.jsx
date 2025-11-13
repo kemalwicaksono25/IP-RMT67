@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { store, persistor } from '../../store';
 import { login as loginAction } from '../../store/authSlice';
-import { register } from '../../services/auth.api';
+import { register, googleLogin } from '../../services/auth.api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/Loader';
 import Modal from '../../components/Modal';
@@ -53,6 +54,7 @@ export default function Register() {
     setShowProjectModal(false);
 
     try {
+      // Normal registration flow
       const response = await register({
         ...tempFormData,
         projectName: projectName.trim(),
@@ -64,6 +66,9 @@ export default function Register() {
         token: access_token,
       }));
 
+      await persistor.flush();
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       toast.success('Registrasi berhasil!');
       navigate('/dashboard');
     } catch (error) {
@@ -74,6 +79,111 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  const handleGoogleSignIn = useCallback(async (response) => {
+    if (!response.credential) {
+      toast.error('Gagal mendapatkan token dari Google');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await googleLogin(response.credential);
+      
+      const { access_token, user: userFromResponse } = result.data;
+
+      if (!access_token) {
+        toast.error('Token tidak diterima dari server');
+        setLoading(false);
+        return;
+      }
+
+      let userData;
+      if (userFromResponse) {
+        userData = userFromResponse;
+      } else {
+        try {
+          const payload = JSON.parse(atob(access_token.split('.')[1]));
+          userData = {
+            id: payload.id,
+            email: payload.email,
+            name: payload.name || payload.email.split('@')[0],
+            role: payload.role,
+            ProjectId: payload.ProjectId,
+            projectName: null,
+          };
+        } catch (error) {
+          userData = {
+            email: userFromResponse?.email || '',
+            name: userFromResponse?.name || '',
+            role: 'staff',
+            projectName: null,
+          };
+        }
+      }
+
+      // Backend sudah auto-create project untuk Google login, jadi seharusnya selalu ada ProjectId
+      // Tapi handle edge case jika tidak ada
+      if (!userData.ProjectId) {
+        toast.error('Project tidak ditemukan. Silakan hubungi administrator.');
+        setLoading(false);
+        return;
+      }
+
+      dispatch(loginAction({
+        user: userData,
+        token: access_token,
+      }));
+
+      await persistor.flush();
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const currentState = store.getState();
+      if (!currentState.auth.token || currentState.auth.token.trim() === '') {
+        toast.error('Gagal menyimpan session. Silakan coba lagi.');
+        setLoading(false);
+        return;
+      }
+
+      toast.success('Login berhasil!');
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      navigate('/dashboard', { replace: true });
+    } catch (error) {
+      if (error.response) {
+        const errorMessage = error.response.data?.message || 'Login dengan Google gagal';
+        toast.error(errorMessage);
+      } else if (error.request) {
+        toast.error('Tidak dapat terhubung ke server');
+      } else {
+        toast.error('Login dengan Google gagal. Silakan coba lagi.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [dispatch, navigate]);
+
+  // Initialize Google Sign-In
+  useEffect(() => {
+    if (token) {
+      return;
+    }
+
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleSignIn,
+      });
+      const buttonDiv = document.getElementById('google-signin-button-register');
+      if (buttonDiv) {
+        window.google.accounts.id.renderButton(buttonDiv, {
+          theme: 'outline',
+          size: 'large',
+        });
+      }
+    }
+  }, [handleGoogleSignIn, token]);
 
   return (
     <>
@@ -127,6 +237,24 @@ export default function Register() {
               {loading ? <Loader size="sm" /> : 'Lanjutkan'}
             </button>
           </form>
+          
+          <div className="mt-4">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">atau</span>
+              </div>
+            </div>
+            
+            {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+              <div className="mt-4">
+                <div id="google-signin-button-register" className="flex justify-center w-full"></div>
+              </div>
+            )}
+          </div>
+          
           <p className="mt-4 text-center text-sm text-gray-600">
             Sudah punya akun?{' '}
             <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
