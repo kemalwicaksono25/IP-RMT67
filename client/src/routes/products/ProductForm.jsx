@@ -46,7 +46,7 @@ export default function ProductForm() {
         : (product.imageUrl ? [product.imageUrl] : []);
       
       const previews = images.map(img => 
-        img.startsWith('http') ? img : `http://54.206.113.88${img}`
+        img.startsWith('http') ? img : `https://planner.kemalwicaksono.com${img}`
       );
       setImagePreviews(previews);
       setExistingImageUrls(images); // Store existing images for edit mode
@@ -125,7 +125,7 @@ export default function ProductForm() {
         // Find which existing images are still in preview (not removed)
         // Convert existing URLs to full URLs for comparison
         const existingFullUrls = existingImageUrls.map(url => 
-          url.startsWith('http') ? url : `http://54.206.113.88${url}`
+          url.startsWith('http') ? url : `https://planner.kemalwicaksono.com${url}`
         );
         
         // Find existing images that are still in previews (by URL matching)
@@ -140,8 +140,8 @@ export default function ProductForm() {
             // Also check if preview is the same URL (for blob URLs, we can't match, so skip)
             if (preview.startsWith('http') && !preview.startsWith('blob:')) {
               // Compare normalized URLs
-              const normalizedPreview = preview.replace('http://54.206.113.88', '');
-              const normalizedExisting = existingUrl.replace('http://54.206.113.88', '');
+              const normalizedPreview = preview.replace('https://planner.kemalwicaksono.com', '');
+              const normalizedExisting = existingUrl.replace('https://planner.kemalwicaksono.com', '');
               return normalizedPreview === normalizedExisting || preview === fullUrl;
             }
             return false;

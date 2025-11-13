@@ -288,7 +288,7 @@ export default function ProductList() {
                 if (images.length > 0) {
                   // Show only first image in card (no carousel)
                   const firstImage = images[0];
-                  const imageUrl = firstImage.startsWith('http') ? firstImage : `http://54.206.113.88${firstImage}`;
+                  const imageUrl = firstImage.startsWith('http') ? firstImage : `https://planner.kemalwicaksono.com${firstImage}`;
                   return (
                     <Link
                       to={`/products/${product.id}`}

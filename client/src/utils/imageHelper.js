@@ -11,7 +11,7 @@ export const getImageUrl = (imageUrl) => {
   }
   
   // Otherwise, it's a local path, prepend the server URL
-  return `http://54.206.113.88${imageUrl}`;
+  return `https://planner.kemalwicaksono.com${imageUrl}`;
 };
 
 /**
